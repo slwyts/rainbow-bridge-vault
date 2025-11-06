@@ -1,0 +1,31 @@
+{
+  "name": "rainbow-bridge-vault",
+  "version": "1.0.0",
+  "description": "Rainbow Warehouse Contract Testing Suite",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "test:bsc": "cross-env FORK_URL=https://bsc-dataseed1.defibit.io/ FORK_CHAIN_ID=56 hardhat test",
+    "test:xlayer": "cross-env FORK_URL=https://rpc.xlayer.tech FORK_CHAIN_ID=196 hardhat test",
+    "test:bsc-specific": "cross-env FORK_URL=https://bsc-dataseed1.defibit.io/ FORK_CHAIN_ID=56 hardhat test test/BSCFork.test.js",
+    "test:xlayer-specific": "cross-env FORK_URL=https://rpc.xlayer.tech FORK_CHAIN_ID=196 hardhat test test/XLayerFork.test.js",
+    "coverage": "hardhat coverage",
+    "compile": "hardhat compile"
+  },
+  "keywords": [
+    "solidity",
+    "ethereum",
+    "smart-contracts",
+    "hardhat"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "chai": "^4.3.10",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.3.1",
+    "hardhat": "^2.19.0"
+  }
+}
