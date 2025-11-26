@@ -68,38 +68,51 @@ contract RainbowWarehouse is Ownable {
     /**
      * @dev 构造函数, 自动根据链ID配置合约
      * @param _initialOwner 初始合约所有者 (也将是费用接收者)
+     * @param _stablecoin 稳定币地址 (传0则自动根据链ID配置)
+     * @param _xwaifuToken xwaifu代币地址 (传0则自动根据链ID配置)
      */
     constructor(
-        address _initialOwner
-        // ( _projectWallet 已移除)
+        address _initialOwner,
+        address _stablecoin,
+        address _xwaifuToken
     ) Ownable(_initialOwner) { 
-        // (V4 Optimization) 链常量在构造函数中定义以节省部署大小
+        // 链常量
         uint256 xlayerChainId = 196; // XLayer Mainnet
         uint256 bscChainId = 56; // BNB Mainnet
         
+        // 默认地址
         address xlayerUsdtAddress = 0x779Ded0c9e1022225f8E0630b35a9b54bE713736;
         address bscUsdtAddress = 0x55d398326f99059fF775485246999027B3197955;
-        
         address xlayerXwaifuAddress = 0x140abA9691353eD54479372c4E9580D558D954b1;
 
         // 自动链配置
         if (block.chainid == xlayerChainId) {
-            stablecoin = IERC20(xlayerUsdtAddress);
+            stablecoin = IERC20(_stablecoin != address(0) ? _stablecoin : xlayerUsdtAddress);
             stablecoinDecimals = 6;
             MIN_AMOUNT_PER_PERIOD_SCALED = 5 * 1e6; // 5 USDT (6位)
             protocolFeePerPeriod = 10000; // 0.01 USDT (6位)
             
-            xwaifuToken = IERC20(xlayerXwaifuAddress);
+            xwaifuToken = IERC20(_xwaifuToken != address(0) ? _xwaifuToken : xlayerXwaifuAddress);
             isXWaifuDiscountActive = true;
 
         } else if (block.chainid == bscChainId) {
-            stablecoin = IERC20(bscUsdtAddress);
+            stablecoin = IERC20(_stablecoin != address(0) ? _stablecoin : bscUsdtAddress);
             stablecoinDecimals = 18;
             MIN_AMOUNT_PER_PERIOD_SCALED = 5 * 1e18; // 5 USDT (18位)
             protocolFeePerPeriod = 10000000000000000; // 0.01 USDT (18位)
 
-            xwaifuToken = IERC20(address(0)); // 在BSC上不使用
-            isXWaifuDiscountActive = false;
+            xwaifuToken = IERC20(_xwaifuToken); // BSC上可选
+            isXWaifuDiscountActive = _xwaifuToken != address(0);
+
+        } else if (_stablecoin != address(0) && _xwaifuToken != address(0)) {
+            // 测试环境：必须同时提供两个地址
+            stablecoin = IERC20(_stablecoin);
+            stablecoinDecimals = 6; // 默认6位
+            MIN_AMOUNT_PER_PERIOD_SCALED = 5 * 1e6;
+            protocolFeePerPeriod = 10000;
+            
+            xwaifuToken = IERC20(_xwaifuToken);
+            isXWaifuDiscountActive = true;
 
         } else {
             revert("Unsupported chain ID");
