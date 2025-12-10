@@ -24,12 +24,12 @@ import {
   Loader2,
   Wallet,
 } from "lucide-react";
-import { tokens } from "@web3icons/common/metadata";
-import { TokenIcon, NetworkIcon } from "@web3icons/react/dynamic";
+// Static imports only - dynamic imports cause 2000+ chunk files!
 import {
   NetworkBinanceSmartChain,
   NetworkXLayer,
   NetworkArbitrumOne,
+  NetworkEthereum,
 } from "@web3icons/react";
 import { useTokenInfo, useTokenBalance } from "@/lib/contracts";
 import { useAccount, useChainId } from "wagmi";
@@ -275,44 +275,6 @@ export const localnetCurrencies: Currency[] = getCurrenciesForChain(
 // LocalStorage keys
 const CUSTOM_CURRENCIES_KEY = "rainbow-bridge-custom-currencies";
 
-function searchTokens(query: string) {
-  const q = query.toLowerCase();
-  return tokens.filter(
-    (t) =>
-      t.name.toLowerCase().includes(q) || t.symbol.toLowerCase().includes(q)
-  );
-}
-
-function hasTokenIcon(symbol: string): boolean {
-  // Check for exact symbol match (case-insensitive)
-  const lowerSymbol = symbol.toLowerCase();
-  return tokens.some((t) => t.symbol.toLowerCase() === lowerSymbol);
-}
-
-// Get the best available variant for a token (prefer branded, fallback to mono)
-function getTokenVariant(symbol: string): "branded" | "mono" {
-  const lowerSymbol = symbol.toLowerCase();
-  const token = tokens.find((t) => t.symbol.toLowerCase() === lowerSymbol);
-  if (token && token.variants) {
-    // Prefer branded if available, otherwise use mono
-    if (token.variants.includes("branded")) return "branded";
-    if (token.variants.includes("mono")) return "mono";
-  }
-  return "branded"; // default
-}
-
-// Check if network icon exists
-function hasNetworkIcon(symbol: string): boolean {
-  const knownNetworks = [
-    "ethereum",
-    "x-layer",
-    "arbitrum-one",
-    "binance-smart-chain",
-    "localnet",
-  ];
-  return knownNetworks.includes(symbol.toLowerCase());
-}
-
 function GenericTokenIcon({
   symbol,
   className,
@@ -441,19 +403,7 @@ export function CurrencyIcon({
     );
   }
 
-  // Try web3icons library with the best available variant
-  if (hasTokenIcon(symbol)) {
-    const variant = getTokenVariant(symbol);
-    return (
-      <TokenIcon
-        symbol={symbol.toLowerCase()}
-        variant={variant}
-        className={className}
-      />
-    );
-  }
-
-  // Fallback to generic icon
+  // Fallback to generic icon (no dynamic TokenIcon to avoid chunk explosion)
   return <GenericTokenIcon symbol={symbol} className={className} />;
 }
 
@@ -471,6 +421,7 @@ export function ChainIcon({
     case "x-layer":
       return <NetworkXLayer className={className} variant="branded" />;
     case "binance-smart-chain":
+    case "bsc-testnet":
       return (
         <NetworkBinanceSmartChain className={className} variant="branded" />
       );
@@ -478,17 +429,9 @@ export function ChainIcon({
       return <NetworkArbitrumOne className={className} variant="branded" />;
     case "ethereum":
     case "localnet":
-      // Use dynamic NetworkIcon for ethereum
-      return (
-        <NetworkIcon name="ethereum" variant="branded" className={className} />
-      );
+      return <NetworkEthereum className={className} variant="branded" />;
     default:
-      // Try dynamic NetworkIcon, fallback to generic
-      if (hasNetworkIcon(symbol)) {
-        return (
-          <NetworkIcon name={symbol} variant="branded" className={className} />
-        );
-      }
+      // Fallback to generic chain icon (no dynamic NetworkIcon)
       return <GenericChainIcon symbol={symbol} className={className} />;
   }
 }
