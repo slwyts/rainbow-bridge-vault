@@ -62,8 +62,12 @@ import { parseUnits, formatUnits } from "viem";
 import { writeContract, waitForTransactionReceipt } from "@wagmi/core";
 import { config as wagmiConfig } from "@/lib/web3";
 import { warehouseAbi, erc20Abi } from "@/lib/abi";
-import { getWarehouseAddress, getTokenAddress, CHAIN_IDS } from "@/lib/constants";
-import { 
+import {
+  getWarehouseAddress,
+  getTokenAddress,
+  CHAIN_IDS,
+} from "@/lib/constants";
+import {
   useTokenAllowance,
   useTokenDecimals,
   useTokenBalance,
@@ -76,11 +80,16 @@ import {
 // Map chain string ID to numeric chain ID
 function getNumericChainId(chainStringId: string): number {
   switch (chainStringId) {
-    case "localnet": return CHAIN_IDS.HARDHAT;
-    case "x-layer": return CHAIN_IDS.XLAYER;
-    case "binance-smart-chain": return CHAIN_IDS.BSC;
-    case "arbitrum-one": return CHAIN_IDS.ARBITRUM;
-    default: return CHAIN_IDS.HARDHAT;
+    case "localnet":
+      return CHAIN_IDS.HARDHAT;
+    case "x-layer":
+      return CHAIN_IDS.XLAYER;
+    case "binance-smart-chain":
+      return CHAIN_IDS.BSC;
+    case "arbitrum-one":
+      return CHAIN_IDS.ARBITRUM;
+    default:
+      return CHAIN_IDS.HARDHAT;
   }
 }
 
@@ -93,13 +102,13 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   const { isConnected, address } = useAccount();
   const connectedChainId = useChainId();
   const { switchChain, isPending: isSwitchingChain } = useSwitchChain();
-  
+
   // Fix hydration mismatch - only use wallet state after client mount
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   // Get warehouse address for current chain
   const warehouseAddress = useWarehouseAddress();
 
@@ -107,13 +116,13 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [depositType, setDepositType] = useState<"u-based" | "coin-based">(
-    "u-based",
+    "u-based"
   );
   const [disbursementAmount, setDisbursementAmount] = useState("50");
   const [frequency, setFrequency] = useState("30");
   const [period, setPeriod] = useState("1");
   const [selectedChain, setSelectedChain] = useState("localnet");
-  
+
   // Get currencies for the selected chain
   const getDefaultCurrency = useCallback((chainStringId: string) => {
     const numericChainId = getNumericChainId(chainStringId);
@@ -121,60 +130,71 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     // Default to USDT if available, otherwise first currency
     return currencies.find((c) => c.symbol === "USDT") || currencies[0];
   }, []);
-  
-  const [selectedCurrency, setSelectedCurrency] = useState(() => getDefaultCurrency("localnet").symbol);
-  const [selectedCurrencyData, setSelectedCurrencyData] = useState<Currency | null>(() => getDefaultCurrency("localnet"));
+
+  const [selectedCurrency, setSelectedCurrency] = useState(
+    () => getDefaultCurrency("localnet").symbol
+  );
+  const [selectedCurrencyData, setSelectedCurrencyData] =
+    useState<Currency | null>(() => getDefaultCurrency("localnet"));
   const [selectedChainSymbol, setSelectedChainSymbol] = useState("localnet");
   const [amount, setAmount] = useState("");
   const [lockPeriod, setLockPeriod] = useState("30");
   const [unlockDate, setUnlockDate] = useState<number>(() => Date.now());
-  
+
   // U-based token selection (USDT or USDC)
-  const [uBasedTokenSymbol, setUBasedTokenSymbol] = useState<'USDT' | 'USDC'>('USDT');
+  const [uBasedTokenSymbol, setUBasedTokenSymbol] = useState<"USDT" | "USDC">(
+    "USDT"
+  );
 
   // Get current chain's token addresses
   const currentNumericChainId = getNumericChainId(selectedChain);
-  const uBasedToken = getTokenAddress(currentNumericChainId, uBasedTokenSymbol) as `0x${string}` | undefined;
+  const uBasedToken = getTokenAddress(
+    currentNumericChainId,
+    uBasedTokenSymbol
+  ) as `0x${string}` | undefined;
   const currentWarehouseAddress = getWarehouseAddress(currentNumericChainId);
-  
+
   // For coin-based, get the selected token from selectedCurrencyData
-  const selectedTokenAddress = selectedCurrencyData?.contractAddress as `0x${string}` | undefined;
+  const selectedTokenAddress = selectedCurrencyData?.contractAddress as
+    | `0x${string}`
+    | undefined;
 
   // Dynamically fetch token decimals
   const { data: uBasedTokenDecimals } = useTokenDecimals(uBasedToken);
-  const { data: selectedTokenDecimals } = useTokenDecimals(selectedTokenAddress);
-  
+  const { data: selectedTokenDecimals } =
+    useTokenDecimals(selectedTokenAddress);
+
   // Use fetched decimals or fallback to common defaults
-  const uBasedDecimals = typeof uBasedTokenDecimals === 'number' ? uBasedTokenDecimals : 6;
-  const lockupTokenDecimals = selectedCurrencyData?.decimals || (typeof selectedTokenDecimals === 'number' ? selectedTokenDecimals : 18);
+  const uBasedDecimals =
+    typeof uBasedTokenDecimals === "number" ? uBasedTokenDecimals : 6;
+  const lockupTokenDecimals =
+    selectedCurrencyData?.decimals ||
+    (typeof selectedTokenDecimals === "number" ? selectedTokenDecimals : 18);
 
   // Check allowance for U-based deposits
-  const { data: uBasedAllowance, refetch: refetchUBasedAllowance } = useTokenAllowance(
-    uBasedToken,
-    address,
-    currentWarehouseAddress
-  );
+  const { data: uBasedAllowance, refetch: refetchUBasedAllowance } =
+    useTokenAllowance(uBasedToken, address, currentWarehouseAddress);
 
   // Check allowance for coin-based lockups
-  const { data: lockupAllowance, refetch: refetchLockupAllowance } = useTokenAllowance(
-    selectedTokenAddress,
-    address,
-    currentWarehouseAddress
-  );
+  const { data: lockupAllowance, refetch: refetchLockupAllowance } =
+    useTokenAllowance(selectedTokenAddress, address, currentWarehouseAddress);
 
   // Fetch token balances
   const { data: uBasedBalance } = useTokenBalance(uBasedToken, address);
-  const { data: lockupTokenBalance } = useTokenBalance(selectedTokenAddress, address);
-  
+  const { data: lockupTokenBalance } = useTokenBalance(
+    selectedTokenAddress,
+    address
+  );
+
   // Fetch native token balance (for ETH, BNB, OKB, etc.)
   const { data: nativeBalanceData } = useNativeBalance(address);
-  
+
   // Determine if selected currency is native
   const isNativeToken = selectedCurrencyData?.isNative === true;
-  
+
   // Get the actual lockup balance based on token type
-  const actualLockupBalance = isNativeToken 
-    ? nativeBalanceData?.value 
+  const actualLockupBalance = isNativeToken
+    ? nativeBalanceData?.value
     : lockupTokenBalance;
 
   // Calculate if user has sufficient balance
@@ -200,12 +220,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   const uBasedTotalNeeded = getUBasedTotalNeeded();
   const lockupTotalNeeded = getLockupTotalNeeded();
 
-  const hasInsufficientUBasedBalance = uBasedBalance !== undefined && 
-    typeof uBasedBalance === 'bigint' && 
+  const hasInsufficientUBasedBalance =
+    uBasedBalance !== undefined &&
+    typeof uBasedBalance === "bigint" &&
     uBasedTotalNeeded > uBasedBalance;
 
-  const hasInsufficientLockupBalance = actualLockupBalance !== undefined && 
-    typeof actualLockupBalance === 'bigint' && 
+  const hasInsufficientLockupBalance =
+    actualLockupBalance !== undefined &&
+    typeof actualLockupBalance === "bigint" &&
     lockupTotalNeeded > actualLockupBalance;
 
   // Update currency when chain changes
@@ -217,7 +239,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
   useEffect(() => {
     setUnlockDate(
-      Date.now() + Number.parseInt(lockPeriod) * 24 * 60 * 60 * 1000,
+      Date.now() + Number.parseInt(lockPeriod) * 24 * 60 * 60 * 1000
     );
   }, [lockPeriod]);
 
@@ -244,7 +266,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
       id: "localnet",
       name: "Localnet",
       icon: (
-        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm ring-1 ring-violet-400/30">
+        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm ring-1 ring-violet-400/30">
           <span className="text-[10px] font-bold text-white">L</span>
         </div>
       ),
@@ -256,7 +278,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     {
       id: "x-layer",
       name: "X Layer",
-      icon: <NetworkXLayer className="w-5 h-5" variant="branded" />,
+      icon: <NetworkXLayer className="h-5 w-5" variant="branded" />,
       gas: "$0.001",
       gasLevel: "low" as const,
       symbol: "x-layer",
@@ -265,7 +287,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     {
       id: "binance-smart-chain",
       name: "BNB Chain",
-      icon: <NetworkBinanceSmartChain className="w-5 h-5" variant="branded" />,
+      icon: <NetworkBinanceSmartChain className="h-5 w-5" variant="branded" />,
       gas: "$0.05",
       gasLevel: "low" as const,
       symbol: "binance-smart-chain",
@@ -274,7 +296,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     {
       id: "arbitrum-one",
       name: "Arbitrum",
-      icon: <NetworkArbitrumOne className="w-5 h-5" variant="branded" />,
+      icon: <NetworkArbitrumOne className="h-5 w-5" variant="branded" />,
       gas: "$0.10",
       gasLevel: "medium" as const,
       symbol: "arbitrum-one",
@@ -283,8 +305,10 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   ];
 
   // Get expected chainId for selected chain
-  const expectedChainId = chains.find(c => c.id === selectedChain)?.chainId ?? CHAIN_IDS.HARDHAT;
-  const isWrongChainForSelected = isConnected && connectedChainId !== expectedChainId;
+  const expectedChainId =
+    chains.find((c) => c.id === selectedChain)?.chainId ?? CHAIN_IDS.HARDHAT;
+  const isWrongChainForSelected =
+    isConnected && connectedChainId !== expectedChainId;
 
   // Switch to the selected chain
   const handleSwitchChain = () => {
@@ -320,7 +344,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     // Check chain first
     if (isWrongChainForSelected) {
       toast.error("Wrong Network", {
-        description: `Please switch to ${chains.find(c => c.id === selectedChain)?.name || 'the correct network'} first`,
+        description: `Please switch to ${chains.find((c) => c.id === selectedChain)?.name || "the correct network"} first`,
       });
       return;
     }
@@ -328,7 +352,11 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     validateDisbursementAmount(disbursementAmount);
 
     const amountNum = Number.parseFloat(disbursementAmount);
-    if (depositType === "u-based" && !Number.isNaN(amountNum) && amountNum <= 4) {
+    if (
+      depositType === "u-based" &&
+      !Number.isNaN(amountNum) &&
+      amountNum <= 4
+    ) {
       return;
     }
 
@@ -350,24 +378,25 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
     try {
       // Check if we need approval
-      const currentAllowance = typeof uBasedAllowance === 'bigint' ? uBasedAllowance : 0n;
+      const currentAllowance =
+        typeof uBasedAllowance === "bigint" ? uBasedAllowance : 0n;
       if (currentAllowance < totalNeeded) {
         toast.info(`Approving ${uBasedTokenSymbol}...`, {
           description: "Please confirm the approval transaction",
         });
-        
+
         if (!currentWarehouseAddress || !uBasedToken) {
           throw new Error("Warehouse or token not configured for this chain");
         }
-        
+
         // Step 1: Send approve transaction using wagmi core action
         const approveHash = await writeContract(wagmiConfig, {
           address: uBasedToken,
           abi: erc20Abi,
-          functionName: 'approve',
+          functionName: "approve",
           args: [currentWarehouseAddress, totalNeeded],
         });
-        
+
         // Step 2: Wait for approval tx to be confirmed on chain
         toast.info("Waiting for approval confirmation...", {
           description: "Please wait while the transaction is being confirmed",
@@ -390,8 +419,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
       const depositHash = await writeContract(wagmiConfig, {
         address: currentWarehouseAddress,
         abi: warehouseAbi,
-        functionName: 'createDeposit',
-        args: [uBasedToken, amountPerPeriod, BigInt(periodSeconds), totalPeriods, 0n],
+        functionName: "createDeposit",
+        args: [
+          uBasedToken,
+          amountPerPeriod,
+          BigInt(periodSeconds),
+          totalPeriods,
+          0n,
+        ],
       });
 
       // Step 4: Wait for deposit confirmation
@@ -399,13 +434,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
         description: "Please wait while the transaction is being confirmed",
       });
       await waitForTransactionReceipt(wagmiConfig, { hash: depositHash });
-      
+
       toast.success(t("toast.depositCreated.title"), {
         description: "Deposit created successfully!",
       });
       onAddPosition();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Please try again";
+      const errorMessage =
+        err instanceof Error ? err.message : "Please try again";
       toast.error("Transaction failed", {
         description: errorMessage,
       });
@@ -416,7 +452,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
   const handleLockDeposit = async () => {
     const isNativeToken = selectedCurrencyData?.isNative === true;
-    
+
     // For ERC20 tokens, we need a contract address
     if (!isNativeToken && !selectedTokenAddress) {
       toast.error("Token not supported", {
@@ -436,10 +472,10 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     const fee = calculateLockupFee(lockAmount);
     const totalNeeded = lockAmount + fee;
     const unlockTimestamp = BigInt(Math.floor(unlockDate / 1000));
-    
+
     // For native tokens, use address(0)
-    const tokenAddressForContract = isNativeToken 
-      ? '0x0000000000000000000000000000000000000000' as `0x${string}`
+    const tokenAddressForContract = isNativeToken
+      ? ("0x0000000000000000000000000000000000000000" as `0x${string}`)
       : selectedTokenAddress!;
 
     setIsSubmitting(true);
@@ -451,20 +487,21 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
       // For ERC20 tokens, check and handle approval
       if (!isNativeToken) {
-        const currentLockupAllowance = typeof lockupAllowance === 'bigint' ? lockupAllowance : 0n;
+        const currentLockupAllowance =
+          typeof lockupAllowance === "bigint" ? lockupAllowance : 0n;
         if (currentLockupAllowance < totalNeeded) {
           toast.info(`Approving ${selectedCurrency}...`, {
             description: "Please confirm the approval transaction",
           });
-          
+
           // Step 1: Send approve transaction
           const approveHash = await writeContract(wagmiConfig, {
             address: selectedTokenAddress!,
             abi: erc20Abi,
-            functionName: 'approve',
+            functionName: "approve",
             args: [currentWarehouseAddress, totalNeeded],
           });
-          
+
           // Step 2: Wait for approval confirmation
           toast.info("Waiting for approval confirmation...", {
             description: "Please wait while the transaction is being confirmed",
@@ -481,11 +518,11 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
       toast.info("Creating lockup...", {
         description: "Please confirm the transaction in your wallet",
       });
-      
+
       const lockupHash = await writeContract(wagmiConfig, {
         address: currentWarehouseAddress,
         abi: warehouseAbi,
-        functionName: 'createLockup',
+        functionName: "createLockup",
         args: [tokenAddressForContract, lockAmount, unlockTimestamp],
         // For native tokens, send the value with the transaction
         ...(isNativeToken ? { value: totalNeeded } : {}),
@@ -496,13 +533,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
         description: "Please wait while the transaction is being confirmed",
       });
       await waitForTransactionReceipt(wagmiConfig, { hash: lockupHash });
-      
+
       toast.success(t("toast.depositLocked.title"), {
         description: "Lockup created successfully!",
       });
       onAddPosition();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Please try again";
+      const errorMessage =
+        err instanceof Error ? err.message : "Please try again";
       toast.error("Transaction failed", {
         description: errorMessage,
       });
@@ -517,10 +555,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     if (chain) {
       setSelectedChainSymbol(chain.symbol);
     }
-    
+
     // Auto switch chain when user selects a different chain
     const targetChain = chains.find((c) => c.id === chainStringId);
-    if (targetChain && isConnected && connectedChainId !== targetChain.chainId) {
+    if (
+      targetChain &&
+      isConnected &&
+      connectedChainId !== targetChain.chainId
+    ) {
       switchChain({ chainId: targetChain.chainId });
     }
   };
@@ -528,7 +570,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   const selectedChainData = chains.find((c) => c.id === selectedChain);
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="mx-auto w-full max-w-6xl">
       <AssetSelectorCard
         isOpen={assetSelectorOpen}
         onClose={() => setAssetSelectorOpen(false)}
@@ -541,33 +583,37 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
         onSelectChain={handleChainChange}
       />
 
-      <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/50 bg-white/70 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/70">
         {/* Terminal-style header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white/70 dark:bg-slate-800/70 border-b border-slate-200/50 dark:border-slate-700/50">
-          <div className="hidden sm:flex items-center gap-3">
-            <Vault className="w-4 h-4 text-violet-500 dark:text-violet-400" />
-            <span className="text-slate-600 dark:text-slate-400 text-sm font-mono">
+        <div className="flex items-center justify-between border-b border-slate-200/50 bg-white/70 px-4 py-4 sm:px-6 dark:border-slate-700/50 dark:bg-slate-800/70">
+          <div className="hidden items-center gap-3 sm:flex">
+            <Vault className="h-4 w-4 text-violet-500 dark:text-violet-400" />
+            <span className="font-mono text-sm text-slate-600 dark:text-slate-400">
               rainbow-bridge-vault
             </span>
             {/* Show actual wallet chain - only after mount to prevent hydration mismatch */}
             {mounted && isConnected && (
-              <span className={`text-xs px-2 py-0.5 rounded ${
-                isWrongChainForSelected 
-                  ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' 
-                  : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-              }`}>
-                Wallet: {chains.find(c => c.chainId === connectedChainId)?.name || `Chain ${connectedChainId}`}
+              <span
+                className={`rounded px-2 py-0.5 text-xs ${
+                  isWrongChainForSelected
+                    ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                    : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                }`}
+              >
+                Wallet:{" "}
+                {chains.find((c) => c.chainId === connectedChainId)?.name ||
+                  `Chain ${connectedChainId}`}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="flex w-full items-center gap-4 sm:w-auto">
             <Popover open={chainOpen} onOpenChange={setChainOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={chainOpen}
-                  className="w-full sm:w-[240px] h-10 justify-between bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700"
+                  className="h-10 w-full justify-between rounded-lg border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200 sm:w-[240px] dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                 >
                   {selectedChainData ? (
                     <span className="flex items-center gap-2">
@@ -583,14 +629,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[240px] p-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-xl">
+              <PopoverContent className="w-[240px] rounded-xl border border-slate-200 bg-white p-0 shadow-lg dark:border-slate-700 dark:bg-slate-800">
                 <Command className="bg-transparent">
                   <CommandInput
                     placeholder={t("form.combobox.searchChain")}
-                    className="text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700"
+                    className="border-b border-slate-200 text-slate-900 dark:border-slate-700 dark:text-white"
                   />
                   <CommandList>
-                    <CommandEmpty className="text-slate-500 dark:text-slate-400 py-6 text-center text-sm">
+                    <CommandEmpty className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                       {t("form.combobox.noChainFound")}
                     </CommandEmpty>
                     <CommandGroup className="p-1">
@@ -604,14 +650,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                             }
                             setChainOpen(false);
                           }}
-                          className="text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 data-[selected=true]:bg-slate-100 dark:data-[selected=true]:bg-slate-700 rounded-lg cursor-pointer px-3 py-2.5"
+                          className="cursor-pointer rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-100 data-[selected=true]:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700 dark:data-[selected=true]:bg-slate-700"
                         >
                           <CheckIcon
                             className={cn(
                               "mr-2 h-4 w-4 text-violet-500",
                               selectedChain === chain.id
                                 ? "opacity-100"
-                                : "opacity-0",
+                                : "opacity-0"
                             )}
                           />
                           <span className="mr-2">{chain.icon}</span>
@@ -642,12 +688,12 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
             }}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 h-14 sm:h-16 bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-xl">
+            <TabsList className="grid h-14 w-full grid-cols-2 rounded-xl bg-slate-100 p-1.5 sm:h-16 dark:bg-slate-800/50">
               <TabsTrigger
                 value="u-based"
-                className="gap-2 rounded-lg data-[state=active]:bg-linear-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-green-500 data-[state=active]:text-white transition-all duration-300 h-full font-semibold text-slate-500 dark:text-slate-400"
+                className="h-full gap-2 rounded-lg font-semibold text-slate-500 transition-all duration-300 data-[state=active]:bg-linear-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-green-500 data-[state=active]:text-white dark:text-slate-400"
               >
-                <DollarSign className="w-4 h-4" />
+                <DollarSign className="h-4 w-4" />
                 <span className="hidden sm:inline">
                   {t("form.tabs.uBased")}
                 </span>
@@ -655,9 +701,9 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
               </TabsTrigger>
               <TabsTrigger
                 value="coin-based"
-                className="gap-2 rounded-lg data-[state=active]:bg-linear-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white transition-all duration-300 h-full font-semibold text-slate-500 dark:text-slate-400"
+                className="h-full gap-2 rounded-lg font-semibold text-slate-500 transition-all duration-300 data-[state=active]:bg-linear-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white dark:text-slate-400"
               >
-                <Coins className="w-4 h-4" />
+                <Coins className="h-4 w-4" />
                 <span className="hidden sm:inline">
                   {t("form.tabs.coinBased")}
                 </span>
@@ -678,15 +724,15 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className={depositType !== "u-based" ? "hidden" : ""}
               >
-                <div className="grid lg:grid-cols-3 gap-6">
+                <div className="grid gap-6 lg:grid-cols-3">
                   {/* Left Column - Main Form */}
-                  <div className="lg:col-span-2 space-y-6">
+                  <div className="space-y-6 lg:col-span-2">
                     {/* Amount Row */}
-                    <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
                       {/* Disbursement Amount */}
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                          <DollarSign className="w-3 h-3" />
+                        <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                          <DollarSign className="h-3 w-3" />
                           {t("form.labels.disbursementAmount")}
                         </label>
                         <div className="relative">
@@ -697,32 +743,32 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                               setDisbursementAmount(e.target.value);
                               validateDisbursementAmount(e.target.value);
                             }}
-                            className={`h-14 text-xl sm:text-2xl font-bold bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white rounded-xl pl-4 pr-24 focus:ring-emerald-500/20 ${
+                            className={`h-14 rounded-xl border-slate-300 bg-slate-100 pr-24 pl-4 text-xl font-bold text-slate-800 focus:ring-emerald-500/20 sm:text-2xl dark:border-slate-600 dark:bg-slate-800/50 dark:text-white ${
                               disbursementError
                                 ? "border-red-500 focus:border-red-500"
                                 : "focus:border-emerald-500"
                             }`}
                           />
                           {/* USDT/USDC Selector */}
-                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => setUBasedTokenSymbol('USDT')}
-                              className={`px-2 py-1 text-xs font-bold rounded transition-all ${
-                                uBasedTokenSymbol === 'USDT'
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-600'
+                              onClick={() => setUBasedTokenSymbol("USDT")}
+                              className={`rounded px-2 py-1 text-xs font-bold transition-all ${
+                                uBasedTokenSymbol === "USDT"
+                                  ? "bg-emerald-500 text-white"
+                                  : "bg-slate-200 text-slate-500 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600"
                               }`}
                             >
                               USDT
                             </button>
                             <button
                               type="button"
-                              onClick={() => setUBasedTokenSymbol('USDC')}
-                              className={`px-2 py-1 text-xs font-bold rounded transition-all ${
-                                uBasedTokenSymbol === 'USDC'
-                                  ? 'bg-blue-500 text-white'
-                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-600'
+                              onClick={() => setUBasedTokenSymbol("USDC")}
+                              className={`rounded px-2 py-1 text-xs font-bold transition-all ${
+                                uBasedTokenSymbol === "USDC"
+                                  ? "bg-blue-500 text-white"
+                                  : "bg-slate-200 text-slate-500 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600"
                               }`}
                             >
                               USDC
@@ -732,24 +778,30 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                         {/* Balance display for U-based */}
                         {isConnected && uBasedBalance !== undefined && (
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                              <Wallet className="w-3 h-3" />
+                            <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                              <Wallet className="h-3 w-3" />
                               余额:
                             </span>
-                            <span className={`font-mono ${hasInsufficientUBasedBalance ? 'text-red-500' : 'text-slate-600 dark:text-slate-300'}`}>
-                              {typeof uBasedBalance === 'bigint' 
-                                ? Number(formatUnits(uBasedBalance, uBasedDecimals)).toLocaleString(undefined, { maximumFractionDigits: 4 })
-                                : '0'
-                              } {uBasedTokenSymbol}
+                            <span
+                              className={`font-mono ${hasInsufficientUBasedBalance ? "text-red-500" : "text-slate-600 dark:text-slate-300"}`}
+                            >
+                              {typeof uBasedBalance === "bigint"
+                                ? Number(
+                                    formatUnits(uBasedBalance, uBasedDecimals)
+                                  ).toLocaleString(undefined, {
+                                    maximumFractionDigits: 4,
+                                  })
+                                : "0"}{" "}
+                              {uBasedTokenSymbol}
                             </span>
                           </div>
                         )}
                         {disbursementError && (
-                          <div className="text-red-500 text-xs font-medium px-2 py-1 bg-red-50 dark:bg-red-500/10 rounded">
+                          <div className="rounded bg-red-50 px-2 py-1 text-xs font-medium text-red-500 dark:bg-red-500/10">
                             {disbursementError}
                           </div>
                         )}
-                        <div className="flex gap-1.5 flex-wrap">
+                        <div className="flex flex-wrap gap-1.5">
                           {quickAmounts.map((amt) => (
                             <button
                               key={amt}
@@ -757,10 +809,10 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                                 setDisbursementAmount(amt);
                                 validateDisbursementAmount(amt);
                               }}
-                              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
                                 disbursementAmount === amt
                                   ? "bg-emerald-500 text-white"
-                                  : "bg-slate-200 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
+                                  : "bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700/50 dark:text-slate-300 dark:hover:bg-slate-600"
                               }`}
                             >
                               {amt}U
@@ -771,8 +823,8 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
                       {/* Frequency */}
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                          <Clock className="w-3 h-3" />
+                        <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                          <Clock className="h-3 w-3" />
                           {t("form.labels.disbursementFrequency")}
                         </label>
                         <div className="relative">
@@ -781,13 +833,13 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                             value={frequency}
                             onChange={(e) => setFrequency(e.target.value)}
                             max="365"
-                            className="h-14 text-xl sm:text-2xl font-bold bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white rounded-xl pl-4 pr-16 focus:border-violet-500 focus:ring-violet-500/20"
+                            className="h-14 rounded-xl border-slate-300 bg-slate-100 pr-16 pl-4 text-xl font-bold text-slate-800 focus:border-violet-500 focus:ring-violet-500/20 sm:text-2xl dark:border-slate-600 dark:bg-slate-800/50 dark:text-white"
                           />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-violet-500 dark:text-violet-400 font-bold text-sm">
+                          <span className="absolute top-1/2 right-4 -translate-y-1/2 text-sm font-bold text-violet-500 dark:text-violet-400">
                             次
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400 dark:text-white-500">
+                        <p className="dark:text-white-500 text-xs text-slate-400">
                           {t("form.hints.maxFrequency")}
                         </p>
                       </div>
@@ -795,11 +847,11 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
                     {/* Period Selector */}
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                        <Shield className="w-3 h-3" />
+                      <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                        <Shield className="h-3 w-3" />
                         {t("form.labels.periodDays")}
                       </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {[
                           {
                             value: "1",
@@ -820,13 +872,13 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           <button
                             key={p.value}
                             onClick={() => setPeriod(p.value)}
-                            className={`p-3 sm:p-4 rounded-xl text-left transition-all border ${
+                            className={`rounded-xl border p-3 text-left transition-all sm:p-4 ${
                               period === p.value
-                                ? "bg-violet-500/20 border-violet-500 text-violet-700 dark:text-white"
-                                : "bg-slate-100 dark:bg-slate-800/30 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/50"
+                                ? "border-violet-500 bg-violet-500/20 text-violet-700 dark:text-white"
+                                : "border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400 dark:hover:bg-slate-700/50"
                             }`}
                           >
-                            <div className="font-bold text-sm">{p.label}</div>
+                            <div className="text-sm font-bold">{p.label}</div>
                             <div className="text-xs opacity-60">{p.desc}</div>
                           </button>
                         ))}
@@ -837,14 +889,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                         >
                           <PopoverTrigger asChild>
                             <button
-                              className={`p-3 sm:p-4 rounded-xl text-left transition-all border ${
+                              className={`rounded-xl border p-3 text-left transition-all sm:p-4 ${
                                 !["1", "7", "30"].includes(period)
-                                  ? "bg-violet-500/20 border-violet-500 text-violet-700 dark:text-white"
-                                  : "bg-slate-100 dark:bg-slate-800/30 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/50"
+                                  ? "border-violet-500 bg-violet-500/20 text-violet-700 dark:text-white"
+                                  : "border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400 dark:hover:bg-slate-700/50"
                               }`}
                             >
-                              <div className="font-bold text-sm flex items-center gap-1">
-                                <Settings className="w-3 h-3" />
+                              <div className="flex items-center gap-1 text-sm font-bold">
+                                <Settings className="h-3 w-3" />
                                 {t("form.periods.custom")}
                               </div>
                               <div className="text-xs opacity-60">
@@ -854,7 +906,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                               </div>
                             </button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-64 p-4 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                          <PopoverContent className="w-64 border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
                             <div className="space-y-3">
                               <h4 className="font-semibold text-slate-800 dark:text-white">
                                 {t("form.periods.customTitle")}
@@ -862,13 +914,13 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                               <Input
                                 type="number"
                                 placeholder={t(
-                                  "form.periods.customPlaceholder",
+                                  "form.periods.customPlaceholder"
                                 )}
                                 value={customPeriodValue}
                                 onChange={(e) =>
                                   setCustomPeriodValue(e.target.value)
                                 }
-                                className="h-10 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white"
+                                className="h-10 border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
                               />
                               <Button
                                 onClick={() => {
@@ -880,7 +932,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                                     setCustomPeriodOpen(false);
                                   }
                                 }}
-                                className="w-full bg-violet-500 hover:bg-violet-600 text-white"
+                                className="w-full bg-violet-500 text-white hover:bg-violet-600"
                               >
                                 {t("form.periods.customConfirm")}
                               </Button>
@@ -893,12 +945,12 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                     {/* Featured Products */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-amber-400" />
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        <Sparkles className="h-4 w-4 text-amber-400" />
+                        <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
                           {t("form.labels.featuredProducts")}
                         </span>
                       </div>
-                      <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
                         {/* War God */}
                         <button
                           onClick={() => {
@@ -906,24 +958,24 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                             setFrequency("7");
                             setPeriod("1");
                           }}
-                          className="group relative p-4 sm:p-5 rounded-xl bg-linear-to-br from-red-100 dark:from-red-900/30 to-orange-100 dark:to-orange-900/30 border border-red-300 dark:border-red-500/30 hover:border-red-500/60 transition-all hover:scale-[1.02]"
+                          className="group relative rounded-xl border border-red-300 bg-linear-to-br from-red-100 to-orange-100 p-4 transition-all hover:scale-[1.02] hover:border-red-500/60 sm:p-5 dark:border-red-500/30 dark:from-red-900/30 dark:to-orange-900/30"
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col items-start">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Zap className="w-5 h-5 text-red-500 dark:text-red-400" />
-                                <span className="px-2 py-0.5 bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold rounded">
+                              <div className="mb-2 flex items-center gap-2">
+                                <Zap className="h-5 w-5 text-red-500 dark:text-red-400" />
+                                <span className="rounded bg-red-500/20 px-2 py-0.5 text-xs font-bold text-red-600 dark:text-red-400">
                                   {t("form.products.warrior.badge")}
                                 </span>
                               </div>
-                              <h4 className="text-slate-800 dark:text-white font-bold text-base sm:text-lg text-left">
+                              <h4 className="text-left text-base font-bold text-slate-800 sm:text-lg dark:text-white">
                                 {t("form.products.warrior.name")}
                               </h4>
-                              <p className="text-slate-500 dark:text-slate-400 text-sm text-left">
+                              <p className="text-left text-sm text-slate-500 dark:text-slate-400">
                                 10U × 7 {t("form.products.days")}
                               </p>
                             </div>
-                            <ChevronRight className="w-5 h-5 text-slate-400 dark:text-slate-600 group-hover:text-red-400 transition-colors shrink-0" />
+                            <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-colors group-hover:text-red-400 dark:text-slate-600" />
                           </div>
                         </button>
 
@@ -934,24 +986,24 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                             setFrequency("30");
                             setPeriod("1");
                           }}
-                          className="group relative p-4 sm:p-5 rounded-xl bg-linear-to-br from-violet-100 dark:from-violet-900/30 to-purple-100 dark:to-purple-900/30 border border-violet-300 dark:border-violet-500/30 hover:border-violet-500/60 transition-all hover:scale-[1.02]"
+                          className="group relative rounded-xl border border-violet-300 bg-linear-to-br from-violet-100 to-purple-100 p-4 transition-all hover:scale-[1.02] hover:border-violet-500/60 sm:p-5 dark:border-violet-500/30 dark:from-violet-900/30 dark:to-purple-900/30"
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col items-start">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Crown className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-                                <span className="px-2 py-0.5 bg-violet-500/20 text-violet-600 dark:text-violet-400 text-xs font-bold rounded">
+                              <div className="mb-2 flex items-center gap-2">
+                                <Crown className="h-5 w-5 text-violet-500 dark:text-violet-400" />
+                                <span className="rounded bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">
                                   {t("form.products.premium.badge")}
                                 </span>
                               </div>
-                              <h4 className="text-slate-800 dark:text-white font-bold text-base sm:text-lg text-left">
+                              <h4 className="text-left text-base font-bold text-slate-800 sm:text-lg dark:text-white">
                                 {t("form.products.premium.name")}
                               </h4>
-                              <p className="text-slate-500 dark:text-slate-400 text-sm text-left">
+                              <p className="text-left text-sm text-slate-500 dark:text-slate-400">
                                 50U × 30 {t("form.products.days")}
                               </p>
                             </div>
-                            <ChevronRight className="w-5 h-5 text-slate-400 dark:text-slate-600 group-hover:text-violet-400 transition-colors shrink-0" />
+                            <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-colors group-hover:text-violet-400 dark:text-slate-600" />
                           </div>
                         </button>
                       </div>
@@ -960,36 +1012,36 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
                   {/* Right Column - Summary Panel */}
                   <div className="lg:col-span-1">
-                    <div className="sticky top-4 p-5 sm:p-6 rounded-xl bg-linear-to-b from-slate-100/90 dark:from-slate-800/90 to-slate-200/90 dark:to-slate-900/90 border border-slate-300/50 dark:border-slate-700/50">
-                      <div className="flex items-center gap-2 mb-6">
-                        <TrendingUp className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                        <h3 className="text-slate-800 dark:text-white font-bold">
+                    <div className="sticky top-4 rounded-xl border border-slate-300/50 bg-linear-to-b from-slate-100/90 to-slate-200/90 p-5 sm:p-6 dark:border-slate-700/50 dark:from-slate-800/90 dark:to-slate-900/90">
+                      <div className="mb-6 flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                        <h3 className="font-bold text-slate-800 dark:text-white">
                           {t("form.summary.title")}
                         </h3>
                       </div>
 
                       {/* Total Amount Display */}
-                      <div className="p-4 rounded-xl bg-white/80 dark:bg-slate-900/80 mb-4">
-                        <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">
+                      <div className="mb-4 rounded-xl bg-white/80 p-4 dark:bg-slate-900/80">
+                        <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">
                           {t("form.summary.totalAmount")}
                         </p>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-emerald-500 to-green-500 dark:from-emerald-400 dark:to-green-400">
+                          <span className="bg-linear-to-r from-emerald-500 to-green-500 bg-clip-text text-3xl font-bold text-transparent sm:text-4xl dark:from-emerald-400 dark:to-green-400">
                             {calculateTotal()}
                           </span>
-                          <span className="text-emerald-500 dark:text-emerald-400 font-semibold">
+                          <span className="font-semibold text-emerald-500 dark:text-emerald-400">
                             {uBasedTokenSymbol}
                           </span>
                         </div>
                       </div>
 
                       {/* Fee Breakdown */}
-                      <div className="space-y-3 mb-6">
+                      <div className="mb-6 space-y-3">
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-500 dark:text-slate-400">
                             {t("form.summary.baseFee")}
                           </span>
-                          <span className="text-slate-800 dark:text-white font-mono">
+                          <span className="font-mono text-slate-800 dark:text-white">
                             {calculateFee().baseFee}
                           </span>
                         </div>
@@ -997,7 +1049,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           <span className="text-slate-500 dark:text-slate-400">
                             {t("form.summary.disbursementFee")}
                           </span>
-                          <span className="text-slate-800 dark:text-white font-mono">
+                          <span className="font-mono text-slate-800 dark:text-white">
                             {calculateFee().disbursementFee}
                           </span>
                         </div>
@@ -1006,14 +1058,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           <span className="text-slate-600 dark:text-slate-300">
                             {t("form.summary.totalFee")}
                           </span>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-mono">
+                          <span className="font-mono text-emerald-600 dark:text-emerald-400">
                             {calculateFee().total}
                           </span>
                         </div>
                       </div>
 
                       {/* Discount Notice */}
-                      <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20 mb-6">
+                      <div className="mb-6 rounded-lg border border-amber-300 bg-amber-100 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
                         <p className="text-xs text-amber-700 dark:text-amber-400">
                           {t("form.summary.discount")}
                         </p>
@@ -1022,11 +1074,11 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                             href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 mt-2 text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+                            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
                           >
                             {t("form.summary.buyXWaifuLink")}
                             <svg
-                              className="w-3 h-3"
+                              className="h-3 w-3"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -1046,7 +1098,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                       {!mounted ? (
                         <Button
                           disabled
-                          className="w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all bg-gray-400 text-white cursor-not-allowed"
+                          className="h-14 w-full cursor-not-allowed rounded-xl bg-gray-400 text-lg font-bold text-white shadow-lg transition-all"
                         >
                           Loading...
                         </Button>
@@ -1054,24 +1106,26 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                         <Button
                           onClick={handleSwitchChain}
                           disabled={isSwitchingChain}
-                          className="w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all bg-amber-500 hover:bg-amber-600 text-white"
+                          className="h-14 w-full rounded-xl bg-amber-500 text-lg font-bold text-white shadow-lg transition-all hover:bg-amber-600"
                         >
                           {isSwitchingChain ? (
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           ) : null}
-                          Switch to {chains.find(c => c.id === selectedChain)?.name || 'Network'}
+                          Switch to{" "}
+                          {chains.find((c) => c.id === selectedChain)?.name ||
+                            "Network"}
                         </Button>
                       ) : !isConnected ? (
                         <Button
                           disabled
-                          className="w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all bg-gray-400 text-white cursor-not-allowed"
+                          className="h-14 w-full cursor-not-allowed rounded-xl bg-gray-400 text-lg font-bold text-white shadow-lg transition-all"
                         >
                           Connect Wallet First
                         </Button>
                       ) : hasInsufficientUBasedBalance ? (
                         <Button
                           disabled
-                          className="w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all bg-red-500/80 text-white cursor-not-allowed"
+                          className="h-14 w-full cursor-not-allowed rounded-xl bg-red-500/80 text-lg font-bold text-white shadow-lg transition-all"
                         >
                           余额不足
                         </Button>
@@ -1079,15 +1133,15 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                         <Button
                           onClick={handleCreateDeposit}
                           disabled={!!disbursementError || isSubmitting}
-                          className={`w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all ${
+                          className={`h-14 w-full rounded-xl text-lg font-bold shadow-lg transition-all ${
                             disbursementError || isSubmitting
-                              ? "bg-gray-400 text-white cursor-not-allowed"
-                              : "bg-linear-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-emerald-500/25 hover:scale-[1.02]"
+                              ? "cursor-not-allowed bg-gray-400 text-white"
+                              : "bg-linear-to-r from-emerald-500 to-green-500 text-white shadow-emerald-500/25 hover:scale-[1.02] hover:from-emerald-600 hover:to-green-600"
                           }`}
                         >
                           {isSubmitting ? (
                             <>
-                              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                               Processing...
                             </>
                           ) : (
@@ -1114,14 +1168,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className={depositType !== "coin-based" ? "hidden" : ""}
               >
-                <div className="grid lg:grid-cols-3 gap-6">
+                <div className="grid gap-6 lg:grid-cols-3">
                   {/* Left Column */}
-                  <div className="lg:col-span-2 space-y-6">
+                  <div className="space-y-6 lg:col-span-2">
                     {/* Asset Selection */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <Coins className="w-4 h-4 text-amber-400" />
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        <Coins className="h-4 w-4 text-amber-400" />
+                        <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
                           {t("form.coinBased.assetSelection")}
                         </span>
                       </div>
@@ -1129,14 +1183,16 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                       <Button
                         onClick={() => setAssetSelectorOpen(true)}
                         variant="outline"
-                        className="w-full h-14 justify-between bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700"
+                        className="h-14 w-full justify-between rounded-xl border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800/50 dark:text-white dark:hover:bg-slate-700"
                       >
                         <div className="flex items-center gap-3">
                           <CurrencyIcon
                             symbol={selectedCurrency}
-                            className="w-8 h-8"
+                            className="h-8 w-8"
                             iconUrl={selectedCurrencyData?.iconUrl}
-                            contractAddress={selectedCurrencyData?.contractAddress}
+                            contractAddress={
+                              selectedCurrencyData?.contractAddress
+                            }
                             chainId={selectedCurrencyData?.chainId}
                           />
                           <div className="text-left">
@@ -1147,16 +1203,17 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="text-right mr-1">
+                          <div className="mr-1 text-right">
                             <div className="text-xs text-slate-500 dark:text-slate-400">
-                              {chains.find((c) => c.id === selectedChain)?.name || selectedChain}
+                              {chains.find((c) => c.id === selectedChain)
+                                ?.name || selectedChain}
                             </div>
                           </div>
                           <ChainIcon
                             symbol={selectedChainSymbol}
-                            className="w-5 h-5"
+                            className="h-5 w-5"
                           />
-                          <ChevronsUpDown className="w-4 h-4 text-slate-400" />
+                          <ChevronsUpDown className="h-4 w-4 text-slate-400" />
                         </div>
                       </Button>
                     </div>
@@ -1164,12 +1221,12 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                     {/* Lock Period Selection */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-violet-400" />
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        <Calendar className="h-4 w-4 text-violet-400" />
+                        <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
                           {t("form.coinBased.selectDuration")}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {[
                           { value: "30", label: "30", desc: t("form.days") },
                           { value: "90", label: "90", desc: t("form.days") },
@@ -1179,13 +1236,13 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           <button
                             key={p.value}
                             onClick={() => setLockPeriod(p.value)}
-                            className={`p-3 sm:p-4 rounded-xl text-center transition-all border ${
+                            className={`rounded-xl border p-3 text-center transition-all sm:p-4 ${
                               lockPeriod === p.value
-                                ? "bg-amber-500/20 border-amber-500 text-amber-700 dark:text-white"
-                                : "bg-slate-100 dark:bg-slate-800/30 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/50"
+                                ? "border-amber-500 bg-amber-500/20 text-amber-700 dark:text-white"
+                                : "border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400 dark:hover:bg-slate-700/50"
                             }`}
                           >
-                            <div className="font-bold text-lg">{p.label}</div>
+                            <div className="text-lg font-bold">{p.label}</div>
                             <div className="text-xs opacity-60">{p.desc}</div>
                           </button>
                         ))}
@@ -1194,8 +1251,8 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
                     {/* Amount Input */}
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                        <Lock className="w-3 h-3" />
+                      <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                        <Lock className="h-3 w-3" />
                         {t("form.coinBased.lockAmount")}
                       </label>
                       <div className="relative">
@@ -1204,24 +1261,33 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           value={amount}
                           onChange={(e) => setAmount(e.target.value)}
                           placeholder="0.00"
-                          className="h-14 text-xl sm:text-2xl font-bold bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white rounded-xl pl-4 pr-20 focus:border-amber-500 focus:ring-amber-500/20"
+                          className="h-14 rounded-xl border-slate-300 bg-slate-100 pr-20 pl-4 text-xl font-bold text-slate-800 focus:border-amber-500 focus:ring-amber-500/20 sm:text-2xl dark:border-slate-600 dark:bg-slate-800/50 dark:text-white"
                         />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-500 dark:text-amber-400 font-bold">
+                        <span className="absolute top-1/2 right-4 -translate-y-1/2 font-bold text-amber-500 dark:text-amber-400">
                           {selectedCurrency}
                         </span>
                       </div>
                       {/* Balance display for coin-based */}
                       {isConnected && actualLockupBalance !== undefined && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                            <Wallet className="w-3 h-3" />
+                          <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                            <Wallet className="h-3 w-3" />
                             余额:
                           </span>
-                          <span className={`font-mono ${hasInsufficientLockupBalance ? 'text-red-500' : 'text-slate-600 dark:text-slate-300'}`}>
-                            {typeof actualLockupBalance === 'bigint' 
-                              ? Number(formatUnits(actualLockupBalance, lockupTokenDecimals)).toLocaleString(undefined, { maximumFractionDigits: 6 })
-                              : '0'
-                            } {selectedCurrency}
+                          <span
+                            className={`font-mono ${hasInsufficientLockupBalance ? "text-red-500" : "text-slate-600 dark:text-slate-300"}`}
+                          >
+                            {typeof actualLockupBalance === "bigint"
+                              ? Number(
+                                  formatUnits(
+                                    actualLockupBalance,
+                                    lockupTokenDecimals
+                                  )
+                                ).toLocaleString(undefined, {
+                                  maximumFractionDigits: 6,
+                                })
+                              : "0"}{" "}
+                            {selectedCurrency}
                           </span>
                         </div>
                       )}
@@ -1230,27 +1296,27 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                     {/* Cross-chain Bridge */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <ArrowRightLeft className="w-4 h-4 text-blue-400" />
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        <ArrowRightLeft className="h-4 w-4 text-blue-400" />
+                        <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
                           {t("form.labels.crossChainBridges")}
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         {/* Stargate Bridge */}
                         <a
                           href="https://stargate.finance/bridge"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group p-4 rounded-xl bg-linear-to-br from-purple-50 to-indigo-50 dark:from-purple-500/10 dark:to-indigo-500/10 border border-purple-200/50 dark:border-purple-500/20 hover:border-purple-400 dark:hover:border-purple-400/50 transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/10"
+                          className="group rounded-xl border border-purple-200/50 bg-linear-to-br from-purple-50 to-indigo-50 p-4 transition-all duration-200 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/10 dark:border-purple-500/20 dark:from-purple-500/10 dark:to-indigo-500/10 dark:hover:border-purple-400/50"
                         >
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                              <span className="text-white font-bold text-lg">
+                          <div className="mb-2 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600 shadow-lg">
+                              <span className="text-lg font-bold text-white">
                                 S
                               </span>
                             </div>
                             <div>
-                              <h4 className="font-bold text-slate-800 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                              <h4 className="font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
                                 Stargate
                               </h4>
                               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1261,9 +1327,9 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           <p className="text-xs text-slate-600 dark:text-slate-300">
                             {t("form.coinBased.stargateDesc")}
                           </p>
-                          <div className="mt-3 flex items-center text-xs text-purple-600 dark:text-purple-400 font-medium">
+                          <div className="mt-3 flex items-center text-xs font-medium text-purple-600 dark:text-purple-400">
                             {t("form.coinBased.bridgeNow")}
-                            <ExternalLink className="w-3 h-3 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                            <ExternalLink className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                           </div>
                         </a>
 
@@ -1272,16 +1338,16 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           href="https://www.orbiter.finance/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group p-4 rounded-xl bg-linear-to-br from-orange-50 to-amber-50 dark:from-orange-500/10 dark:to-amber-500/10 border border-orange-200/50 dark:border-orange-500/20 hover:border-orange-400 dark:hover:border-orange-400/50 transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/10"
+                          className="group rounded-xl border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-4 transition-all duration-200 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-500/10 dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10 dark:hover:border-orange-400/50"
                         >
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg">
-                              <span className="text-white font-bold text-lg">
+                          <div className="mb-2 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500 shadow-lg">
+                              <span className="text-lg font-bold text-white">
                                 O
                               </span>
                             </div>
                             <div>
-                              <h4 className="font-bold text-slate-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                              <h4 className="font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
                                 Orbiter
                               </h4>
                               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1292,9 +1358,9 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           <p className="text-xs text-slate-600 dark:text-slate-300">
                             {t("form.coinBased.orbiterDesc")}
                           </p>
-                          <div className="mt-3 flex items-center text-xs text-orange-600 dark:text-orange-400 font-medium">
+                          <div className="mt-3 flex items-center text-xs font-medium text-orange-600 dark:text-orange-400">
                             {t("form.coinBased.bridgeNow")}
-                            <ExternalLink className="w-3 h-3 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                            <ExternalLink className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                           </div>
                         </a>
                       </div>
@@ -1303,36 +1369,36 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
                   {/* Right Column - Summary */}
                   <div className="lg:col-span-1">
-                    <div className="sticky top-4 p-5 sm:p-6 rounded-xl bg-linear-to-b from-slate-100/90 dark:from-slate-800/90 to-slate-200/90 dark:to-slate-900/90 border border-slate-300/50 dark:border-slate-700/50">
-                      <div className="flex items-center gap-2 mb-6">
-                        <Lock className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-                        <h3 className="text-slate-800 dark:text-white font-bold">
+                    <div className="sticky top-4 rounded-xl border border-slate-300/50 bg-linear-to-b from-slate-100/90 to-slate-200/90 p-5 sm:p-6 dark:border-slate-700/50 dark:from-slate-800/90 dark:to-slate-900/90">
+                      <div className="mb-6 flex items-center gap-2">
+                        <Lock className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+                        <h3 className="font-bold text-slate-800 dark:text-white">
                           {t("form.coinBased.title")}
                         </h3>
                       </div>
 
                       {/* Lock Amount Display */}
-                      <div className="p-4 rounded-xl bg-white/80 dark:bg-slate-900/80 mb-4">
-                        <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">
+                      <div className="mb-4 rounded-xl bg-white/80 p-4 dark:bg-slate-900/80">
+                        <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">
                           {t("form.summary.lockAmount")}
                         </p>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-amber-500 to-orange-500 dark:from-amber-400 dark:to-orange-400">
+                          <span className="bg-linear-to-r from-amber-500 to-orange-500 bg-clip-text text-3xl font-bold text-transparent sm:text-4xl dark:from-amber-400 dark:to-orange-400">
                             {amount || "0"}
                           </span>
-                          <span className="text-amber-500 dark:text-amber-400 font-semibold">
+                          <span className="font-semibold text-amber-500 dark:text-amber-400">
                             {selectedCurrency}
                           </span>
                         </div>
                       </div>
 
                       {/* Lock Period Display */}
-                      <div className="space-y-3 mb-6">
+                      <div className="mb-6 space-y-3">
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-500 dark:text-slate-400">
                             {t("form.summary.lockPeriod")}
                           </span>
-                          <span className="text-slate-800 dark:text-white font-mono">
+                          <span className="font-mono text-slate-800 dark:text-white">
                             {lockPeriod} {t("form.summary.days")}
                           </span>
                         </div>
@@ -1340,25 +1406,25 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                           <span className="text-slate-500 dark:text-slate-400">
                             {t("form.labels.unlockDate")}
                           </span>
-                          <span className="text-slate-800 dark:text-white font-mono">
+                          <span className="font-mono text-slate-800 dark:text-white">
                             {new Date(unlockDate).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
                       <div className="h-px bg-slate-300 dark:bg-slate-700" />
-                      <div className="flex justify-between text-sm my-3">
+                      <div className="my-3 flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-slate-400">
                           {t("form.summary.fee")}
                         </span>
-                        <span className="text-amber-600 dark:text-amber-400 font-mono">
+                        <span className="font-mono text-amber-600 dark:text-amber-400">
                           0.5%
                         </span>
                       </div>
 
                       {/* Security Notice */}
-                      <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 mb-6">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                        <div className="mb-1 flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                           <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                             {t("form.coinBased.securedBy")}
                           </span>
@@ -1372,7 +1438,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                       {!mounted ? (
                         <Button
                           disabled
-                          className="w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all bg-gray-400 text-white cursor-not-allowed"
+                          className="h-14 w-full cursor-not-allowed rounded-xl bg-gray-400 text-lg font-bold text-white shadow-lg transition-all"
                         >
                           Loading...
                         </Button>
@@ -1380,40 +1446,48 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                         <Button
                           onClick={handleSwitchChain}
                           disabled={isSwitchingChain}
-                          className="w-full h-14 text-lg font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02]"
+                          className="h-14 w-full rounded-xl bg-amber-500 text-lg font-bold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] hover:bg-amber-600"
                         >
                           {isSwitchingChain ? (
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           ) : null}
-                          Switch to {chains.find(c => c.id === selectedChain)?.name || 'Network'}
+                          Switch to{" "}
+                          {chains.find((c) => c.id === selectedChain)?.name ||
+                            "Network"}
                         </Button>
                       ) : !isConnected ? (
                         <Button
                           disabled
-                          className="w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all bg-gray-400 text-white cursor-not-allowed"
+                          className="h-14 w-full cursor-not-allowed rounded-xl bg-gray-400 text-lg font-bold text-white shadow-lg transition-all"
                         >
                           Connect Wallet First
                         </Button>
                       ) : hasInsufficientLockupBalance ? (
                         <Button
                           disabled
-                          className="w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all bg-red-500/80 text-white cursor-not-allowed"
+                          className="h-14 w-full cursor-not-allowed rounded-xl bg-red-500/80 text-lg font-bold text-white shadow-lg transition-all"
                         >
                           余额不足
                         </Button>
                       ) : (
                         <Button
                           onClick={handleLockDeposit}
-                          disabled={isSubmitting || !amount || Number.parseFloat(amount) <= 0}
-                          className={`w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all ${
-                            isSubmitting || !amount || Number.parseFloat(amount) <= 0
-                              ? "bg-gray-400 text-white cursor-not-allowed"
-                              : "bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-amber-500/25 hover:scale-[1.02]"
+                          disabled={
+                            isSubmitting ||
+                            !amount ||
+                            Number.parseFloat(amount) <= 0
+                          }
+                          className={`h-14 w-full rounded-xl text-lg font-bold shadow-lg transition-all ${
+                            isSubmitting ||
+                            !amount ||
+                            Number.parseFloat(amount) <= 0
+                              ? "cursor-not-allowed bg-gray-400 text-white"
+                              : "bg-linear-to-r from-amber-500 to-orange-500 text-white shadow-amber-500/25 hover:scale-[1.02] hover:from-amber-600 hover:to-orange-600"
                           }`}
                         >
                           {isSubmitting ? (
                             <>
-                              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                               Processing...
                             </>
                           ) : (

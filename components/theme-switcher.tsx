@@ -11,6 +11,7 @@ export function ThemeSwitcher() {
 
   // Avoid hydration mismatch by only rendering after mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -18,7 +19,7 @@ export function ThemeSwitcher() {
   if (!mounted) {
     return (
       <Button variant="outline" size="icon" disabled>
-        <Sun className="w-4 h-4" />
+        <Sun className="h-4 w-4" />
       </Button>
     );
   }
@@ -30,9 +31,9 @@ export function ThemeSwitcher() {
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
     >
       {theme === "dark" ? (
-        <Sun className="w-4 h-4" />
+        <Sun className="h-4 w-4" />
       ) : (
-        <Moon className="w-4 h-4" />
+        <Moon className="h-4 w-4" />
       )}
     </Button>
   );

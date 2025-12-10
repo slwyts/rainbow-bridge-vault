@@ -7,21 +7,26 @@ import "@nomicfoundation/hardhat-toolbox-viem";
 async function main() {
   // Try to access viem from network object if not on HRE
   let viem = (hre as any).viem;
-  
+
   if (!viem && hre.network && (hre.network as any).connect) {
-      console.log("Connecting to network...");
-      const connection = await (hre.network as any).connect();
-      viem = connection.viem;
+    console.log("Connecting to network...");
+    const connection = await (hre.network as any).connect();
+    viem = connection.viem;
   }
-  
+
   if (!viem) {
-    console.error("Error: 'viem' object not found on 'hre' or network connection.");
+    console.error(
+      "Error: 'viem' object not found on 'hre' or network connection."
+    );
     process.exit(1);
   }
 
   const [deployer] = await viem.getWalletClients();
 
-  console.log("Deploying contracts with the account:", deployer.account.address);
+  console.log(
+    "Deploying contracts with the account:",
+    deployer.account.address
+  );
 
   // Target Addresses
   const ownerAddress = "0x98c2e0ecdfa961f8b36144c743fea3951dad0309";
@@ -29,22 +34,30 @@ async function main() {
 
   // 1. Deploy Mocks
   console.log("Deploying Mock Tokens...");
-  
-  const usdt = await viem.deployContract("MockERC20", ["Tether USD", "USDT", 6]);
+
+  const usdt = await viem.deployContract("MockERC20", [
+    "Tether USD",
+    "USDT",
+    6,
+  ]);
   console.log("USDT deployed to:", usdt.address);
 
   const usdc = await viem.deployContract("MockERC20", ["USD Coin", "USDC", 6]);
   console.log("USDC deployed to:", usdc.address);
 
-  const xwaifu = await viem.deployContract("MockERC20", ["xWaifu", "xWAIFU", 18]);
+  const xwaifu = await viem.deployContract("MockERC20", [
+    "xWaifu",
+    "xWAIFU",
+    18,
+  ]);
   console.log("xWaifu deployed to:", xwaifu.address);
 
   // 2. Deploy Warehouse
   console.log("Deploying RainbowWarehouse...");
   // Pass ownerAddress as the initial owner
   const warehouse = await viem.deployContract("RainbowWarehouse", [
-    ownerAddress, 
-    xwaifu.address
+    ownerAddress,
+    xwaifu.address,
   ]);
   console.log("RainbowWarehouse deployed to:", warehouse.address);
 
@@ -59,7 +72,7 @@ async function main() {
 
   for (const recipient of recipients) {
     console.log(`Processing recipient: ${recipient}`);
-    
+
     // Send ETH
     await deployer.sendTransaction({
       to: recipient as `0x${string}`,

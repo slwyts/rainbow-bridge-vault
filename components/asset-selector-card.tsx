@@ -60,14 +60,17 @@ export interface Currency {
 
 // Chain ID to Trust Wallet assets chain name mapping
 const CHAIN_TO_TRUST_WALLET: Record<string, string> = {
-  "localnet": "ethereum", // Use ethereum icons for localnet
+  localnet: "ethereum", // Use ethereum icons for localnet
   "x-layer": "xlayer", // X Layer might not be supported, fallback
   "binance-smart-chain": "smartchain",
   "arbitrum-one": "arbitrum",
 };
 
 // Get token icon URL from Trust Wallet Assets
-export function getTokenIconUrl(contractAddress: string, chainId: string): string {
+export function getTokenIconUrl(
+  contractAddress: string,
+  chainId: string
+): string {
   const trustWalletChain = CHAIN_TO_TRUST_WALLET[chainId] || "ethereum";
   const checksumAddress = contractAddress; // Ideally should be checksummed
   return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${trustWalletChain}/assets/${checksumAddress}/logo.png`;
@@ -75,15 +78,35 @@ export function getTokenIconUrl(contractAddress: string, chainId: string): strin
 
 // Define supported chains with their numeric IDs
 export const defaultChains: Chain[] = [
-  { id: "localnet", name: "Localnet", symbol: "localnet", chainId: CHAIN_IDS.HARDHAT },
-  { id: "x-layer", name: "X Layer", symbol: "x-layer", chainId: CHAIN_IDS.XLAYER },
-  { id: "binance-smart-chain", name: "BNB Smart Chain", symbol: "binance-smart-chain", chainId: CHAIN_IDS.BSC },
-  { id: "arbitrum-one", name: "Arbitrum", symbol: "arbitrum-one", chainId: CHAIN_IDS.ARBITRUM },
+  {
+    id: "localnet",
+    name: "Localnet",
+    symbol: "localnet",
+    chainId: CHAIN_IDS.HARDHAT,
+  },
+  {
+    id: "x-layer",
+    name: "X Layer",
+    symbol: "x-layer",
+    chainId: CHAIN_IDS.XLAYER,
+  },
+  {
+    id: "binance-smart-chain",
+    name: "BNB Smart Chain",
+    symbol: "binance-smart-chain",
+    chainId: CHAIN_IDS.BSC,
+  },
+  {
+    id: "arbitrum-one",
+    name: "Arbitrum",
+    symbol: "arbitrum-one",
+    chainId: CHAIN_IDS.ARBITRUM,
+  },
 ];
 
 // Get chain ID string from numeric ID
 export function getChainStringId(numericChainId: number): string {
-  const chain = defaultChains.find(c => c.chainId === numericChainId);
+  const chain = defaultChains.find((c) => c.chainId === numericChainId);
   return chain?.id || "unknown";
 }
 
@@ -92,136 +115,142 @@ export function getCurrenciesForChain(chainId: number): Currency[] {
   switch (chainId) {
     case CHAIN_IDS.HARDHAT:
       return [
-        { 
-          id: "localnet-eth", 
-          name: "Localnet ETH", 
-          symbol: "ETH", 
-          isNative: true, 
+        {
+          id: "localnet-eth",
+          name: "Localnet ETH",
+          symbol: "ETH",
+          isNative: true,
           decimals: 18,
           chainId: "localnet",
         },
-        { 
-          id: "localnet-usdt", 
-          name: "Mock USDT", 
-          symbol: "USDT", 
-          contractAddress: getTokenAddress(CHAIN_IDS.HARDHAT, 'USDT'),
+        {
+          id: "localnet-usdt",
+          name: "Mock USDT",
+          symbol: "USDT",
+          contractAddress: getTokenAddress(CHAIN_IDS.HARDHAT, "USDT"),
           decimals: 6,
           chainId: "localnet",
         },
-        { 
-          id: "localnet-usdc", 
-          name: "Mock USDC", 
-          symbol: "USDC", 
-          contractAddress: getTokenAddress(CHAIN_IDS.HARDHAT, 'USDC'),
+        {
+          id: "localnet-usdc",
+          name: "Mock USDC",
+          symbol: "USDC",
+          contractAddress: getTokenAddress(CHAIN_IDS.HARDHAT, "USDC"),
           decimals: 6,
           chainId: "localnet",
         },
-        { 
-          id: "localnet-xwaifu", 
-          name: "xWaifu Token", 
-          symbol: "xWaifu", 
-          contractAddress: getTokenAddress(CHAIN_IDS.HARDHAT, 'XWAIFU'),
+        {
+          id: "localnet-xwaifu",
+          name: "xWaifu Token",
+          symbol: "xWaifu",
+          contractAddress: getTokenAddress(CHAIN_IDS.HARDHAT, "XWAIFU"),
           decimals: 18,
           chainId: "localnet",
         },
       ];
-    
+
     case CHAIN_IDS.XLAYER:
       return [
-        { 
-          id: "xlayer-okb", 
-          name: "OKB", 
-          symbol: "OKB", 
-          isNative: true, 
+        {
+          id: "xlayer-okb",
+          name: "OKB",
+          symbol: "OKB",
+          isNative: true,
           decimals: 18,
           chainId: "x-layer",
         },
-        { 
-          id: "xlayer-usdt", 
-          name: "USDT", 
-          symbol: "USDT", 
-          contractAddress: getTokenAddress(CHAIN_IDS.XLAYER, 'USDT'),
+        {
+          id: "xlayer-usdt",
+          name: "USDT",
+          symbol: "USDT",
+          contractAddress: getTokenAddress(CHAIN_IDS.XLAYER, "USDT"),
           decimals: 6,
           chainId: "x-layer",
         },
-        { 
-          id: "xlayer-usdc", 
-          name: "USDC", 
-          symbol: "USDC", 
-          contractAddress: getTokenAddress(CHAIN_IDS.XLAYER, 'USDC'),
+        {
+          id: "xlayer-usdc",
+          name: "USDC",
+          symbol: "USDC",
+          contractAddress: getTokenAddress(CHAIN_IDS.XLAYER, "USDC"),
           decimals: 6,
           chainId: "x-layer",
         },
-        { 
-          id: "xlayer-xwaifu", 
-          name: "xWaifu", 
-          symbol: "xWaifu", 
-          contractAddress: getTokenAddress(CHAIN_IDS.XLAYER, 'XWAIFU'),
+        {
+          id: "xlayer-xwaifu",
+          name: "xWaifu",
+          symbol: "xWaifu",
+          contractAddress: getTokenAddress(CHAIN_IDS.XLAYER, "XWAIFU"),
           decimals: 18,
           chainId: "x-layer",
         },
       ];
-    
+
     case CHAIN_IDS.BSC:
       return [
-        { 
-          id: "bsc-bnb", 
-          name: "BNB", 
-          symbol: "BNB", 
-          isNative: true, 
+        {
+          id: "bsc-bnb",
+          name: "BNB",
+          symbol: "BNB",
+          isNative: true,
           decimals: 18,
           chainId: "binance-smart-chain",
         },
-        { 
-          id: "bsc-usdt", 
-          name: "USDT", 
-          symbol: "USDT", 
-          contractAddress: getTokenAddress(CHAIN_IDS.BSC, 'USDT'),
+        {
+          id: "bsc-usdt",
+          name: "USDT",
+          symbol: "USDT",
+          contractAddress: getTokenAddress(CHAIN_IDS.BSC, "USDT"),
           decimals: 18, // BSC USDT is 18 decimals
           chainId: "binance-smart-chain",
         },
-        { 
-          id: "bsc-usdc", 
-          name: "USDC", 
-          symbol: "USDC", 
-          contractAddress: getTokenAddress(CHAIN_IDS.BSC, 'USDC'),
+        {
+          id: "bsc-usdc",
+          name: "USDC",
+          symbol: "USDC",
+          contractAddress: getTokenAddress(CHAIN_IDS.BSC, "USDC"),
           decimals: 18,
           chainId: "binance-smart-chain",
         },
       ];
-    
+
     case CHAIN_IDS.ARBITRUM:
       return [
-        { 
-          id: "arb-eth", 
-          name: "Ethereum", 
-          symbol: "ETH", 
-          isNative: true, 
+        {
+          id: "arb-eth",
+          name: "Ethereum",
+          symbol: "ETH",
+          isNative: true,
           decimals: 18,
           chainId: "arbitrum-one",
         },
-        { 
-          id: "arb-usdt", 
-          name: "USDT", 
-          symbol: "USDT", 
-          contractAddress: getTokenAddress(CHAIN_IDS.ARBITRUM, 'USDT'),
+        {
+          id: "arb-usdt",
+          name: "USDT",
+          symbol: "USDT",
+          contractAddress: getTokenAddress(CHAIN_IDS.ARBITRUM, "USDT"),
           decimals: 6,
           chainId: "arbitrum-one",
         },
-        { 
-          id: "arb-usdc", 
-          name: "USDC", 
-          symbol: "USDC", 
-          contractAddress: getTokenAddress(CHAIN_IDS.ARBITRUM, 'USDC'),
+        {
+          id: "arb-usdc",
+          name: "USDC",
+          symbol: "USDC",
+          contractAddress: getTokenAddress(CHAIN_IDS.ARBITRUM, "USDC"),
           decimals: 6,
           chainId: "arbitrum-one",
         },
       ];
-    
+
     default:
       // Fallback to generic tokens
       return [
-        { id: "ETH", name: "Ethereum", symbol: "ETH", isNative: true, decimals: 18 },
+        {
+          id: "ETH",
+          name: "Ethereum",
+          symbol: "ETH",
+          isNative: true,
+          decimals: 18,
+        },
         { id: "USDT", name: "Tether", symbol: "USDT", decimals: 6 },
         { id: "USDC", name: "USD Coin", symbol: "USDC", decimals: 6 },
       ];
@@ -239,7 +268,9 @@ export const defaultCurrencies: Currency[] = [
 ];
 
 // Localnet specific tokens with actual addresses (legacy, use getCurrenciesForChain instead)
-export const localnetCurrencies: Currency[] = getCurrenciesForChain(CHAIN_IDS.HARDHAT);
+export const localnetCurrencies: Currency[] = getCurrenciesForChain(
+  CHAIN_IDS.HARDHAT
+);
 
 // LocalStorage keys
 const CUSTOM_CURRENCIES_KEY = "rainbow-bridge-custom-currencies";
@@ -248,7 +279,7 @@ function searchTokens(query: string) {
   const q = query.toLowerCase();
   return tokens.filter(
     (t) =>
-      t.name.toLowerCase().includes(q) || t.symbol.toLowerCase().includes(q),
+      t.name.toLowerCase().includes(q) || t.symbol.toLowerCase().includes(q)
   );
 }
 
@@ -272,7 +303,13 @@ function getTokenVariant(symbol: string): "branded" | "mono" {
 
 // Check if network icon exists
 function hasNetworkIcon(symbol: string): boolean {
-  const knownNetworks = ["ethereum", "x-layer", "arbitrum-one", "binance-smart-chain", "localnet"];
+  const knownNetworks = [
+    "ethereum",
+    "x-layer",
+    "arbitrum-one",
+    "binance-smart-chain",
+    "localnet",
+  ];
   return knownNetworks.includes(symbol.toLowerCase());
 }
 
@@ -286,11 +323,11 @@ function GenericTokenIcon({
   return (
     <div
       className={cn(
-        "rounded-full bg-linear-to-br from-slate-400 to-slate-600 flex items-center justify-center",
-        className,
+        "flex items-center justify-center rounded-full bg-linear-to-br from-slate-400 to-slate-600",
+        className
       )}
     >
-      <span className="text-white font-bold text-xs">
+      <span className="text-xs font-bold text-white">
         {symbol.slice(0, 2).toUpperCase()}
       </span>
     </div>
@@ -307,11 +344,11 @@ function GenericChainIcon({
   return (
     <div
       className={cn(
-        "rounded-xl bg-linear-to-br from-indigo-400 to-purple-600 flex items-center justify-center",
-        className,
+        "flex items-center justify-center rounded-xl bg-linear-to-br from-indigo-400 to-purple-600",
+        className
       )}
     >
-      <Globe className="w-1/2 h-1/2 text-white" />
+      <Globe className="h-1/2 w-1/2 text-white" />
     </div>
   );
 }
@@ -328,7 +365,10 @@ function TokenBalanceDisplay({
   decimals: number;
   symbol: string;
 }) {
-  const { data: balance, isLoading } = useTokenBalance(tokenAddress, userAddress);
+  const { data: balance, isLoading } = useTokenBalance(
+    tokenAddress,
+    userAddress
+  );
 
   const formatBalance = (bal: bigint | undefined) => {
     if (bal === undefined) return "0";
@@ -343,8 +383,8 @@ function TokenBalanceDisplay({
 
   if (isLoading) {
     return (
-      <div className="text-[9px] text-slate-400 mt-0.5">
-        <Loader2 className="w-2.5 h-2.5 animate-spin inline" />
+      <div className="mt-0.5 text-[9px] text-slate-400">
+        <Loader2 className="inline h-2.5 w-2.5 animate-spin" />
       </div>
     );
   }
@@ -353,10 +393,12 @@ function TokenBalanceDisplay({
   const hasBalance = bal !== undefined && bal > 0n;
 
   return (
-    <div className={cn(
-      "text-[9px] mt-0.5 font-mono",
-      hasBalance ? "text-emerald-500" : "text-slate-400"
-    )}>
+    <div
+      className={cn(
+        "mt-0.5 font-mono text-[9px]",
+        hasBalance ? "text-emerald-500" : "text-slate-400"
+      )}
+    >
       {formatBalance(bal)}
     </div>
   );
@@ -377,26 +419,28 @@ export function CurrencyIcon({
   chainId?: string;
 }) {
   const [imgError, setImgError] = useState(false);
-  
+
   // Try to get icon URL from Trust Wallet if we have contract address
-  const fallbackIconUrl = contractAddress && chainId 
-    ? getTokenIconUrl(contractAddress, chainId) 
-    : undefined;
-  
+  const fallbackIconUrl =
+    contractAddress && chainId
+      ? getTokenIconUrl(contractAddress, chainId)
+      : undefined;
+
   const imageUrl = iconUrl || fallbackIconUrl;
-  
+
   // If we have a valid image URL and it hasn't errored, use it
   if (imageUrl && !imgError) {
     return (
-      <img 
-        src={imageUrl} 
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={imageUrl}
         alt={symbol}
         className={cn("rounded-full", className)}
         onError={() => setImgError(true)}
       />
     );
   }
-  
+
   // Try web3icons library with the best available variant
   if (hasTokenIcon(symbol)) {
     const variant = getTokenVariant(symbol);
@@ -408,7 +452,7 @@ export function CurrencyIcon({
       />
     );
   }
-  
+
   // Fallback to generic icon
   return <GenericTokenIcon symbol={symbol} className={className} />;
 }
@@ -421,23 +465,29 @@ export function ChainIcon({
   className?: string;
 }) {
   const lowerSymbol = symbol.toLowerCase();
-  
+
   // Use specific imported icons for known chains
   switch (lowerSymbol) {
     case "x-layer":
       return <NetworkXLayer className={className} variant="branded" />;
     case "binance-smart-chain":
-      return <NetworkBinanceSmartChain className={className} variant="branded" />;
+      return (
+        <NetworkBinanceSmartChain className={className} variant="branded" />
+      );
     case "arbitrum-one":
       return <NetworkArbitrumOne className={className} variant="branded" />;
     case "ethereum":
     case "localnet":
       // Use dynamic NetworkIcon for ethereum
-      return <NetworkIcon name="ethereum" variant="branded" className={className} />;
+      return (
+        <NetworkIcon name="ethereum" variant="branded" className={className} />
+      );
     default:
       // Try dynamic NetworkIcon, fallback to generic
       if (hasNetworkIcon(symbol)) {
-        return <NetworkIcon name={symbol} variant="branded" className={className} />;
+        return (
+          <NetworkIcon name={symbol} variant="branded" className={className} />
+        );
       }
       return <GenericChainIcon symbol={symbol} className={className} />;
   }
@@ -462,7 +512,8 @@ function AddCurrencyCard({
   const { address } = useAccount();
   const [customAddress, setCustomAddress] = useState("");
   const [addressError, setAddressError] = useState("");
-  const [selectedChainForImport, setSelectedChainForImport] = useState(activeChain);
+  const [selectedChainForImport, setSelectedChainForImport] =
+    useState(activeChain);
 
   // Update selected chain when activeChain changes
   useEffect(() => {
@@ -471,11 +522,20 @@ function AddCurrencyCard({
 
   // Validate address format
   const isValidAddress = /^0x[a-fA-F0-9]{40}$/.test(customAddress);
-  const tokenAddress = isValidAddress ? customAddress as `0x${string}` : undefined;
+  const tokenAddress = isValidAddress
+    ? (customAddress as `0x${string}`)
+    : undefined;
 
   // Auto-fetch token info when address is valid
-  const { name, symbol, decimals, isLoading: tokenLoading, isValid: tokenValid, error: tokenError } = useTokenInfo(tokenAddress);
-  
+  const {
+    name,
+    symbol,
+    decimals,
+    isLoading: tokenLoading,
+    isValid: tokenValid,
+    error: tokenError,
+  } = useTokenInfo(tokenAddress);
+
   // Fetch user balance
   const { data: balance } = useTokenBalance(tokenAddress, address);
 
@@ -495,7 +555,9 @@ function AddCurrencyCard({
     }
 
     const exists = existingCurrencies.some(
-      (c) => c.contractAddress?.toLowerCase() === customAddress.toLowerCase() && c.chainId === selectedChainForImport,
+      (c) =>
+        c.contractAddress?.toLowerCase() === customAddress.toLowerCase() &&
+        c.chainId === selectedChainForImport
     );
     if (exists) {
       setAddressError(t("form.assetSelector.currencyExists"));
@@ -506,6 +568,7 @@ function AddCurrencyCard({
     const iconUrl = getTokenIconUrl(customAddress, selectedChainForImport);
 
     const newCurrency: Currency = {
+      // eslint-disable-next-line react-hooks/purity
       id: `custom-${symbol}-${Date.now()}`,
       name: name || symbol,
       symbol: symbol,
@@ -534,7 +597,7 @@ function AddCurrencyCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-60"
+            className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm"
             onClick={handleClose}
           />
           <motion.div
@@ -542,16 +605,16 @@ function AddCurrencyCard({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[90vw] max-w-md"
+            className="fixed top-1/2 left-1/2 z-60 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2"
           >
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
               {/* Header */}
-              <div className="relative px-6 py-5 border-b border-slate-200 dark:border-slate-800">
+              <div className="relative border-b border-slate-200 px-6 py-5 dark:border-slate-800">
                 <div className="absolute inset-0 bg-linear-to-r from-cyan-500/10 via-blue-500/10 to-indigo-500/10" />
                 <div className="relative flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-linear-to-br from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/30">
-                      <Sparkles className="w-5 h-5 text-white" />
+                    <div className="rounded-xl bg-linear-to-br from-cyan-500 to-blue-500 p-2.5 shadow-lg shadow-cyan-500/30">
+                      <Sparkles className="h-5 w-5 text-white" />
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-900 dark:text-white">
@@ -566,18 +629,18 @@ function AddCurrencyCard({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleClose}
-                    className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="rounded-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
-                    <X className="w-5 h-5 text-slate-500" />
+                    <X className="h-5 w-5 text-slate-500" />
                   </motion.button>
                 </div>
               </div>
 
               {/* Form */}
-              <div className="p-6 space-y-5">
+              <div className="space-y-5 p-6">
                 {/* Chain Selector */}
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400">
                     选择链
                   </label>
                   <div className="grid grid-cols-4 gap-2">
@@ -586,15 +649,17 @@ function AddCurrencyCard({
                         key={chain.id}
                         onClick={() => setSelectedChainForImport(chain.id)}
                         className={cn(
-                          "p-2 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-1",
+                          "flex flex-col items-center gap-1 rounded-xl border-2 p-2 transition-all duration-200",
                           selectedChainForImport === chain.id
                             ? "border-amber-500 bg-amber-50 dark:bg-amber-500/10"
-                            : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                            : "border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600"
                         )}
                       >
-                        <ChainIcon symbol={chain.id} className="w-6 h-6" />
-                        <span className="text-[10px] text-slate-600 dark:text-slate-400 truncate w-full text-center">
-                          {chain.name.length > 8 ? chain.name.slice(0, 8) + '...' : chain.name}
+                        <ChainIcon symbol={chain.id} className="h-6 w-6" />
+                        <span className="w-full truncate text-center text-[10px] text-slate-600 dark:text-slate-400">
+                          {chain.name.length > 8
+                            ? chain.name.slice(0, 8) + "..."
+                            : chain.name}
                         </span>
                       </button>
                     ))}
@@ -602,7 +667,7 @@ function AddCurrencyCard({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400">
                     {t("form.assetSelector.contractAddress")}
                   </label>
                   <Input
@@ -614,17 +679,17 @@ function AddCurrencyCard({
                       setAddressError("");
                     }}
                     className={cn(
-                      "h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl font-mono text-sm",
-                      addressError && "border-red-500",
+                      "h-12 rounded-xl border-slate-200 bg-slate-50 font-mono text-sm dark:border-slate-700 dark:bg-slate-800",
+                      addressError && "border-red-500"
                     )}
                   />
                   {addressError && (
                     <motion.div
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-1.5 text-red-500 text-xs"
+                      className="flex items-center gap-1.5 text-xs text-red-500"
                     >
-                      <AlertCircle className="w-3.5 h-3.5" />
+                      <AlertCircle className="h-3.5 w-3.5" />
                       {addressError}
                     </motion.div>
                   )}
@@ -635,31 +700,41 @@ function AddCurrencyCard({
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    className="rounded-xl border border-slate-200 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-800"
                   >
                     {tokenLoading ? (
                       <div className="flex items-center justify-center gap-2 py-4">
-                        <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
-                        <span className="text-sm text-slate-500">获取代币信息中...</span>
+                        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                        <span className="text-sm text-slate-500">
+                          获取代币信息中...
+                        </span>
                       </div>
                     ) : tokenValid ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">{symbol?.slice(0, 2)}</span>
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500">
+                            <span className="text-sm font-bold text-white">
+                              {symbol?.slice(0, 2)}
+                            </span>
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900 dark:text-white">{symbol}</div>
+                            <div className="font-bold text-slate-900 dark:text-white">
+                              {symbol}
+                            </div>
                             <div className="text-sm text-slate-500">{name}</div>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
-                          <span className="text-sm text-slate-500 flex items-center gap-1.5">
-                            <Wallet className="w-4 h-4" />
+                        <div className="flex items-center justify-between border-t border-slate-200 pt-2 dark:border-slate-700">
+                          <span className="flex items-center gap-1.5 text-sm text-slate-500">
+                            <Wallet className="h-4 w-4" />
                             你的余额
                           </span>
                           <span className="font-mono font-medium text-slate-900 dark:text-white">
-                            {formatBalance(balance as bigint | undefined, decimals)} {symbol}
+                            {formatBalance(
+                              balance as bigint | undefined,
+                              decimals
+                            )}{" "}
+                            {symbol}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-xs text-slate-400">
@@ -668,8 +743,10 @@ function AddCurrencyCard({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 py-2 text-red-500">
-                        <AlertCircle className="w-4 h-4" />
-                        <span className="text-sm">无效的代币合约或无法获取信息</span>
+                        <AlertCircle className="h-4 w-4" />
+                        <span className="text-sm">
+                          无效的代币合约或无法获取信息
+                        </span>
                       </div>
                     )}
                   </motion.div>
@@ -678,16 +755,16 @@ function AddCurrencyCard({
                 <Button
                   onClick={handleAdd}
                   disabled={!tokenValid || tokenLoading}
-                  className="w-full h-12 bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-xl font-bold shadow-lg shadow-cyan-500/25 disabled:opacity-50"
+                  className="h-12 w-full rounded-xl bg-linear-to-r from-cyan-500 to-blue-500 font-bold text-white shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50"
                 >
                   {tokenLoading ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       获取中...
                     </>
                   ) : (
                     <>
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="mr-2 h-4 w-4" />
                       {t("form.assetSelector.addCurrency")}
                     </>
                   )}
@@ -748,15 +825,17 @@ export function AssetSelectorCard({
   // Get currencies based on active chain
   const chainCurrencies = useMemo(() => {
     // Get the numeric chain ID for the active chain
-    const chainConfig = defaultChains.find(c => c.id === activeChain);
+    const chainConfig = defaultChains.find((c) => c.id === activeChain);
     const numericChainId = chainConfig?.chainId || CHAIN_IDS.HARDHAT;
-    
+
     // Get default currencies for this specific chain
     const defaultForChain = getCurrenciesForChain(numericChainId);
-    
+
     // Get custom currencies that were added for this chain
-    const chainCustom = customCurrencies.filter(c => c.chainId === activeChain);
-    
+    const chainCustom = customCurrencies.filter(
+      (c) => c.chainId === activeChain
+    );
+
     return [...defaultForChain, ...chainCustom];
   }, [activeChain, customCurrencies]);
 
@@ -766,7 +845,7 @@ export function AssetSelectorCard({
     const q = searchQuery.toLowerCase();
     return chainCurrencies.filter(
       (c) =>
-        c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q),
+        c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q)
     );
   }, [chainCurrencies, searchQuery]);
 
@@ -822,7 +901,7 @@ export function AssetSelectorCard({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-md z-50"
+              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md"
               onClick={onClose}
             />
 
@@ -832,16 +911,16 @@ export function AssetSelectorCard({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 30 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-4xl"
+              className="fixed top-1/2 left-1/2 z-50 w-[95vw] max-w-4xl -translate-x-1/2 -translate-y-1/2"
             >
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl shadow-black/20 overflow-hidden">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-black/20 dark:border-slate-800 dark:bg-slate-900">
                 {/* Header */}
                 <div className="relative">
                   <div className="absolute inset-0 bg-linear-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 dark:from-amber-500/20 dark:via-orange-500/20 dark:to-rose-500/20" />
-                  <div className="relative flex items-center justify-between px-6 py-5 border-b border-slate-200/80 dark:border-slate-800">
+                  <div className="relative flex items-center justify-between border-b border-slate-200/80 px-6 py-5 dark:border-slate-800">
                     <div className="flex items-center gap-4">
-                      <div className="p-2.5 rounded-xl bg-linear-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30">
-                        <Coins className="w-5 h-5 text-white" />
+                      <div className="rounded-xl bg-linear-to-br from-amber-500 to-orange-500 p-2.5 shadow-lg shadow-amber-500/30">
+                        <Coins className="h-5 w-5 text-white" />
                       </div>
                       <div>
                         <h2 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -856,17 +935,17 @@ export function AssetSelectorCard({
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={onClose}
-                      className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      className="rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
-                      <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                      <X className="h-5 w-5 text-slate-500 dark:text-slate-400" />
                     </motion.button>
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row min-h-[400px]">
+                <div className="flex min-h-[400px] flex-col md:flex-row">
                   {/* Left Side - Chains */}
-                  <div className="w-full md:w-1/3 p-4 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                  <div className="w-full border-b border-slate-200 p-4 md:w-1/3 md:border-r md:border-b-0 dark:border-slate-800">
+                    <p className="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
                       {t("form.assetSelector.selectChain")}
                     </p>
 
@@ -881,10 +960,10 @@ export function AssetSelectorCard({
                           whileTap={{ scale: 0.95 }}
                           onClick={() => handleChainSelect(chain.id)}
                           className={cn(
-                            "relative p-3 rounded-xl text-center transition-all duration-200 border-2 group aspect-square flex flex-col items-center justify-center",
+                            "group relative flex aspect-square flex-col items-center justify-center rounded-xl border-2 p-3 text-center transition-all duration-200",
                             activeChain === chain.id
-                              ? "bg-linear-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 border-amber-500 shadow-lg shadow-amber-500/20"
-                              : "bg-slate-50 dark:bg-slate-800/50 border-transparent hover:border-amber-400 dark:hover:border-amber-500",
+                              ? "border-amber-500 bg-linear-to-br from-amber-50 to-orange-50 shadow-lg shadow-amber-500/20 dark:from-amber-500/10 dark:to-orange-500/10"
+                              : "border-transparent bg-slate-50 hover:border-amber-400 dark:bg-slate-800/50 dark:hover:border-amber-500"
                           )}
                         >
                           {activeChain === chain.id && (
@@ -893,23 +972,23 @@ export function AssetSelectorCard({
                               animate={{ scale: 1 }}
                               className="absolute top-1.5 right-1.5"
                             >
-                              <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
-                                <Check className="w-2.5 h-2.5 text-white" />
+                              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500">
+                                <Check className="h-2.5 w-2.5 text-white" />
                               </div>
                             </motion.div>
                           )}
 
                           <div
                             className={cn(
-                              "p-2 rounded-xl mb-1.5 transition-all",
+                              "mb-1.5 rounded-xl p-2 transition-all",
                               activeChain === chain.id
-                                ? "bg-white dark:bg-slate-900 shadow-md"
-                                : "bg-slate-100 dark:bg-slate-700/50 group-hover:bg-white dark:group-hover:bg-slate-700",
+                                ? "bg-white shadow-md dark:bg-slate-900"
+                                : "bg-slate-100 group-hover:bg-white dark:bg-slate-700/50 dark:group-hover:bg-slate-700"
                             )}
                           >
-                            <ChainIcon symbol={chain.id} className="w-6 h-6" />
+                            <ChainIcon symbol={chain.id} className="h-6 w-6" />
                           </div>
-                          <div className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-full px-1">
+                          <div className="max-w-full truncate px-1 text-xs font-bold text-slate-900 dark:text-white">
                             {chain.name}
                           </div>
                         </motion.button>
@@ -918,28 +997,28 @@ export function AssetSelectorCard({
                   </div>
 
                   {/* Right Side - Currencies */}
-                  <div className="w-full md:w-2/3 flex flex-col">
+                  <div className="flex w-full flex-col md:w-2/3">
                     {/* Search */}
-                    <div className="px-4 py-3 border-b border-slate-200/80 dark:border-slate-800">
+                    <div className="border-b border-slate-200/80 px-4 py-3 dark:border-slate-800">
                       <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <Input
                           type="text"
                           placeholder={t(
-                            "form.assetSelector.searchPlaceholder",
+                            "form.assetSelector.searchPlaceholder"
                           )}
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-11 h-10 bg-slate-100 dark:bg-slate-800 border-0 rounded-xl focus:ring-2 focus:ring-amber-500/50"
+                          className="h-10 rounded-xl border-0 bg-slate-100 pl-11 focus:ring-2 focus:ring-amber-500/50 dark:bg-slate-800"
                         />
                       </div>
                     </div>
 
                     {/* Currency List */}
-                    <div className="flex-1 p-4 overflow-y-auto max-h-[350px]">
+                    <div className="max-h-[350px] flex-1 overflow-y-auto p-4">
                       {filteredCurrencies.length === 0 ? (
-                        <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-                          <Coins className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                        <div className="py-12 text-center text-slate-500 dark:text-slate-400">
+                          <Coins className="mx-auto mb-3 h-12 w-12 opacity-30" />
                           <p>{t("form.assetSelector.noResults")}</p>
                         </div>
                       ) : (
@@ -953,57 +1032,60 @@ export function AssetSelectorCard({
                               whileTap={{ scale: 0.98 }}
                               onClick={() => handleSelect(currency)}
                               className={cn(
-                                "relative p-3 rounded-xl transition-all duration-200 border-2 group flex items-center gap-3",
+                                "group relative flex items-center gap-3 rounded-xl border-2 p-3 transition-all duration-200",
                                 selectedCurrency === currency.symbol
-                                  ? "bg-linear-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 border-amber-500 shadow-lg shadow-amber-500/20"
-                                  : "bg-slate-50 dark:bg-slate-800/50 border-transparent hover:border-amber-400 dark:hover:border-amber-500",
+                                  ? "border-amber-500 bg-linear-to-br from-amber-50 to-orange-50 shadow-lg shadow-amber-500/20 dark:from-amber-500/10 dark:to-orange-500/10"
+                                  : "border-transparent bg-slate-50 hover:border-amber-400 dark:bg-slate-800/50 dark:hover:border-amber-500"
                               )}
                             >
                               {/* Left: Icon */}
                               <div
                                 className={cn(
-                                  "p-2 rounded-xl transition-all shrink-0",
+                                  "shrink-0 rounded-xl p-2 transition-all",
                                   selectedCurrency === currency.symbol
-                                    ? "bg-white dark:bg-slate-900 shadow-md"
-                                    : "bg-slate-100 dark:bg-slate-700/50 group-hover:bg-white dark:group-hover:bg-slate-700",
+                                    ? "bg-white shadow-md dark:bg-slate-900"
+                                    : "bg-slate-100 group-hover:bg-white dark:bg-slate-700/50 dark:group-hover:bg-slate-700"
                                 )}
                               >
                                 <CurrencyIcon
                                   symbol={currency.symbol}
-                                  className="w-6 h-6"
+                                  className="h-6 w-6"
                                   iconUrl={currency.iconUrl}
                                   contractAddress={currency.contractAddress}
                                   chainId={currency.chainId}
                                 />
                               </div>
-                              
+
                               {/* Middle: Info */}
-                              <div className="flex-1 text-left min-w-0">
+                              <div className="min-w-0 flex-1 text-left">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-bold text-slate-900 dark:text-white text-sm">
+                                  <span className="text-sm font-bold text-slate-900 dark:text-white">
                                     {currency.symbol}
                                   </span>
                                   {currency.isCustom && (
-                                    <span className="px-1.5 py-0.5 text-[9px] font-bold bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded">
+                                    <span className="rounded bg-linear-to-r from-blue-500 to-cyan-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
                                       {t("form.assetSelector.customBadge")}
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                <div className="truncate text-xs text-slate-500 dark:text-slate-400">
                                   {currency.name}
                                 </div>
                                 {currency.contractAddress && (
-                                  <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate mt-0.5">
-                                    {currency.contractAddress.slice(0, 6)}...{currency.contractAddress.slice(-4)}
+                                  <div className="mt-0.5 truncate font-mono text-[10px] text-slate-400 dark:text-slate-500">
+                                    {currency.contractAddress.slice(0, 6)}...
+                                    {currency.contractAddress.slice(-4)}
                                   </div>
                                 )}
                               </div>
-                              
+
                               {/* Right: Balance & Check */}
-                              <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex shrink-0 items-center gap-2">
                                 {address && currency.contractAddress && (
-                                  <TokenBalanceDisplay 
-                                    tokenAddress={currency.contractAddress as `0x${string}`}
+                                  <TokenBalanceDisplay
+                                    tokenAddress={
+                                      currency.contractAddress as `0x${string}`
+                                    }
                                     userAddress={address}
                                     decimals={currency.decimals || 18}
                                     symbol={currency.symbol}
@@ -1014,8 +1096,8 @@ export function AssetSelectorCard({
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                   >
-                                    <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-                                      <Check className="w-3 h-3 text-white" />
+                                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500">
+                                      <Check className="h-3 w-3 text-white" />
                                     </div>
                                   </motion.div>
                                 )}
@@ -1031,9 +1113,9 @@ export function AssetSelectorCard({
                       <Button
                         onClick={() => setShowAddCurrencyCard(true)}
                         variant="outline"
-                        className="w-full h-10 border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-amber-500 rounded-xl transition-all group"
+                        className="group h-10 w-full rounded-xl border-2 border-dashed border-slate-300 text-slate-600 transition-all hover:border-amber-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                       >
-                        <Plus className="w-4 h-4 mr-2 group-hover:text-amber-500" />
+                        <Plus className="mr-2 h-4 w-4 group-hover:text-amber-500" />
                         <span className="group-hover:text-amber-500">
                           {t("form.assetSelector.addOther")}
                         </span>

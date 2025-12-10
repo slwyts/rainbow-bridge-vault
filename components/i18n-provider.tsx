@@ -25,7 +25,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const savedLocale = localStorage.getItem(
-      "rainbow-bridge-locale",
+      "rainbow-bridge-locale"
     ) as Locale | null;
     if (savedLocale && (savedLocale === "en" || savedLocale === "zh")) {
       // eslint-disable-next-line react-hooks/set-state-in-effect

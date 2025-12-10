@@ -1,7 +1,14 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount, useChainId, useBalance } from 'wagmi';
-import { parseUnits, zeroAddress } from 'viem';
-import { warehouseAbi, erc20Abi } from './abi';
-import { getWarehouseAddress, getChainName, CHAIN_IDS } from './constants';
+import {
+  useReadContract,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+  useAccount,
+  useChainId,
+  useBalance,
+} from "wagmi";
+import { parseUnits, zeroAddress } from "viem";
+import { warehouseAbi, erc20Abi } from "./abi";
+import { getWarehouseAddress, getChainName, CHAIN_IDS } from "./constants";
 
 // Hook to get current chain's warehouse address
 export function useWarehouseAddress(): `0x${string}` | undefined {
@@ -20,11 +27,11 @@ export function useContractChainId(): number {
 export function useDeposit(depositId: bigint) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: warehouseAddress,
     abi: warehouseAbi,
-    functionName: 'deposits',
+    functionName: "deposits",
     args: [depositId],
     chainId,
     query: { enabled: !!warehouseAddress },
@@ -35,11 +42,11 @@ export function useDeposit(depositId: bigint) {
 export function useLockup(lockupId: bigint) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: warehouseAddress,
     abi: warehouseAbi,
-    functionName: 'lockups',
+    functionName: "lockups",
     args: [lockupId],
     chainId,
     query: { enabled: !!warehouseAddress },
@@ -50,11 +57,11 @@ export function useLockup(lockupId: bigint) {
 export function useNextDepositId() {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: warehouseAddress,
     abi: warehouseAbi,
-    functionName: 'nextDepositId',
+    functionName: "nextDepositId",
     chainId,
     query: { enabled: !!warehouseAddress },
   });
@@ -64,25 +71,28 @@ export function useNextDepositId() {
 export function useNextLockupId() {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: warehouseAddress,
     abi: warehouseAbi,
-    functionName: 'nextLockupId',
+    functionName: "nextLockupId",
     chainId,
     query: { enabled: !!warehouseAddress },
   });
 }
 
 // Read user's deposit IDs
-export function useUserDepositId(userAddress: `0x${string}` | undefined, index: bigint) {
+export function useUserDepositId(
+  userAddress: `0x${string}` | undefined,
+  index: bigint
+) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: warehouseAddress,
     abi: warehouseAbi,
-    functionName: 'userDepositIds',
+    functionName: "userDepositIds",
     args: userAddress ? [userAddress, index] : undefined,
     chainId,
     query: { enabled: !!userAddress && !!warehouseAddress },
@@ -90,14 +100,17 @@ export function useUserDepositId(userAddress: `0x${string}` | undefined, index: 
 }
 
 // Read user's lockup IDs
-export function useUserLockupId(userAddress: `0x${string}` | undefined, index: bigint) {
+export function useUserLockupId(
+  userAddress: `0x${string}` | undefined,
+  index: bigint
+) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: warehouseAddress,
     abi: warehouseAbi,
-    functionName: 'userLockupIds',
+    functionName: "userLockupIds",
     args: userAddress ? [userAddress, index] : undefined,
     chainId,
     query: { enabled: !!userAddress && !!warehouseAddress },
@@ -105,13 +118,16 @@ export function useUserLockupId(userAddress: `0x${string}` | undefined, index: b
 }
 
 // Read ERC20 balance
-export function useTokenBalance(tokenAddress: `0x${string}` | undefined, userAddress: `0x${string}` | undefined) {
+export function useTokenBalance(
+  tokenAddress: `0x${string}` | undefined,
+  userAddress: `0x${string}` | undefined
+) {
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
-    functionName: 'balanceOf',
+    functionName: "balanceOf",
     args: userAddress ? [userAddress] : undefined,
     chainId,
     query: { enabled: !!tokenAddress && !!userAddress },
@@ -121,7 +137,7 @@ export function useTokenBalance(tokenAddress: `0x${string}` | undefined, userAdd
 // Read native token balance (ETH, BNB, OKB, etc.)
 export function useNativeBalance(userAddress: `0x${string}` | undefined) {
   const chainId = useContractChainId();
-  
+
   return useBalance({
     address: userAddress,
     chainId,
@@ -132,11 +148,11 @@ export function useNativeBalance(userAddress: `0x${string}` | undefined) {
 // Read ERC20 decimals
 export function useTokenDecimals(tokenAddress: `0x${string}` | undefined) {
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
-    functionName: 'decimals',
+    functionName: "decimals",
     chainId,
     query: { enabled: !!tokenAddress },
   });
@@ -145,11 +161,11 @@ export function useTokenDecimals(tokenAddress: `0x${string}` | undefined) {
 // Read ERC20 name
 export function useTokenName(tokenAddress: `0x${string}` | undefined) {
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
-    functionName: 'name',
+    functionName: "name",
     chainId,
     query: { enabled: !!tokenAddress },
   });
@@ -158,11 +174,11 @@ export function useTokenName(tokenAddress: `0x${string}` | undefined) {
 // Read ERC20 symbol
 export function useTokenSymbol(tokenAddress: `0x${string}` | undefined) {
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
-    functionName: 'symbol',
+    functionName: "symbol",
     chainId,
     query: { enabled: !!tokenAddress },
   });
@@ -170,9 +186,21 @@ export function useTokenSymbol(tokenAddress: `0x${string}` | undefined) {
 
 // Combined hook to get all token info
 export function useTokenInfo(tokenAddress: `0x${string}` | undefined) {
-  const { data: name, isLoading: nameLoading, error: nameError } = useTokenName(tokenAddress);
-  const { data: symbol, isLoading: symbolLoading, error: symbolError } = useTokenSymbol(tokenAddress);
-  const { data: decimals, isLoading: decimalsLoading, error: decimalsError } = useTokenDecimals(tokenAddress);
+  const {
+    data: name,
+    isLoading: nameLoading,
+    error: nameError,
+  } = useTokenName(tokenAddress);
+  const {
+    data: symbol,
+    isLoading: symbolLoading,
+    error: symbolError,
+  } = useTokenSymbol(tokenAddress);
+  const {
+    data: decimals,
+    isLoading: decimalsLoading,
+    error: decimalsError,
+  } = useTokenDecimals(tokenAddress);
 
   const isLoading = nameLoading || symbolLoading || decimalsLoading;
   const error = nameError || symbolError || decimalsError;
@@ -189,14 +217,21 @@ export function useTokenInfo(tokenAddress: `0x${string}` | undefined) {
 }
 
 // Read ERC20 allowance
-export function useTokenAllowance(tokenAddress: `0x${string}` | undefined, ownerAddress: `0x${string}` | undefined, spenderAddress: `0x${string}` | undefined) {
+export function useTokenAllowance(
+  tokenAddress: `0x${string}` | undefined,
+  ownerAddress: `0x${string}` | undefined,
+  spenderAddress: `0x${string}` | undefined
+) {
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
-    functionName: 'allowance',
-    args: ownerAddress && spenderAddress ? [ownerAddress, spenderAddress] : undefined,
+    functionName: "allowance",
+    args:
+      ownerAddress && spenderAddress
+        ? [ownerAddress, spenderAddress]
+        : undefined,
     chainId,
     query: { enabled: !!tokenAddress && !!ownerAddress && !!spenderAddress },
   });
@@ -207,15 +242,23 @@ export function useTokenAllowance(tokenAddress: `0x${string}` | undefined, owner
 // Hook to approve ERC20 spending
 export function useApproveToken() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const {
+    writeContractAsync,
+    data: hash,
+    isPending,
+    error,
+  } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
 
   const approve = async (tokenAddress: `0x${string}`, amount: bigint) => {
-    if (!warehouseAddress) throw new Error('Warehouse not deployed on this chain');
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
     const txHash = await writeContractAsync({
       address: tokenAddress,
       abi: erc20Abi,
-      functionName: 'approve',
+      functionName: "approve",
       args: [warehouseAddress, amount],
     });
     return txHash;
@@ -227,8 +270,15 @@ export function useApproveToken() {
 // Hook to create a U-based deposit
 export function useCreateDeposit() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const {
+    writeContractAsync,
+    data: hash,
+    isPending,
+    error,
+  } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
 
   const createDeposit = async (params: {
     token: `0x${string}`;
@@ -238,11 +288,12 @@ export function useCreateDeposit() {
     discountLockupId?: bigint;
     value?: bigint; // For native token deposits
   }) => {
-    if (!warehouseAddress) throw new Error('Warehouse not deployed on this chain');
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
     const txHash = await writeContractAsync({
       address: warehouseAddress,
       abi: warehouseAbi,
-      functionName: 'createDeposit',
+      functionName: "createDeposit",
       args: [
         params.token,
         params.amountPerPeriod,
@@ -261,8 +312,15 @@ export function useCreateDeposit() {
 // Hook to create a coin-based lockup
 export function useCreateLockup() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const {
+    writeContractAsync,
+    data: hash,
+    isPending,
+    error,
+  } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
 
   const createLockup = async (params: {
     token: `0x${string}`;
@@ -270,11 +328,12 @@ export function useCreateLockup() {
     unlockTime: bigint;
     value?: bigint; // For native token lockups
   }) => {
-    if (!warehouseAddress) throw new Error('Warehouse not deployed on this chain');
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
     const txHash = await writeContractAsync({
       address: warehouseAddress,
       abi: warehouseAbi,
-      functionName: 'createLockup',
+      functionName: "createLockup",
       args: [params.token, params.amount, params.unlockTime],
       value: params.value,
     });
@@ -288,14 +347,17 @@ export function useCreateLockup() {
 export function useWithdraw() {
   const warehouseAddress = useWarehouseAddress();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
 
   const withdraw = async (depositId: bigint) => {
-    if (!warehouseAddress) throw new Error('Warehouse not deployed on this chain');
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
     return writeContract({
       address: warehouseAddress,
       abi: warehouseAbi,
-      functionName: 'withdraw',
+      functionName: "withdraw",
       args: [depositId],
     });
   };
@@ -307,14 +369,17 @@ export function useWithdraw() {
 export function useWithdrawLockup() {
   const warehouseAddress = useWarehouseAddress();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
 
   const withdrawLockup = async (lockupId: bigint) => {
-    if (!warehouseAddress) throw new Error('Warehouse not deployed on this chain');
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
     return writeContract({
       address: warehouseAddress,
       abi: warehouseAbi,
-      functionName: 'withdrawLockup',
+      functionName: "withdrawLockup",
       args: [lockupId],
     });
   };
@@ -326,14 +391,17 @@ export function useWithdrawLockup() {
 export function useEmergencyCancel() {
   const warehouseAddress = useWarehouseAddress();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
 
   const emergencyCancel = async (depositId: bigint) => {
-    if (!warehouseAddress) throw new Error('Warehouse not deployed on this chain');
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
     return writeContract({
       address: warehouseAddress,
       abi: warehouseAbi,
-      functionName: 'emergencyCancel',
+      functionName: "emergencyCancel",
       args: [depositId],
     });
   };
@@ -345,25 +413,38 @@ export function useEmergencyCancel() {
 export function useEmergencyCancelLockup() {
   const warehouseAddress = useWarehouseAddress();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
 
   const emergencyCancelLockup = async (lockupId: bigint) => {
-    if (!warehouseAddress) throw new Error('Warehouse not deployed on this chain');
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
     return writeContract({
       address: warehouseAddress,
       abi: warehouseAbi,
-      functionName: 'emergencyCancelLockup',
+      functionName: "emergencyCancelLockup",
       args: [lockupId],
     });
   };
 
-  return { emergencyCancelLockup, hash, isPending, isConfirming, isSuccess, error };
+  return {
+    emergencyCancelLockup,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error,
+  };
 }
 
 // ============ Utility Functions ============
 
 // Calculate fee based on periods
-export function calculateFee(totalAmount: bigint, totalPeriods: number): bigint {
+export function calculateFee(
+  totalAmount: bigint,
+  totalPeriods: number
+): bigint {
   let feeRate: bigint;
   if (totalPeriods <= 10) {
     feeRate = 50n; // 0.5%
@@ -410,11 +491,11 @@ export interface LockupData {
 export function useDepositById(depositId: bigint | undefined) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: warehouseAddress,
     abi: warehouseAbi,
-    functionName: 'deposits',
+    functionName: "deposits",
     args: depositId !== undefined ? [depositId] : undefined,
     chainId,
     query: { enabled: depositId !== undefined && !!warehouseAddress },
@@ -425,11 +506,11 @@ export function useDepositById(depositId: bigint | undefined) {
 export function useLockupById(lockupId: bigint | undefined) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
-  
+
   return useReadContract({
     address: warehouseAddress,
     abi: warehouseAbi,
-    functionName: 'lockups',
+    functionName: "lockups",
     args: lockupId !== undefined ? [lockupId] : undefined,
     chainId,
     query: { enabled: lockupId !== undefined && !!warehouseAddress },
@@ -437,7 +518,10 @@ export function useLockupById(lockupId: bigint | undefined) {
 }
 
 // Parse deposit tuple from contract
-export function parseDeposit(id: bigint, data: readonly [string, string, bigint, bigint, number, number, bigint]): DepositData {
+export function parseDeposit(
+  id: bigint,
+  data: readonly [string, string, bigint, bigint, number, number, bigint]
+): DepositData {
   return {
     id,
     user: data[0] as `0x${string}`,
@@ -451,7 +535,10 @@ export function parseDeposit(id: bigint, data: readonly [string, string, bigint,
 }
 
 // Parse lockup tuple from contract
-export function parseLockup(id: bigint, data: readonly [string, string, bigint, bigint, boolean, boolean, bigint]): LockupData {
+export function parseLockup(
+  id: bigint,
+  data: readonly [string, string, bigint, bigint, boolean, boolean, bigint]
+): LockupData {
   return {
     id,
     user: data[0] as `0x${string}`,

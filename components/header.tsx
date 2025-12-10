@@ -34,28 +34,28 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="border-b border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl sticky top-0 z-50">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/50">
       <div className="container mx-auto px-4 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link
               href="/"
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 transition-opacity hover:opacity-80"
             >
               <Image
                 src="/logo.png"
                 alt="Rainbow Bridge Vault"
                 width={40}
                 height={40}
-                className="w-10 h-10"
+                className="h-10 w-10"
               />
-              <span className="font-bold text-lg bg-linear-to-r from-violet-500 via-fuchsia-500 to-orange-500 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-violet-500 via-fuchsia-500 to-orange-500 bg-clip-text text-lg font-bold text-transparent">
                 {t("app.name")}
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden items-center gap-1 md:flex">
               <Link href="/">
                 <Button
                   variant={pathname === "/" ? "secondary" : "ghost"}
@@ -95,7 +95,7 @@ export function Header() {
 
           <div className="flex items-center gap-2">
             {/* Desktop actions */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden items-center gap-2 md:flex">
               <LanguageSwitcher />
               <ThemeSwitcher />
             </div>
@@ -103,7 +103,7 @@ export function Header() {
               <WalletConnect />
             </div>
 
-            <div className="flex md:hidden items-center gap-1">
+            <div className="flex items-center gap-1 md:hidden">
               <LanguageSwitcher />
               <ThemeSwitcher />
             </div>
@@ -127,20 +127,20 @@ export function Header() {
                       alt="Rainbow Bridge Vault"
                       width={32}
                       height={32}
-                      className="w-8 h-8"
+                      className="h-8 w-8"
                     />
-                    <span className="font-bold text-base bg-linear-to-r from-violet-500 via-fuchsia-500 to-orange-500 bg-clip-text text-transparent">
+                    <span className="bg-linear-to-r from-violet-500 via-fuchsia-500 to-orange-500 bg-clip-text text-base font-bold text-transparent">
                       {t("app.name")}
                     </span>
                   </SheetTitle>
                 </SheetHeader>
 
-                <div className="flex justify-center mt-6">
+                <div className="mt-6 flex justify-center">
                   <WalletConnect />
                 </div>
 
                 {/* Mobile Navigation Links */}
-                <nav className="flex flex-col gap-2 mt-6">
+                <nav className="mt-6 flex flex-col gap-2">
                   <Link href="/" onClick={() => setMobileMenuOpen(false)}>
                     <Button
                       variant={pathname === "/" ? "secondary" : "ghost"}

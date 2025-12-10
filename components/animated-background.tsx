@@ -69,7 +69,7 @@ export function AnimatedBackground() {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number>(0);
   const [palette] = useState(
-    () => colorPalettes[Math.floor(Math.random() * colorPalettes.length)],
+    () => colorPalettes[Math.floor(Math.random() * colorPalettes.length)]
   );
   const wavesRef = useRef<WaveLayer[]>([]);
   const timeRef = useRef(0);

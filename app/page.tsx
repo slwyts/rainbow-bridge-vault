@@ -11,22 +11,22 @@ import { useUserPositions } from "@/lib/useUserPositions";
 export type Position = {
   id: string;
   type: "u-based" | "coin-based";
-  amount: string;           // For u-based: per-period amount, for coin-based: total amount
-  totalAmount?: string;     // Total amount (calculated for u-based)
+  amount: string; // For u-based: per-period amount, for coin-based: total amount
+  totalAmount?: string; // Total amount (calculated for u-based)
   currency: string;
-  decimals?: number;        // Token decimals (e.g., 6 for USDT/USDC, 18 for most ERC20)
-  frequency?: number;       // Total periods (u-based only)
-  period: number;           // Period in days
-  remaining?: number;       // Remaining periods (u-based only)
+  decimals?: number; // Token decimals (e.g., 6 for USDT/USDC, 18 for most ERC20)
+  frequency?: number; // Total periods (u-based only)
+  period: number; // Period in days
+  remaining?: number; // Remaining periods (u-based only)
   startDate: string;
   status: "active" | "completed";
   chain: string;
-  chainId?: number;         // Numeric chain ID for multi-chain support
+  chainId?: number; // Numeric chain ID for multi-chain support
   // New fields for time tracking
-  nextWithdrawTime?: number;     // Unix timestamp for next withdrawal (u-based)
-  unlockTime?: number;           // Unix timestamp for unlock (coin-based)
-  canWithdraw: boolean;          // Whether withdrawal is currently possible
-  withdrawableNow?: number;      // How many periods can be withdrawn now (u-based)
+  nextWithdrawTime?: number; // Unix timestamp for next withdrawal (u-based)
+  unlockTime?: number; // Unix timestamp for unlock (coin-based)
+  canWithdraw: boolean; // Whether withdrawal is currently possible
+  withdrawableNow?: number; // How many periods can be withdrawn now (u-based)
 };
 
 function HomePage() {
@@ -49,17 +49,17 @@ function HomePage() {
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="relative min-h-screen">
       <AnimatedBackground />
 
       <Header />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="mx-auto max-w-6xl">
           <DepositForm onAddPosition={handlePositionAdded} />
         </div>
 
-        <div className="mt-12 max-w-6xl mx-auto">
+        <div className="mx-auto mt-12 max-w-6xl">
           <PositionsList
             positions={positions}
             isLoading={isLoading}

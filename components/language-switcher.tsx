@@ -14,7 +14,7 @@ export function LanguageSwitcher() {
       onClick={() => setLocale(locale === "en" ? "zh" : "en")}
       title={locale === "en" ? "Switch to Chinese" : "切换到英文"}
     >
-      <Languages className="w-4 h-4" />
+      <Languages className="h-4 w-4" />
     </Button>
   );
 }

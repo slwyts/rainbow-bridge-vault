@@ -16,10 +16,11 @@ export function WalletConnect() {
   const { address, isConnected, isConnecting } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  
+
   // Fix hydration mismatch - only render wallet state after client mount
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -30,7 +31,8 @@ export function WalletConnect() {
 
   const handleConnect = () => {
     // Prefer injected connector or the first available one
-    const connector = connectors.find((c) => c.id === 'injected') || connectors[0];
+    const connector =
+      connectors.find((c) => c.id === "injected") || connectors[0];
     if (connector) {
       connect({ connector });
     }
@@ -40,7 +42,7 @@ export function WalletConnect() {
   if (!mounted) {
     return (
       <Button disabled>
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         {t("wallet.connect")}
       </Button>
     );
@@ -50,23 +52,23 @@ export function WalletConnect() {
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button className="bg-linear-to-r from-chart-1 to-chart-3">
-            <Wallet className="w-4 h-4 mr-2" />
+          <Button className="from-chart-1 to-chart-3 bg-linear-to-r">
+            <Wallet className="mr-2 h-4 w-4" />
             {formatAddress(address)}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-48 p-2">
           <div className="flex flex-col gap-2">
-            <div className="text-xs text-muted-foreground px-2 py-1">
+            <div className="text-muted-foreground px-2 py-1 text-xs">
               {t("wallet.connected")}
             </div>
-            <Button 
-              variant="destructive" 
-              size="sm" 
+            <Button
+              variant="destructive"
+              size="sm"
               className="w-full justify-start"
               onClick={() => disconnect()}
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className="mr-2 h-4 w-4" />
               {t("wallet.disconnect")}
             </Button>
           </div>
@@ -78,9 +80,9 @@ export function WalletConnect() {
   return (
     <Button disabled={isConnecting} onClick={handleConnect}>
       {isConnecting ? (
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       ) : (
-        <Wallet className="w-4 h-4 mr-2" />
+        <Wallet className="mr-2 h-4 w-4" />
       )}
       {t("wallet.connect")}
     </Button>
