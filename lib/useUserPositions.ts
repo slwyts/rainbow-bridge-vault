@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { createPublicClient, http, zeroAddress } from "viem";
-import { hardhat, bsc, arbitrum, xLayer } from "viem/chains";
+import { hardhat, bsc, bscTestnet, arbitrum, xLayer } from "viem/chains";
 import {
   CHAIN_IDS,
   getWarehouseAddress,
@@ -24,6 +24,7 @@ function getKnownTokenSymbol(
       case CHAIN_IDS.XLAYER:
         return "OKB";
       case CHAIN_IDS.BSC:
+      case CHAIN_IDS.BSC_TESTNET:
         return "BNB";
       case CHAIN_IDS.ARBITRUM:
         return "ETH";
@@ -137,6 +138,11 @@ const SUPPORTED_CHAINS = [
     chainId: CHAIN_IDS.BSC,
     chain: bsc,
     name: "BNB Chain",
+  },
+  {
+    chainId: CHAIN_IDS.BSC_TESTNET,
+    chain: bscTestnet,
+    name: "BSC Testnet",
   },
   {
     chainId: CHAIN_IDS.ARBITRUM,

@@ -86,6 +86,8 @@ function getNumericChainId(chainStringId: string): number {
       return CHAIN_IDS.XLAYER;
     case "binance-smart-chain":
       return CHAIN_IDS.BSC;
+    case "bsc-testnet":
+      return CHAIN_IDS.BSC_TESTNET;
     case "arbitrum-one":
       return CHAIN_IDS.ARBITRUM;
     default:
@@ -292,6 +294,15 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
       gasLevel: "low" as const,
       symbol: "binance-smart-chain",
       chainId: CHAIN_IDS.BSC,
+    },
+    {
+      id: "bsc-testnet",
+      name: "BSC Testnet",
+      icon: <NetworkBinanceSmartChain className="h-5 w-5" variant="branded" />,
+      gas: "<0.001",
+      gasLevel: "low" as const,
+      symbol: "bsc-testnet",
+      chainId: CHAIN_IDS.BSC_TESTNET,
     },
     {
       id: "arbitrum-one",

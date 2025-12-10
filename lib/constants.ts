@@ -2,6 +2,7 @@
 export const CHAIN_IDS = {
   HARDHAT: 31337,
   XLAYER: 196,
+  BSC_TESTNET: 97,
   BSC: 56,
   ARBITRUM: 42161,
 } as const;
@@ -54,6 +55,19 @@ const chainConfigs: Record<number, ChainConfig> = {
     tokens: {
       USDT: process.env.NEXT_PUBLIC_BSC_USDT_ADDRESS as `0x${string}`,
       USDC: process.env.NEXT_PUBLIC_BSC_USDC_ADDRESS as `0x${string}`,
+    },
+  },
+  // BSC Testnet
+  [CHAIN_IDS.BSC_TESTNET]: {
+    chainId: Number(
+      process.env.NEXT_PUBLIC_BSC_TESTNET_CHAIN_ID || CHAIN_IDS.BSC_TESTNET
+    ),
+    name: "BSC Testnet",
+    warehouseAddress: process.env
+      .NEXT_PUBLIC_BSC_TESTNET_WAREHOUSE_ADDRESS as `0x${string}`,
+    tokens: {
+      USDT: process.env.NEXT_PUBLIC_BSC_TESTNET_USDT_ADDRESS as `0x${string}`,
+      USDC: process.env.NEXT_PUBLIC_BSC_TESTNET_USDC_ADDRESS as `0x${string}`,
     },
   },
   // Arbitrum

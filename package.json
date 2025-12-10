@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:tbsc": "dotenv -e .env.bsc-testnet -- next dev",
     "build": "next build",
+    "build:tbsc": "dotenv -e .env.bsc-testnet -- next build",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --write ."
@@ -39,6 +41,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.6",
     "postcss": "^8.5.6",
