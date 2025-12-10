@@ -7,7 +7,8 @@
     "test": "hardhat test",
     "compile": "hardhat compile",
     "clean": "hardhat clean",
-    "deploy:local": "node scripts/start-local.js"
+    "deploy:local": "node scripts/start-local.js",
+    "deploy:tbsc": "hardhat run scripts/deploy-tbsc.ts --network bscTestnet"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +26,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",
+    "dotenv": "^17.2.3",
     "wagmi": "^3.1.0"
   }
 }
