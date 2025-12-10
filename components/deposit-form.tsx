@@ -147,12 +147,12 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     if (freq >= 101) baseFeeRate = 0.02;
 
     const baseFee = total * baseFeeRate;
-    const disbursementFee = freq * 0.01;
+    // const disbursementFee = freq * 0.01; // Protocol fee removed
 
     return {
       baseFee: baseFee.toFixed(2),
-      disbursementFee: disbursementFee.toFixed(2),
-      total: (baseFee + disbursementFee).toFixed(2),
+      disbursementFee: "0.00",
+      total: baseFee.toFixed(2),
     };
   };
 

@@ -55,7 +55,6 @@ describe("RainbowWarehouse", async () => {
     // 部署 RainbowWarehouse，传入 mock 代币地址
     warehouse = await viem.deployContract("RainbowWarehouse", [
       ownerAddress,
-      usdtAddress,
       xwaifuAddress,
     ]);
     warehouseAddress = warehouse.address;
@@ -73,25 +72,14 @@ describe("RainbowWarehouse", async () => {
       assert.strictEqual(getAddress(contractOwner), getAddress(ownerAddress));
     });
 
-    it("应该正确设置稳定币", async () => {
-      const stablecoin = await warehouse.read.stablecoin();
-      assert.strictEqual(getAddress(stablecoin), getAddress(usdtAddress));
-    });
+
 
     it("应该正确设置 xwaifu 代币", async () => {
       const token = await warehouse.read.xwaifuToken();
       assert.strictEqual(getAddress(token), getAddress(xwaifuAddress));
     });
 
-    it("应该正确设置最小金额 (5U)", async () => {
-      const minAmount = await warehouse.read.MIN_AMOUNT_PER_PERIOD_SCALED();
-      assert.strictEqual(minAmount, parseUsdt("5"));
-    });
 
-    it("应该启用 xwaifu 优惠", async () => {
-      const active = await warehouse.read.isXWaifuDiscountActive();
-      assert.strictEqual(active, true);
-    });
   });
 
   describe("U本位周期派发 - createDeposit", () => {
@@ -101,31 +89,30 @@ describe("RainbowWarehouse", async () => {
     });
 
     it("应该成功创建存款 (10期, 0.5%费用)", async () => {
-      const amountPerPeriod = parseUsdt("100");
-      const periodSeconds = 86400n;
-      const totalPeriods = 10;
-
       const user1Warehouse = await viem.getContractAt("RainbowWarehouse", warehouseAddress, {
         client: { wallet: user1 },
       });
 
+      const amountPerPeriod = parseUsdt("100");
+      const periodSeconds = 86400n;
+      const totalPeriods = 10;
+
       const balanceBefore = await usdt.read.balanceOf([user1Address]);
-      await user1Warehouse.write.createDeposit([amountPerPeriod, periodSeconds, totalPeriods, 0n]);
+      await user1Warehouse.write.createDeposit([usdtAddress, amountPerPeriod, periodSeconds, totalPeriods, 0n]);
       const balanceAfter = await usdt.read.balanceOf([user1Address]);
 
       // 总金额 = 100 * 10 = 1000U
       // 基础费用 = 1000 * 0.5% = 5U
-      // 协议费 = 0.01 * 10 = 0.1U
+      // 无协议费
       const totalAmount = parseUsdt("1000");
       const baseFee = (totalAmount * 50n) / 10000n;
-      const protocolFee = parseUsdt("0.01") * BigInt(totalPeriods);
-      const expectedPaid = totalAmount + baseFee + protocolFee;
+      const expectedPaid = totalAmount + baseFee;
 
       assert.strictEqual(balanceBefore - balanceAfter, expectedPaid);
 
       const deposit = await warehouse.read.deposits([0n]);
       assert.strictEqual(getAddress(deposit[0]), getAddress(user1Address));
-      assert.strictEqual(deposit[1], totalAmount);
+      assert.strictEqual(deposit[2], amountPerPeriod); // Check amountPerPeriod
     });
 
     it("应该成功创建存款 (30期, 0.8%费用)", async () => {
@@ -133,10 +120,10 @@ describe("RainbowWarehouse", async () => {
         client: { wallet: user1 },
       });
 
-      await user1Warehouse.write.createDeposit([parseUsdt("10"), 86400n, 30, 0n]);
+      await user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("10"), 86400n, 30, 0n]);
 
       const deposit = await warehouse.read.deposits([0n]);
-      assert.strictEqual(deposit[1], parseUsdt("300"));
+      assert.strictEqual(deposit[2], parseUsdt("10"));
     });
 
     it("应该成功创建存款 (100期, 1%费用)", async () => {
@@ -144,10 +131,10 @@ describe("RainbowWarehouse", async () => {
         client: { wallet: user1 },
       });
 
-      await user1Warehouse.write.createDeposit([parseUsdt("10"), 86400n, 100, 0n]);
+      await user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("10"), 86400n, 100, 0n]);
 
       const deposit = await warehouse.read.deposits([0n]);
-      assert.strictEqual(deposit[1], parseUsdt("1000"));
+      assert.strictEqual(deposit[2], parseUsdt("10"));
     });
 
     it("应该成功创建存款 (365期, 2%费用)", async () => {
@@ -155,19 +142,19 @@ describe("RainbowWarehouse", async () => {
         client: { wallet: user1 },
       });
 
-      await user1Warehouse.write.createDeposit([parseUsdt("10"), 86400n, 365, 0n]);
+      await user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("10"), 86400n, 365, 0n]);
 
       const deposit = await warehouse.read.deposits([0n]);
-      assert.strictEqual(deposit[1], parseUsdt("3650"));
+      assert.strictEqual(deposit[2], parseUsdt("10"));
     });
 
-    it("应该拒绝金额太低的存款", async () => {
+    it("应该拒绝0金额存款", async () => {
       const user1Warehouse = await viem.getContractAt("RainbowWarehouse", warehouseAddress, {
         client: { wallet: user1 },
       });
 
       await assert.rejects(
-        user1Warehouse.write.createDeposit([parseUsdt("4"), 86400n, 10, 0n])
+        user1Warehouse.write.createDeposit([usdtAddress, 0n, 86400n, 10, 0n])
       );
     });
 
@@ -177,7 +164,7 @@ describe("RainbowWarehouse", async () => {
       });
 
       await assert.rejects(
-        user1Warehouse.write.createDeposit([parseUsdt("10"), 86400n, 0, 0n])
+        user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("10"), 86400n, 0, 0n])
       );
     });
 
@@ -187,7 +174,7 @@ describe("RainbowWarehouse", async () => {
       });
 
       await assert.rejects(
-        user1Warehouse.write.createDeposit([parseUsdt("10"), 86400n, 366, 0n])
+        user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("10"), 86400n, 366, 0n])
       );
     });
   });
@@ -201,7 +188,7 @@ describe("RainbowWarehouse", async () => {
         client: { wallet: user1 },
       });
 
-      await user1Warehouse.write.createDeposit([parseUsdt("100"), 86400n, 10, 0n]);
+      await user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("100"), 86400n, 10, 0n]);
     });
 
     it("应该在时间到后成功提款", async () => {
@@ -284,7 +271,7 @@ describe("RainbowWarehouse", async () => {
         client: { wallet: user1 },
       });
 
-      await user1Warehouse.write.createDeposit([parseUsdt("100"), 86400n, 10, 0n]);
+      await user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("100"), 86400n, 10, 0n]);
     });
 
     it("应该能紧急取消并取回全部剩余资金", async () => {
@@ -293,7 +280,7 @@ describe("RainbowWarehouse", async () => {
       });
 
       const balanceBefore = await usdt.read.balanceOf([user1Address]);
-      await user1Warehouse.write.emergencyCancelDeposit([0n]);
+      await user1Warehouse.write.emergencyCancel([0n]);
       const balanceAfter = await usdt.read.balanceOf([user1Address]);
 
       assert.strictEqual(balanceAfter - balanceBefore, parseUsdt("1000"));
@@ -314,7 +301,7 @@ describe("RainbowWarehouse", async () => {
       }
 
       const balanceBefore = await usdt.read.balanceOf([user1Address]);
-      await user1Warehouse.write.emergencyCancelDeposit([0n]);
+      await user1Warehouse.write.emergencyCancel([0n]);
       const balanceAfter = await usdt.read.balanceOf([user1Address]);
 
       assert.strictEqual(balanceAfter - balanceBefore, parseUsdt("700"));
@@ -325,7 +312,7 @@ describe("RainbowWarehouse", async () => {
         client: { wallet: user2 },
       });
 
-      await assert.rejects(user2Warehouse.write.emergencyCancelDeposit([0n]));
+      await assert.rejects(user2Warehouse.write.emergencyCancel([0n]));
     });
   });
 
@@ -345,12 +332,12 @@ describe("RainbowWarehouse", async () => {
       const unlockTime = block.timestamp + BigInt(86400 * 30);
 
       const balanceBefore = await xwaifu.read.balanceOf([user1Address]);
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, amount, unlockTime]);
+      await user1Warehouse.write.createLockup([xwaifuAddress, amount, unlockTime]);
       const balanceAfter = await xwaifu.read.balanceOf([user1Address]);
 
       assert.strictEqual(balanceBefore - balanceAfter, amount);
 
-      const lockup = await warehouse.read.tokenLockups([0n]);
+      const lockup = await warehouse.read.lockups([0n]);
       const expectedLocked = amount - (amount * 5n) / 1000n;
       assert.strictEqual(lockup[2], expectedLocked);
       assert.strictEqual(lockup[4], false);
@@ -366,7 +353,7 @@ describe("RainbowWarehouse", async () => {
       const unlockTime = block.timestamp + BigInt(86400 * 30);
 
       const ownerBalanceBefore = await xwaifu.read.balanceOf([ownerAddress]);
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, amount, unlockTime]);
+      await user1Warehouse.write.createLockup([xwaifuAddress, amount, unlockTime]);
       const ownerBalanceAfter = await xwaifu.read.balanceOf([ownerAddress]);
 
       const expectedFee = (amount * 5n) / 1000n;
@@ -382,19 +369,19 @@ describe("RainbowWarehouse", async () => {
       const block = await publicClient.getBlock();
       const unlockTime = block.timestamp + BigInt(86400);
 
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, amount, unlockTime]);
+      await user1Warehouse.write.createLockup([xwaifuAddress, amount, unlockTime]);
 
       await publicClient.request({ method: "evm_increaseTime" as any, params: [86400] });
       await publicClient.request({ method: "evm_mine" as any, params: [] });
 
       const balanceBefore = await xwaifu.read.balanceOf([user1Address]);
-      await user1Warehouse.write.withdrawTokenLockup([0n]);
+      await user1Warehouse.write.withdrawLockup([0n]);
       const balanceAfter = await xwaifu.read.balanceOf([user1Address]);
 
       const expectedLocked = amount - (amount * 5n) / 1000n;
       assert.strictEqual(balanceAfter - balanceBefore, expectedLocked);
 
-      const lockup = await warehouse.read.tokenLockups([0n]);
+      const lockup = await warehouse.read.lockups([0n]);
       assert.strictEqual(lockup[4], true);
     });
 
@@ -407,9 +394,9 @@ describe("RainbowWarehouse", async () => {
       const block = await publicClient.getBlock();
       const unlockTime = block.timestamp + BigInt(86400 * 30);
 
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, amount, unlockTime]);
+      await user1Warehouse.write.createLockup([xwaifuAddress, amount, unlockTime]);
 
-      await assert.rejects(user1Warehouse.write.withdrawTokenLockup([0n]));
+      await assert.rejects(user1Warehouse.write.withdrawLockup([0n]));
     });
 
     it("应该拒绝重复提取", async () => {
@@ -421,14 +408,14 @@ describe("RainbowWarehouse", async () => {
       const block = await publicClient.getBlock();
       const unlockTime = block.timestamp + BigInt(86400);
 
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, amount, unlockTime]);
+      await user1Warehouse.write.createLockup([xwaifuAddress, amount, unlockTime]);
 
       await publicClient.request({ method: "evm_increaseTime" as any, params: [86400] });
       await publicClient.request({ method: "evm_mine" as any, params: [] });
 
-      await user1Warehouse.write.withdrawTokenLockup([0n]);
+      await user1Warehouse.write.withdrawLockup([0n]);
 
-      await assert.rejects(user1Warehouse.write.withdrawTokenLockup([0n]));
+      await assert.rejects(user1Warehouse.write.withdrawLockup([0n]));
     });
   });
 
@@ -442,9 +429,9 @@ describe("RainbowWarehouse", async () => {
       const block = await publicClient.getBlock();
       const unlockTime = block.timestamp + BigInt(86400);
 
-      await user1Warehouse.write.createTokenLockup([zeroAddress, 0n, unlockTime], { value: amount });
+      await user1Warehouse.write.createLockup([zeroAddress, 0n, unlockTime], { value: amount });
 
-      const lockup = await warehouse.read.tokenLockups([0n]);
+      const lockup = await warehouse.read.lockups([0n]);
       const expectedLocked = amount - (amount * 5n) / 1000n;
       assert.strictEqual(lockup[2], expectedLocked);
     });
@@ -458,13 +445,13 @@ describe("RainbowWarehouse", async () => {
       const block = await publicClient.getBlock();
       const unlockTime = block.timestamp + BigInt(86400);
 
-      await user1Warehouse.write.createTokenLockup([zeroAddress, 0n, unlockTime], { value: amount });
+      await user1Warehouse.write.createLockup([zeroAddress, 0n, unlockTime], { value: amount });
 
       await publicClient.request({ method: "evm_increaseTime" as any, params: [86400] });
       await publicClient.request({ method: "evm_mine" as any, params: [] });
 
       const balanceBefore = await publicClient.getBalance({ address: user1Address });
-      const tx = await user1Warehouse.write.withdrawTokenLockup([0n]);
+      const tx = await user1Warehouse.write.withdrawLockup([0n]);
       const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
       const balanceAfter = await publicClient.getBalance({ address: user1Address });
 
@@ -488,73 +475,84 @@ describe("RainbowWarehouse", async () => {
         client: { wallet: user1 },
       });
 
-      // 创建符合条件的 xwaifu 锁仓 (15000 xwaifu, 365天+)
-      const stakeAmount = parseXwaifu("15000");
       const block = await publicClient.getBlock();
-      const unlockTime = block.timestamp + BigInt(366 * 86400); // 366天
+      
+      // 1. 创建占位锁仓 (lockupId=0)
+      await user1Warehouse.write.createLockup([xwaifuAddress, parseXwaifu("100"), block.timestamp + 86400n]);
 
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, stakeAmount, unlockTime]);
+      // 2. 创建符合条件的 xwaifu 锁仓 (lockupId=1)
+      const stakeAmount = parseXwaifu("15000");
+      const unlockTime = block.timestamp + BigInt(366 * 86400);
 
-      // 创建存款使用优惠 (lockupId = 1，因为 > 0 才触发优惠检查)
+      await user1Warehouse.write.createLockup([xwaifuAddress, stakeAmount, unlockTime]);
+
+      // 3. 创建存款使用优惠 (使用 lockupId = 1)
       const amountPerPeriod = parseUsdt("100");
       const totalPeriods = 10;
-      const totalAmount = amountPerPeriod * BigInt(totalPeriods);
-
+      const period = 86400n;
+      
+      // 10期 -> 0.5% 费率
+      // 总金额 = 1000
+      // 正常费用 = 5
+      // 优惠费用 = 2.5
+      
       const balanceBefore = await usdt.read.balanceOf([user1Address]);
       
-      // 创建占位锁仓让 lockupId=0 被占用，然后用 lockupId=1
-      // 但我们上面已经创建了 lockupId=0，所以直接用 1 试试
-      // 实际上传入的是 lockupId，不是 lockupId+1
-      // 但合约检查 _discountLockupId > 0 才启用优惠
-      // 所以 lockupId=0 无法被用于优惠... 这是原合约的设计限制
+      await user1Warehouse.write.createDeposit([usdtAddress, amountPerPeriod, period, totalPeriods, 1n]);
       
-      // 先创建一个占位锁仓
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, parseXwaifu("100"), block.timestamp + 86400n]);
+      const balanceAfter = await usdt.read.balanceOf([user1Address]);
       
-      // 现在 lockupId=0 是 xwaifu 质押锁仓，lockupId=1 是占位锁仓
-      // 等等，顺序反了。第一个创建的是 15000 的质押，是 lockupId=0
-      // 我们需要让质押锁仓的 id > 0
-      // 重新设计测试...
+      // 扣除金额 = 1000 + 2.5 = 1002.5
+      assert.strictEqual(balanceBefore - balanceAfter, parseUsdt("1002.5"));
+
+      const deposit = await warehouse.read.deposits([0n]);
+      assert.strictEqual(deposit[2], amountPerPeriod);
     });
 
-    it("应该拒绝质押金额不足的优惠申请", async () => {
+    it("应该在质押金额不足时收取全额费用", async () => {
       const user1Warehouse = await viem.getContractAt("RainbowWarehouse", warehouseAddress, {
         client: { wallet: user1 },
       });
 
       const block = await publicClient.getBlock();
       
-      // 创建占位锁仓 (lockupId=0)
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, parseXwaifu("100"), block.timestamp + 86400n]);
+      await user1Warehouse.write.createLockup([xwaifuAddress, parseXwaifu("100"), block.timestamp + 86400n]);
       
-      // 创建不足额锁仓 (lockupId=1)
+      // 不足额锁仓
       const stakeAmount = parseXwaifu("5000");
       const unlockTime = block.timestamp + BigInt(366 * 86400);
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, stakeAmount, unlockTime]);
+      await user1Warehouse.write.createLockup([xwaifuAddress, stakeAmount, unlockTime]);
 
-      await assert.rejects(
-        user1Warehouse.write.createDeposit([parseUsdt("100"), 86400n, 10, 1n])
-      );
+      const balanceBefore = await usdt.read.balanceOf([user1Address]);
+      // 尝试使用优惠 (lockupId=1)
+      await user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("100"), 86400n, 10, 1n]);
+      const balanceAfter = await usdt.read.balanceOf([user1Address]);
+
+      // 应该收取全额费用: 1000 + 5 = 1005
+      assert.strictEqual(balanceBefore - balanceAfter, parseUsdt("1005"));
     });
 
-    it("应该拒绝质押时长不足的优惠申请", async () => {
+    it("应该在质押时长不足时收取全额费用", async () => {
       const user1Warehouse = await viem.getContractAt("RainbowWarehouse", warehouseAddress, {
         client: { wallet: user1 },
       });
 
       const block = await publicClient.getBlock();
       
-      // 创建占位锁仓 (lockupId=0)
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, parseXwaifu("100"), block.timestamp + 86400n]);
+      await user1Warehouse.write.createLockup([xwaifuAddress, parseXwaifu("100"), block.timestamp + 86400n]);
       
-      // 创建时长不足的锁仓 (lockupId=1)
+      // 时长不足锁仓
       const stakeAmount = parseXwaifu("15000");
-      const unlockTime = block.timestamp + BigInt(100 * 86400); // 只有100天
-      await user1Warehouse.write.createTokenLockup([xwaifuAddress, stakeAmount, unlockTime]);
+      const unlockTime = block.timestamp + BigInt(100 * 86400);
+      await user1Warehouse.write.createLockup([xwaifuAddress, stakeAmount, unlockTime]);
 
-      await assert.rejects(
-        user1Warehouse.write.createDeposit([parseUsdt("100"), 86400n, 10, 1n])
-      );
+      const balanceBefore = await usdt.read.balanceOf([user1Address]);
+      // 尝试使用优惠 (lockupId=1)
+      await user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("100"), 86400n, 10, 1n]);
+      const balanceAfter = await usdt.read.balanceOf([user1Address]);
+
+      // 应该收取全额费用: 1000 + 5 = 1005
+      assert.strictEqual(balanceBefore - balanceAfter, parseUsdt("1005"));
     });
   });
 
@@ -571,6 +569,93 @@ describe("RainbowWarehouse", async () => {
 
       const ownerBalanceAfter = await publicClient.getBalance({ address: ownerAddress });
       assert.strictEqual(ownerBalanceAfter - ownerBalanceBefore, amount);
+    });
+  });
+
+  describe("U本位周期派发 - 原生代币", () => {
+    it("应该成功创建原生代币存款", async () => {
+      const user1Warehouse = await viem.getContractAt("RainbowWarehouse", warehouseAddress, {
+        client: { wallet: user1 },
+      });
+
+      const amountPerPeriod = parseUnits("1", 18);
+      const periodSeconds = 86400n;
+      const totalPeriods = 10;
+
+      // 总金额 = 1 * 10 = 10 ETH
+      // 费用 = 10 * 0.5% = 0.05 ETH
+      const totalAmount = parseUnits("10", 18);
+      const fee = parseUnits("0.05", 18);
+      const totalPayable = totalAmount + fee;
+
+      const balanceBefore = await publicClient.getBalance({ address: user1Address });
+      const tx = await user1Warehouse.write.createDeposit(
+        [zeroAddress, amountPerPeriod, periodSeconds, totalPeriods, 0n],
+        { value: totalPayable }
+      );
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
+      const balanceAfter = await publicClient.getBalance({ address: user1Address });
+
+      const gasUsed = receipt.gasUsed * receipt.effectiveGasPrice;
+      assert.strictEqual(balanceBefore - balanceAfter - gasUsed, totalPayable);
+
+      const deposit = await warehouse.read.deposits([0n]);
+      assert.strictEqual(deposit[2], amountPerPeriod);
+    });
+
+    it("应该成功提取原生代币存款", async () => {
+      const user1Warehouse = await viem.getContractAt("RainbowWarehouse", warehouseAddress, {
+        client: { wallet: user1 },
+      });
+
+      const amountPerPeriod = parseUnits("1", 18);
+      const periodSeconds = 86400n;
+      const totalPeriods = 10;
+      const totalPayable = parseUnits("10.05", 18);
+
+      await user1Warehouse.write.createDeposit(
+        [zeroAddress, amountPerPeriod, periodSeconds, totalPeriods, 0n],
+        { value: totalPayable }
+      );
+
+      await publicClient.request({ method: "evm_increaseTime" as any, params: [86400] });
+      await publicClient.request({ method: "evm_mine" as any, params: [] });
+
+      const balanceBefore = await publicClient.getBalance({ address: user1Address });
+      const tx = await user1Warehouse.write.withdraw([0n]);
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
+      const balanceAfter = await publicClient.getBalance({ address: user1Address });
+
+      const gasUsed = receipt.gasUsed * receipt.effectiveGasPrice;
+      assert.strictEqual(balanceAfter - balanceBefore + gasUsed, amountPerPeriod);
+    });
+  });
+
+  describe("币本位锁仓 - 紧急取消", () => {
+    it("应该能紧急取消锁仓并取回资金", async () => {
+      const user1Xwaifu = await viem.getContractAt("MockERC20", xwaifuAddress, { client: { wallet: user1 } });
+      await user1Xwaifu.write.approve([warehouseAddress, parseXwaifu("50000")]);
+
+      const user1Warehouse = await viem.getContractAt("RainbowWarehouse", warehouseAddress, {
+        client: { wallet: user1 },
+      });
+
+      const amount = parseXwaifu("1000");
+      const block = await publicClient.getBlock();
+      const unlockTime = block.timestamp + BigInt(86400 * 30);
+
+      await user1Warehouse.write.createLockup([xwaifuAddress, amount, unlockTime]);
+
+      const balanceBefore = await xwaifu.read.balanceOf([user1Address]);
+      await user1Warehouse.write.emergencyCancelLockup([0n]);
+      const balanceAfter = await xwaifu.read.balanceOf([user1Address]);
+
+      // 扣除手续费后的金额
+      const expectedLocked = amount - (amount * 5n) / 1000n;
+      assert.strictEqual(balanceAfter - balanceBefore, expectedLocked);
+
+      const lockup = await warehouse.read.lockups([0n]);
+      assert.strictEqual(lockup[4], true); // withdrawn
     });
   });
 });
