@@ -1,62 +1,51 @@
 "use client";
 
-import { useState } from "react";
 import { Header } from "@/components/header";
 import { DepositForm } from "@/components/deposit-form";
 import { PositionsList } from "@/components/positions-list";
 import { AnimatedBackground } from "@/components/animated-background";
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider, useI18n } from "@/components/i18n-provider";
+import { useUserPositions } from "@/lib/useUserPositions";
 
 export type Position = {
   id: string;
   type: "u-based" | "coin-based";
-  amount: string;
+  amount: string;           // For u-based: per-period amount, for coin-based: total amount
+  totalAmount?: string;     // Total amount (calculated for u-based)
   currency: string;
-  frequency?: number;
-  period: number;
-  remaining?: number;
+  decimals?: number;        // Token decimals (e.g., 6 for USDT/USDC, 18 for most ERC20)
+  frequency?: number;       // Total periods (u-based only)
+  period: number;           // Period in days
+  remaining?: number;       // Remaining periods (u-based only)
   startDate: string;
   status: "active" | "completed";
   chain: string;
+  chainId?: number;         // Numeric chain ID for multi-chain support
+  // New fields for time tracking
+  nextWithdrawTime?: number;     // Unix timestamp for next withdrawal (u-based)
+  unlockTime?: number;           // Unix timestamp for unlock (coin-based)
+  canWithdraw: boolean;          // Whether withdrawal is currently possible
+  withdrawableNow?: number;      // How many periods can be withdrawn now (u-based)
 };
 
 function HomePage() {
   const { t } = useI18n();
-  const [positions, setPositions] = useState<Position[]>([
-    {
-      id: "1",
-      type: "u-based",
-      amount: "10",
-      currency: "USDT",
-      frequency: 7,
-      period: 7,
-      remaining: 5,
-      startDate: "2025-01-15",
-      status: "active",
-      chain: "XLayer",
-    },
-    {
-      id: "2",
-      type: "coin-based",
-      amount: "0.5",
-      currency: "ETH",
-      period: 30,
-      startDate: "2025-01-10",
-      status: "active",
-      chain: "Ethereum",
-    },
-  ]);
+  // Fetch positions from contract
+  const { positions, isLoading, refetch } = useUserPositions();
 
-  const addPosition = (position: Omit<Position, "id">) => {
-    setPositions((prev) => [
-      ...prev,
-      { ...position, id: Date.now().toString() },
-    ]);
+  // Called after successful deposit/lockup - refetch from chain
+  const handlePositionAdded = () => {
+    // Delay to allow chain state to update
+    setTimeout(() => {
+      refetch();
+    }, 2000);
   };
 
-  const removePosition = (id: string) => {
-    setPositions((prev) => prev.filter((p) => p.id !== id));
+  // Called when user withdraws - refetch from chain
+  const handleWithdraw = (id: string) => {
+    // For now, just refetch. Actual withdraw will be implemented in positions-list
+    refetch();
   };
 
   return (
@@ -67,13 +56,15 @@ function HomePage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <DepositForm onAddPosition={addPosition} />
+          <DepositForm onAddPosition={handlePositionAdded} />
         </div>
 
         <div className="mt-12 max-w-6xl mx-auto">
           <PositionsList
             positions={positions}
-            onRemovePosition={removePosition}
+            isLoading={isLoading}
+            onRemovePosition={handleWithdraw}
+            onRefresh={refetch}
           />
         </div>
       </main>

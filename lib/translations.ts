@@ -14,6 +14,7 @@ export const translations = {
     wallet: {
       connect: "Connect Wallet",
       connected: "Connected",
+      disconnect: "Disconnect",
     },
     form: {
       title: "Create Vault",
@@ -276,6 +277,7 @@ export const translations = {
     wallet: {
       connect: "连接钱包",
       connected: "已连接",
+      disconnect: "断开连接",
     },
     form: {
       title: "创建仓库",
