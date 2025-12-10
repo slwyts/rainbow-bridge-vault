@@ -14,8 +14,11 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
     
     // Discount Config
     uint256 public constant DISCOUNT_COST = 100 * 1e18;
-    uint256 public constant STAKE_MIN_AMOUNT = 10000 * 1e18;
+    uint256 public constant STAKE_MIN_AMOUNT = 9800 * 1e18; // Adjusted to allow for fee + cost deduction
     uint256 public constant STAKE_MIN_DURATION = 365 days;
+    
+    uint256 public constant XLAYER_CHAIN_ID = 196;
+    address public constant XWAIFU_ADDRESS = 0x140abA9691353eD54479372c4E9580D558D954b1;
 
     // --- State ---
     struct Deposit {
@@ -34,6 +37,7 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
         uint256 amount;
         uint256 unlockTime;
         bool withdrawn;
+        bool isDiscountActive; // VIP Status
         uint256 createTime;
     }
 
@@ -55,7 +59,13 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
     event LockupWithdrawn(uint256 indexed id, uint256 amount);
 
     constructor(address _initialOwner, address _xwaifuToken) Ownable(_initialOwner) {
-        xwaifuToken = IERC20(_xwaifuToken);
+        if (block.chainid == XLAYER_CHAIN_ID) {
+            xwaifuToken = IERC20(0x140abA9691353eD54479372c4E9580D558D954b1);
+        } else if (block.chainid == 31337) {
+            xwaifuToken = IERC20(_xwaifuToken); // Allow testnet injection
+        } else {
+            xwaifuToken = IERC20(address(0)); // Disable on other chains
+        }
     }
 
     // --- Vesting (Periodic) ---
@@ -74,7 +84,7 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
 
         // Handle Discount
         if (_discountLockupId > 0 && address(xwaifuToken) != address(0)) {
-            if (_processDiscount(_discountLockupId)) {
+            if (_checkDiscount(_discountLockupId)) {
                 fee = fee / 2;
             }
         }
@@ -192,6 +202,7 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
             amount: amountLocked,
             unlockTime: _unlockTime,
             withdrawn: false,
+            isDiscountActive: false,
             createTime: block.timestamp
         });
 
@@ -221,18 +232,34 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
         return (_amount * bps) / 10000;
     }
 
-    function _processDiscount(uint256 _lockupId) internal returns (bool) {
+    function activateVIP(uint256 _lockupId) external nonReentrant {
+        Lockup storage l = lockups[_lockupId];
+        require(msg.sender == l.user, "Not owner");
+        require(address(xwaifuToken) != address(0), "Not supported");
+        require(l.token == address(xwaifuToken), "Not xWaifu");
+        require(!l.withdrawn, "Withdrawn");
+        require(!l.isDiscountActive, "Already active");
+        
+        // Check eligibility
+        require(l.amount >= STAKE_MIN_AMOUNT, "Insufficient amount");
+        require(l.unlockTime >= l.createTime + STAKE_MIN_DURATION, "Insufficient duration");
+
+        // Burn cost from position
+        require(l.amount >= DISCOUNT_COST, "Cost too high");
+        l.amount -= DISCOUNT_COST;
+        xwaifuToken.safeTransfer(owner(), DISCOUNT_COST);
+        
+        l.isDiscountActive = true;
+    }
+
+    function _checkDiscount(uint256 _lockupId) internal view returns (bool) {
         Lockup storage l = lockups[_lockupId];
         if (l.user != msg.sender) return false;
         if (l.token != address(xwaifuToken)) return false;
         if (l.withdrawn) return false;
+        if (!l.isDiscountActive) return false;
         if (l.amount < STAKE_MIN_AMOUNT) return false;
         if (l.unlockTime < l.createTime + STAKE_MIN_DURATION) return false;
-        
-        // Pay cost
-        if (l.amount < DISCOUNT_COST) return false;
-        l.amount -= DISCOUNT_COST;
-        xwaifuToken.safeTransfer(owner(), DISCOUNT_COST);
         
         return true;
     }

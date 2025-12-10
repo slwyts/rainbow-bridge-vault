@@ -486,7 +486,10 @@ describe("RainbowWarehouse", async () => {
 
       await user1Warehouse.write.createLockup([xwaifuAddress, stakeAmount, unlockTime]);
 
-      // 3. 创建存款使用优惠 (使用 lockupId = 1)
+      // 3. 激活 VIP (燃烧 100 xWaifu)
+      await user1Warehouse.write.activateVIP([1n]);
+
+      // 4. 创建存款使用优惠 (使用 lockupId = 1)
       const amountPerPeriod = parseUsdt("100");
       const totalPeriods = 10;
       const period = 86400n;
@@ -497,13 +500,27 @@ describe("RainbowWarehouse", async () => {
       // 优惠费用 = 2.5
       
       const balanceBefore = await usdt.read.balanceOf([user1Address]);
+      const xwaifuBalanceBefore = await xwaifu.read.balanceOf([user1Address]);
       
       await user1Warehouse.write.createDeposit([usdtAddress, amountPerPeriod, period, totalPeriods, 1n]);
       
       const balanceAfter = await usdt.read.balanceOf([user1Address]);
+      const xwaifuBalanceAfter = await xwaifu.read.balanceOf([user1Address]);
       
       // 扣除金额 = 1000 + 2.5 = 1002.5
       assert.strictEqual(balanceBefore - balanceAfter, parseUsdt("1002.5"));
+      
+      // 检查 xwaifu 钱包余额未变 (因为是从锁仓扣除)
+      assert.strictEqual(xwaifuBalanceBefore, xwaifuBalanceAfter);
+
+      // 检查锁仓金额减少了 100 个
+      // 初始锁定 = 15000 - 0.5% = 14925
+      // 扣除后 = 14925 - 100 = 14825
+      const lockup = await warehouse.read.lockups([1n]);
+      const initialLocked = stakeAmount - (stakeAmount * 5n) / 1000n;
+      const expectedLocked = initialLocked - parseXwaifu("100");
+      assert.strictEqual(lockup[2], expectedLocked);
+      assert.strictEqual(lockup[5], true); // isDiscountActive
 
       const deposit = await warehouse.read.deposits([0n]);
       assert.strictEqual(deposit[2], amountPerPeriod);
@@ -523,8 +540,11 @@ describe("RainbowWarehouse", async () => {
       const unlockTime = block.timestamp + BigInt(366 * 86400);
       await user1Warehouse.write.createLockup([xwaifuAddress, stakeAmount, unlockTime]);
 
+      // 尝试激活 VIP 应该失败
+      await assert.rejects(user1Warehouse.write.activateVIP([1n]));
+
       const balanceBefore = await usdt.read.balanceOf([user1Address]);
-      // 尝试使用优惠 (lockupId=1)
+      // 尝试使用优惠 (lockupId=1) - 即使传入 ID，因为未激活，也不会有优惠
       await user1Warehouse.write.createDeposit([usdtAddress, parseUsdt("100"), 86400n, 10, 1n]);
       const balanceAfter = await usdt.read.balanceOf([user1Address]);
 
@@ -545,6 +565,9 @@ describe("RainbowWarehouse", async () => {
       const stakeAmount = parseXwaifu("15000");
       const unlockTime = block.timestamp + BigInt(100 * 86400);
       await user1Warehouse.write.createLockup([xwaifuAddress, stakeAmount, unlockTime]);
+
+      // 尝试激活 VIP 应该失败
+      await assert.rejects(user1Warehouse.write.activateVIP([1n]));
 
       const balanceBefore = await usdt.read.balanceOf([user1Address]);
       // 尝试使用优惠 (lockupId=1)

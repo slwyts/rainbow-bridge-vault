@@ -31,7 +31,7 @@ export default defineConfig({
     hardhat: {
       type: "edr-simulated",
       chainType: "l1",
-      chainId: 196, // XLayer Mainnet for testing
+      chainId: 31337, // Use 31337 for local dev to enable mock token injection
     },
     hardhatBsc: {
       type: "edr-simulated",
