@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/components/i18n-provider";
 import {
@@ -17,10 +18,30 @@ import {
   Unlock,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAccount } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import type { Position } from "@/app/page";
-import { useWithdraw, useWithdrawLockup, useBlockchainTime } from "@/lib/contracts";
+import {
+  useWithdraw,
+  useWithdrawLockup,
+  useBlockchainTime,
+  useEnableDepositRemittance,
+  useEnableLockupRemittance,
+  useTokenAllowance,
+  useTokenBalance,
+  useRemittanceFee,
+  useApproveToken,
+  useWarehouseAddress,
+  useEmergencyCancel,
+  useEmergencyCancelLockup,
+} from "@/lib/contracts";
+import { getTokenAddress, getWarehouseAddress, CHAIN_IDS, type SupportedChainId } from "@/lib/chains";
+import { useChainId } from "wagmi";
+import { waitForTransactionReceipt } from "@wagmi/core";
+import { config as wagmiConfig } from "@/lib/web3";
 import { formatUnits } from "viem";
+import { warehouseAbi, erc20Abi } from "@/lib/abi";
+import { writeContract } from "@wagmi/core";
+import { zeroAddress } from "viem";
 
 // Helper to format token amount based on token type
 // USDC/USDT: 2 decimal places, others: 6 decimals for small amounts, M/K for large
@@ -154,7 +175,11 @@ export function PositionsList({
   onRefresh,
 }: PositionsListProps) {
   const { t } = useI18n();
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
+  const chainId = useChainId();
+  const warehouseAddress = useWarehouseAddress();
+  const usdtAddress = getTokenAddress(chainId, "USDT");
   const {
     withdraw,
     isPending: isWithdrawing,
@@ -165,6 +190,35 @@ export function PositionsList({
     isPending: isWithdrawingLockup,
     isSuccess: isWithdrawLockupSuccess,
   } = useWithdrawLockup();
+
+  const {
+    enableDepositRemittance,
+    isPending: isEnablingDeposit,
+  } = useEnableDepositRemittance();
+
+  const {
+    enableLockupRemittance,
+    isPending: isEnablingLockup,
+  } = useEnableLockupRemittance();
+
+  const { data: remittanceFee } = useRemittanceFee();
+  const { data: usdtAllowance, refetch: refetchUsdtAllowance } = useTokenAllowance(
+    usdtAddress,
+    address,
+    warehouseAddress
+  );
+  const { data: usdtBalance } = useTokenBalance(usdtAddress, address);
+  const { approve: approveUsdt, isPending: isApprovingRemitFee } = useApproveToken();
+
+  const { emergencyCancel, isPending: isEmergencyDeposit } = useEmergencyCancel();
+  const { emergencyCancelLockup, isPending: isEmergencyLockup } = useEmergencyCancelLockup();
+
+  const [recipientMap, setRecipientMap] = useState<Record<string, string>>({});
+  const [enablingId, setEnablingId] = useState<string | null>(null);
+  const [earlyClickMap, setEarlyClickMap] = useState<Record<string, number>>({});
+  const [isEarlyProcessing, setIsEarlyProcessing] = useState(false);
+  const [isWithdrawingAction, setIsWithdrawingAction] = useState(false);
+  const [isEnablingAction, setIsEnablingAction] = useState(false);
   
   // 获取区块链时间（严格从链上读取）
   const { timestamp: blockchainTime } = useBlockchainTime();
@@ -172,7 +226,6 @@ export function PositionsList({
   // Fix hydration mismatch - only use wallet state after client mount
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -185,23 +238,45 @@ export function PositionsList({
 
   const handleWithdraw = async (position: Position) => {
     try {
+      if (position.chainId && position.chainId !== chainId) {
+        const switched = await switchChainAsync?.({ chainId: position.chainId });
+        if (!switched || switched.id !== position.chainId) {
+          throw new Error("网络切换失败，未执行交易");
+        }
+      }
+
+      const targetWarehouse = getWarehouseAddress(position.chainId as SupportedChainId);
+      if (!targetWarehouse) {
+        throw new Error("当前链未配置仓库地址");
+      }
+
       // Parse ID: format is "deposit-{chainId}-{index}" or "lockup-{chainId}-{index}"
       const parts = position.id.split("-");
       const type = parts[0]; // "deposit" or "lockup"
       const index = BigInt(parts[2]); // The actual contract index
 
-      if (type === "deposit") {
-        await withdraw(index);
-        toast.success(t("toast.withdrawSuccess.title"), {
-          description: "Withdrawal initiated. Please confirm in your wallet.",
-        });
-      } else if (type === "lockup") {
-        await withdrawLockup(index);
-        toast.success(t("toast.withdrawSuccess.title"), {
-          description:
-            "Lockup withdrawal initiated. Please confirm in your wallet.",
-        });
-      }
+      const recipient = (recipientMap[position.id] || "").trim();
+      const toAddress =
+        recipient.startsWith("0x") && recipient.length === 42
+          ? (recipient as `0x${string}`)
+          : zeroAddress;
+
+      setIsWithdrawingAction(true);
+
+      const functionName = type === "deposit" ? "withdraw" : "withdrawLockup";
+      const txHash = await writeContract(wagmiConfig, {
+        address: targetWarehouse,
+        abi: warehouseAbi,
+        functionName,
+        args: [index, toAddress],
+        chainId: position.chainId,
+      });
+
+      await waitForTransactionReceipt(wagmiConfig, { hash: txHash });
+
+      toast.success(t("toast.withdrawSuccess.title"), {
+        description: "Withdrawal submitted. Please confirm in your wallet.",
+      });
 
       // Refresh positions after a delay
       setTimeout(() => onRefresh?.(), 2000);
@@ -209,6 +284,126 @@ export function PositionsList({
       toast.error("Withdraw failed", {
         description: err instanceof Error ? err.message : "Please try again",
       });
+    } finally {
+      setIsWithdrawingAction(false);
+    }
+  };
+
+  const handleEarlyRemitWithdraw = async (position: Position) => {
+    setIsEarlyProcessing(true);
+    try {
+      if (position.chainId && position.chainId !== chainId) {
+        const switched = await switchChainAsync?.({ chainId: position.chainId });
+        if (!switched || switched.id !== position.chainId) {
+          throw new Error("网络切换失败，未执行交易");
+        }
+      }
+
+      const targetWarehouse = getWarehouseAddress(position.chainId as SupportedChainId);
+      if (!targetWarehouse) {
+        throw new Error("当前链未配置仓库地址");
+      }
+
+      if (!position.createdAsRemit) {
+        throw new Error("仅原生汇付仓位可提前取款");
+      }
+
+      const recipient = (recipientMap[position.id] || "").trim();
+      const toAddress = recipient.startsWith("0x") && recipient.length === 42 ? (recipient as `0x${string}`) : undefined;
+
+      const parts = position.id.split("-");
+      const type = parts[0];
+      const index = BigInt(parts[2]);
+
+      const functionName = type === "deposit" ? "emergencyCancel" : "emergencyCancelLockup";
+      const txHash = await writeContract(wagmiConfig, {
+        address: targetWarehouse,
+        abi: warehouseAbi,
+        functionName,
+        args: [index, toAddress ?? zeroAddress],
+        chainId: position.chainId,
+      });
+
+      if (txHash) {
+        await waitForTransactionReceipt(wagmiConfig, { hash: txHash });
+      }
+
+      toast.success("汇付仓位提前取款已提交", {
+        description: "请在钱包确认交易，资金将直接结算",
+      });
+      setTimeout(() => onRefresh?.(), 1500);
+    } catch (err) {
+      toast.error("提前取款失败", {
+        description: err instanceof Error ? err.message : "Please try again",
+      });
+    } finally {
+      setIsEarlyProcessing(false);
+    }
+  };
+
+  const handleEnableRemittance = async (position: Position) => {
+    setEnablingId(position.id);
+    setIsEnablingAction(true);
+    try {
+      if (!address) throw new Error("请先连接钱包");
+      const targetWarehouse = getWarehouseAddress(position.chainId as SupportedChainId);
+      const targetUsdt = getTokenAddress(position.chainId as SupportedChainId, "USDT");
+      if (!targetWarehouse) throw new Error("当前链未配置仓库合约");
+      if (!targetUsdt) throw new Error("当前链未配置 USDT 地址");
+
+      if (position.chainId && position.chainId !== chainId) {
+        const switched = await switchChainAsync?.({ chainId: position.chainId });
+        if (!switched || switched.id !== position.chainId) {
+          throw new Error("网络切换失败，已阻止交易");
+        }
+      }
+
+      const fee = (remittanceFee as bigint | undefined) ?? 0n;
+      if (fee === 0n) throw new Error("无法获取汇付手续费");
+
+      const parts = position.id.split("-");
+      const type = parts[0];
+      const index = BigInt(parts[2]);
+
+      // Approve fee
+      toast.info("请先批准 0.1 USDT 手续费", {
+        description: "需要授权仓库合约扣除 USDT",
+      });
+      const approveHash = await writeContract(wagmiConfig, {
+        address: targetUsdt,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [targetWarehouse, fee],
+        chainId: position.chainId,
+      });
+      await waitForTransactionReceipt(wagmiConfig, { hash: approveHash });
+
+      const functionName = type === "deposit" ? "enableDepositRemittance" : "enableLockupRemittance";
+      const txHash = await writeContract(wagmiConfig, {
+        address: targetWarehouse,
+        abi: warehouseAbi,
+        functionName,
+        args: [index],
+        chainId: position.chainId,
+      });
+
+      if (txHash) {
+        await waitForTransactionReceipt(wagmiConfig, { hash: txHash });
+      }
+
+      toast.success("已提交开启汇付", {
+        description: "请在钱包确认支付 0.1 USDT 手续费",
+      });
+
+      setTimeout(() => onRefresh?.(), 2000);
+    } catch (err) {
+      const msg = (err as any)?.shortMessage || (err as Error)?.message || "Please try again";
+      toast.error("开启汇付失败", {
+        description: msg,
+      });
+    } finally {
+      setEnablingId(null);
+      setIsEnablingAction(false);
     }
   };
 
@@ -282,8 +477,24 @@ export function PositionsList({
           <div className="grid gap-4">
             {positions.map((position) => {
               // Determine if withdraw button should be enabled
+              const isProcessing =
+                isWithdrawing ||
+                isWithdrawingLockup ||
+                isEmergencyDeposit ||
+                isEmergencyLockup ||
+                isWithdrawingAction;
+              const isEnabling =
+                isEnablingDeposit ||
+                isEnablingLockup ||
+                isApprovingRemitFee ||
+                enablingId === position.id ||
+                isEnablingAction;
               const canWithdrawNow = position.canWithdraw ?? false;
-              const isProcessing = isWithdrawing || isWithdrawingLockup;
+              const isWithdrawDisabled =
+                !canWithdrawNow ||
+                position.status !== "active" ||
+                isProcessing ||
+                isEarlyProcessing;
 
               // Get the next withdraw time for countdown
               const nextWithdrawTime =
@@ -446,18 +657,75 @@ export function PositionsList({
                               .replace("{currency}", position.currency)}
                           </p>
                         )}
+
+                      {/* Remittance recipient input */}
+                      {(position.remittanceEnabled || position.createdAsRemit) && position.status === "active" && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            汇付收款地址（留空则提到自己）
+                          </p>
+                          <Input
+                            placeholder="0x..."
+                            value={recipientMap[position.id] || ""}
+                            onChange={(e) =>
+                              setRecipientMap((prev) => ({ ...prev, [position.id]: e.target.value }))
+                            }
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-2 sm:flex-col">
+                      {!position.remittanceEnabled && position.status === "active" && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="flex-1 sm:flex-none"
+                          onClick={() => handleEnableRemittance(position)}
+                          disabled={isEnabling}
+                        >
+                          {isEnabling ? (
+                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          ) : null}
+                          开启汇付 (0.1 USDT)
+                        </Button>
+                      )}
+
+                      {/* 新增：原生汇付仓位提前取出按钮（仅原生汇付仓位） */}
+                      {position.status === "active" && position.createdAsRemit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 sm:flex-none border-amber-400 text-amber-600 hover:bg-amber-50 dark:border-amber-500/70 dark:text-amber-300"
+                          onClick={() => handleEarlyRemitWithdraw(position)}
+                          disabled={isEarlyProcessing || isProcessing}
+                        >
+                          {isEarlyProcessing ? (
+                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          ) : null}
+                          提前取出
+                        </Button>
+                      )}
+
                       {position.status === "active" && (
                         <Button
                           size="sm"
                           variant="destructive"
-                          className="flex-1 sm:flex-none"
-                          onClick={() => handleWithdraw(position)}
-                          disabled={!canWithdrawNow || isProcessing}
+                          className={`flex-1 sm:flex-none ${
+                            isWithdrawDisabled
+                              ? "cursor-not-allowed opacity-60"
+                              : ""
+                          }`}
+                          onClick={() => {
+                            if (!canWithdrawNow) {
+                              // 禁用时不再触发彩蛋，直接拦截
+                              return;
+                            }
+                            handleWithdraw(position);
+                          }}
+                          disabled={isWithdrawDisabled}
                         >
-                          {isProcessing ? (
+                          {isProcessing || isEarlyProcessing ? (
                             <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                           ) : null}
                           {t("positions.actions.withdraw")}

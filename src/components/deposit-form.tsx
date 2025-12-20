@@ -14,7 +14,6 @@ import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
@@ -131,6 +130,8 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   const [amount, setAmount] = useState("");
   const [lockPeriod, setLockPeriod] = useState("30");
   const [unlockDate, setUnlockDate] = useState<number>(() => Date.now());
+  const [depositRemittance, setDepositRemittance] = useState(false);
+  const [lockupRemittance, setLockupRemittance] = useState(false);
 
   // U-based token selection (USDT or USDC)
   const [uBasedTokenSymbol, setUBasedTokenSymbol] = useState<"USDT" | "USDC">(
@@ -272,8 +273,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     isConnected && connectedChainId !== expectedChainId;
 
   // Switch to the selected chain
-  const handleSwitchChain = () => {
-    switchChain({ chainId: expectedChainId });
+  const handleSwitchChain = async () => {
+    try {
+      await switchChain({ chainId: expectedChainId });
+    } catch (err) {
+      toast.error("切换网络失败", {
+        description: err instanceof Error ? err.message : "Please try again",
+      });
+    }
   };
 
   const calculateTotal = () => {
@@ -302,124 +309,120 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   };
 
   const handleCreateDeposit = async () => {
-    // Check chain first
-    if (isWrongChainForSelected) {
-      toast.error("Wrong Network", {
-        description: `Please switch to ${chains.find((c) => c.id === selectedChain)?.name || "the correct network"} first`,
-      });
-      return;
-    }
-
-    validateDisbursementAmount(disbursementAmount);
-
-    const amountNum = Number.parseFloat(disbursementAmount);
-    if (
-      depositType === "u-based" &&
-      !Number.isNaN(amountNum) &&
-      amountNum <= 4
-    ) {
-      return;
-    }
-
-    if (!uBasedToken) {
-      toast.error("Token not configured", {
-        description: "Please check .env.local configuration",
-      });
-      return;
-    }
-
-    const totalPeriods = Number.parseInt(frequency);
-    const periodSeconds = Number.parseInt(period) * 24 * 60 * 60; // Convert days to seconds
-    const amountPerPeriod = parseUnits(disbursementAmount, uBasedDecimals);
-    const totalAmount = amountPerPeriod * BigInt(totalPeriods);
-    const fee = calcContractFee(totalAmount, totalPeriods);
-    const totalNeeded = totalAmount + fee;
-
-    setIsSubmitting(true);
-
     try {
-      // Check if we need approval
-      const currentAllowance =
-        typeof uBasedAllowance === "bigint" ? uBasedAllowance : 0n;
-      if (currentAllowance < totalNeeded) {
-        toast.info(`Approving ${uBasedTokenSymbol}...`, {
-          description: "Please confirm the approval transaction",
+      if (!address) throw new Error("请先连接钱包");
+
+      if (connectedChainId !== expectedChainId) {
+        await switchChain?.({ chainId: expectedChainId });
+      }
+
+      validateDisbursementAmount(disbursementAmount);
+
+      const amountNum = Number.parseFloat(disbursementAmount);
+      if (
+        depositType === "u-based" &&
+        !Number.isNaN(amountNum) &&
+        amountNum <= 4
+      ) {
+        return;
+      }
+
+      if (!uBasedToken) {
+        toast.error("Token not configured", {
+          description: "Please check .env.local configuration",
         });
+        return;
+      }
+
+      const totalPeriods = Number.parseInt(frequency);
+      const periodSeconds = Number.parseInt(period) * 24 * 60 * 60; // Convert days to seconds
+      const amountPerPeriod = parseUnits(disbursementAmount, uBasedDecimals);
+      const totalAmount = amountPerPeriod * BigInt(totalPeriods);
+      const fee = calcContractFee(totalAmount, totalPeriods);
+      const totalNeeded = totalAmount + fee;
+
+      setIsSubmitting(true);
+
+      try {
+        // Check if we need approval
+        const currentAllowance =
+          typeof uBasedAllowance === "bigint" ? uBasedAllowance : 0n;
+        if (currentAllowance < totalNeeded) {
+          toast.info(`Approving ${uBasedTokenSymbol}...`, {
+            description: "Please confirm the approval transaction",
+          });
+
+          if (!currentWarehouseAddress || !uBasedToken) {
+            throw new Error("Warehouse or token not configured for this chain");
+          }
+
+          // Step 1: Send approve transaction using wagmi core action
+          const approveHash = await writeContract(wagmiConfig, {
+            address: uBasedToken,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [currentWarehouseAddress, totalNeeded],
+          });
+
+          // Step 2: Wait for approval tx to be confirmed on chain
+          toast.info("Waiting for approval confirmation...", {
+            description: "Please wait while the transaction is being confirmed",
+          });
+          await waitForTransactionReceipt(wagmiConfig, { hash: approveHash });
+          await refetchUBasedAllowance();
+          toast.success(`${uBasedTokenSymbol} Approved!`, {
+            description: "Now creating deposit...",
+          });
+        }
 
         if (!currentWarehouseAddress || !uBasedToken) {
           throw new Error("Warehouse or token not configured for this chain");
         }
 
-        // Step 1: Send approve transaction using wagmi core action
-        const approveHash = await writeContract(wagmiConfig, {
-          address: uBasedToken,
-          abi: erc20Abi,
-          functionName: "approve",
-          args: [currentWarehouseAddress, totalNeeded],
+        // Step 3: Send deposit transaction
+        toast.info("Creating deposit...", {
+          description: "Please confirm the transaction in your wallet",
+        });
+        const depositHash = await writeContract(wagmiConfig, {
+          address: currentWarehouseAddress,
+          abi: warehouseAbi,
+          functionName: "createDeposit",
+          args: [
+            uBasedToken,
+            amountPerPeriod,
+            BigInt(periodSeconds),
+            totalPeriods,
+            0n,
+            depositRemittance,
+          ],
         });
 
-        // Step 2: Wait for approval tx to be confirmed on chain
-        toast.info("Waiting for approval confirmation...", {
+        // Step 4: Wait for deposit confirmation
+        toast.info("Waiting for deposit confirmation...", {
           description: "Please wait while the transaction is being confirmed",
         });
-        await waitForTransactionReceipt(wagmiConfig, { hash: approveHash });
-        await refetchUBasedAllowance();
-        toast.success(`${uBasedTokenSymbol} Approved!`, {
-          description: "Now creating deposit...",
+        await waitForTransactionReceipt(wagmiConfig, { hash: depositHash });
+
+        toast.success(t("toast.depositCreated.title"), {
+          description: "Deposit created successfully!",
         });
+        onAddPosition();
+      } finally {
+        setIsSubmitting(false);
       }
-
-      if (!currentWarehouseAddress || !uBasedToken) {
-        throw new Error("Warehouse or token not configured for this chain");
-      }
-
-      // Step 3: Send deposit transaction
-      toast.info("Creating deposit...", {
-        description: "Please confirm the transaction in your wallet",
-      });
-      const depositHash = await writeContract(wagmiConfig, {
-        address: currentWarehouseAddress,
-        abi: warehouseAbi,
-        functionName: "createDeposit",
-        args: [
-          uBasedToken,
-          amountPerPeriod,
-          BigInt(periodSeconds),
-          totalPeriods,
-          0n,
-        ],
-      });
-
-      // Step 4: Wait for deposit confirmation
-      toast.info("Waiting for deposit confirmation...", {
-        description: "Please wait while the transaction is being confirmed",
-      });
-      await waitForTransactionReceipt(wagmiConfig, { hash: depositHash });
-
-      toast.success(t("toast.depositCreated.title"), {
-        description: "Deposit created successfully!",
-      });
-      onAddPosition();
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Please try again";
+      const errorMessage = err instanceof Error ? err.message : "Please try again";
       toast.error("Transaction failed", {
         description: errorMessage,
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleLockDeposit = async () => {
     const isNativeToken = selectedCurrencyData?.isNative === true;
 
-    // For ERC20 tokens, we need a contract address
-    if (!isNativeToken && !selectedTokenAddress) {
-      toast.error("Token not supported", {
-        description: `${selectedCurrency} is not configured on this chain.`,
-      });
-      return;
+    if (connectedChainId !== expectedChainId) {
+      await switchChain?.({ chainId: expectedChainId });
     }
 
     if (!amount || parseFloat(amount) <= 0) {
@@ -484,7 +487,12 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
         address: currentWarehouseAddress,
         abi: warehouseAbi,
         functionName: "createLockup",
-        args: [tokenAddressForContract, lockAmount, unlockTimestamp],
+        args: [
+          tokenAddressForContract,
+          lockAmount,
+          unlockTimestamp,
+          lockupRemittance,
+        ],
         // For native tokens, send the value with the transaction
         ...(isNativeToken ? { value: totalNeeded } : {}),
       });
@@ -590,12 +598,8 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[240px] rounded-xl border border-slate-200 bg-white p-0 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+              <PopoverContent className="w-[260px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-800">
                 <Command className="bg-transparent">
-                  <CommandInput
-                    placeholder={t("form.combobox.searchChain")}
-                    className="border-b border-slate-200 text-slate-900 dark:border-slate-700 dark:text-white"
-                  />
                   <CommandList>
                     <CommandEmpty className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                       {t("form.combobox.noChainFound")}
@@ -1055,6 +1059,37 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                         )}
                       </div>
 
+                      {/* Remittance toggle - pill style */}
+                      <div className="mb-4 space-y-2">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {t("form.remittance.depositOption")}
+                        </p>
+                        <div className="inline-flex rounded-lg border border-slate-200 bg-white/70 p-1 dark:border-slate-700 dark:bg-slate-800/70">
+                          <button
+                            type="button"
+                            className={`min-w-[88px] rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                              !depositRemittance
+                                ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
+                                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                            }`}
+                            onClick={() => setDepositRemittance(false)}
+                          >
+                            仅自己收款
+                          </button>
+                          <button
+                            type="button"
+                            className={`min-w-[120px] rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                              depositRemittance
+                                ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
+                                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                            }`}
+                            onClick={() => setDepositRemittance(true)}
+                          >
+                            开启汇付
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Create Button */}
                       {!mounted ? (
                         <Button
@@ -1393,6 +1428,37 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                         <p className="text-xs text-emerald-600 dark:text-emerald-300/80">
                           {t("form.coinBased.info")}
                         </p>
+                      </div>
+
+                      {/* Remittance toggle for lockup - pill style */}
+                      <div className="mb-4 space-y-2">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {t("form.remittance.lockupOption")}
+                        </p>
+                        <div className="inline-flex rounded-lg border border-slate-200 bg-white/70 p-1 dark:border-slate-700 dark:bg-slate-800/70">
+                          <button
+                            type="button"
+                            className={`min-w-[88px] rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                              !lockupRemittance
+                                ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
+                                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                            }`}
+                            onClick={() => setLockupRemittance(false)}
+                          >
+                            仅自己收款
+                          </button>
+                          <button
+                            type="button"
+                            className={`min-w-[120px] rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                              lockupRemittance
+                                ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
+                                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                            }`}
+                            onClick={() => setLockupRemittance(true)}
+                          >
+                            开启汇付
+                          </button>
+                        </div>
                       </div>
 
                       {/* Lock Button */}

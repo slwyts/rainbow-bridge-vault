@@ -286,6 +286,7 @@ export function useCreateDeposit() {
     periodSeconds: bigint;
     totalPeriods: number;
     discountLockupId?: bigint;
+    enableRemittance?: boolean;
     value?: bigint; // For native token deposits
   }) => {
     if (!warehouseAddress)
@@ -300,6 +301,7 @@ export function useCreateDeposit() {
         params.periodSeconds,
         params.totalPeriods,
         params.discountLockupId ?? 0n,
+        params.enableRemittance ?? false,
       ],
       value: params.value,
     });
@@ -326,6 +328,7 @@ export function useCreateLockup() {
     token: `0x${string}`;
     amount: bigint;
     unlockTime: bigint;
+    enableRemittance?: boolean;
     value?: bigint; // For native token lockups
   }) => {
     if (!warehouseAddress)
@@ -334,7 +337,7 @@ export function useCreateLockup() {
       address: warehouseAddress,
       abi: warehouseAbi,
       functionName: "createLockup",
-      args: [params.token, params.amount, params.unlockTime],
+      args: [params.token, params.amount, params.unlockTime, params.enableRemittance ?? false],
       value: params.value,
     });
     return txHash;
@@ -351,14 +354,14 @@ export function useWithdraw() {
     hash,
   });
 
-  const withdraw = async (depositId: bigint) => {
+  const withdraw = async (depositId: bigint, to?: `0x${string}`) => {
     if (!warehouseAddress)
       throw new Error("Warehouse not deployed on this chain");
     return writeContract({
       address: warehouseAddress,
       abi: warehouseAbi,
       functionName: "withdraw",
-      args: [depositId],
+      args: [depositId, to ?? zeroAddress],
     });
   };
 
@@ -373,14 +376,14 @@ export function useWithdrawLockup() {
     hash,
   });
 
-  const withdrawLockup = async (lockupId: bigint) => {
+  const withdrawLockup = async (lockupId: bigint, to?: `0x${string}`) => {
     if (!warehouseAddress)
       throw new Error("Warehouse not deployed on this chain");
     return writeContract({
       address: warehouseAddress,
       abi: warehouseAbi,
       functionName: "withdrawLockup",
-      args: [lockupId],
+      args: [lockupId, to ?? zeroAddress],
     });
   };
 
@@ -390,19 +393,19 @@ export function useWithdrawLockup() {
 // Hook to emergency cancel a deposit
 export function useEmergencyCancel() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
-  const emergencyCancel = async (depositId: bigint) => {
+  const emergencyCancel = async (depositId: bigint, to?: `0x${string}`) => {
     if (!warehouseAddress)
       throw new Error("Warehouse not deployed on this chain");
-    return writeContract({
+    return writeContractAsync({
       address: warehouseAddress,
       abi: warehouseAbi,
       functionName: "emergencyCancel",
-      args: [depositId],
+      args: [depositId, to ?? zeroAddress],
     });
   };
 
@@ -412,19 +415,19 @@ export function useEmergencyCancel() {
 // Hook to emergency cancel a lockup
 export function useEmergencyCancelLockup() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
-  const emergencyCancelLockup = async (lockupId: bigint) => {
+  const emergencyCancelLockup = async (lockupId: bigint, to?: `0x${string}`) => {
     if (!warehouseAddress)
       throw new Error("Warehouse not deployed on this chain");
-    return writeContract({
+    return writeContractAsync({
       address: warehouseAddress,
       abi: warehouseAbi,
       functionName: "emergencyCancelLockup",
-      args: [lockupId],
+      args: [lockupId, to ?? zeroAddress],
     });
   };
 
@@ -436,6 +439,78 @@ export function useEmergencyCancelLockup() {
     isSuccess,
     error,
   };
+}
+
+// Hook to enable remittance for a deposit (pay 0.1 USDT fee)
+export function useEnableDepositRemittance() {
+  const warehouseAddress = useWarehouseAddress();
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const enableDepositRemittance = async (depositId: bigint) => {
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
+    return writeContractAsync({
+      address: warehouseAddress,
+      abi: warehouseAbi,
+      functionName: "enableDepositRemittance",
+      args: [depositId],
+    });
+  };
+
+  return {
+    enableDepositRemittance,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error,
+  };
+}
+
+// Hook to enable remittance for a lockup
+export function useEnableLockupRemittance() {
+  const warehouseAddress = useWarehouseAddress();
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const enableLockupRemittance = async (lockupId: bigint) => {
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
+    return writeContractAsync({
+      address: warehouseAddress,
+      abi: warehouseAbi,
+      functionName: "enableLockupRemittance",
+      args: [lockupId],
+    });
+  };
+
+  return {
+    enableLockupRemittance,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error,
+  };
+}
+
+// Hook to read remittance fee
+export function useRemittanceFee() {
+  const warehouseAddress = useWarehouseAddress();
+  const chainId = useContractChainId();
+
+  return useReadContract({
+    address: warehouseAddress,
+    abi: warehouseAbi,
+    functionName: "REMITTANCE_FEE",
+    chainId,
+    query: { enabled: !!warehouseAddress },
+  });
 }
 
 // ============ Utility Functions ============

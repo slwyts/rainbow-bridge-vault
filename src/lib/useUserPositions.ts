@@ -146,6 +146,8 @@ export interface Position {
   withdrawableNow?: number; // How many periods can be withdrawn now (u-based)
   // Internal fields for contract operations
   tokenAddress?: string;
+  remittanceEnabled?: boolean;
+  createdAsRemit?: boolean;
 }
 
 // Data returned from contract - matches actual ABI
@@ -157,6 +159,8 @@ interface DepositData {
   totalPeriods: number;
   periodsWithdrawn: number;
   nextWithdrawalTime: bigint;
+  remittanceEnabled: boolean;
+  createdAsRemit: boolean;
 }
 
 interface LockupData {
@@ -167,6 +171,8 @@ interface LockupData {
   withdrawn: boolean;
   isDiscountActive: boolean;
   createTime: bigint;
+  remittanceEnabled: boolean;
+  createdAsRemit: boolean;
 }
 
 // Fetch positions for a single chain
@@ -228,7 +234,7 @@ async function fetchPositionsForChain(
           abi: warehouseAbi,
           functionName: "deposits",
           args: [i],
-        })) as [string, string, bigint, bigint, number, number, bigint];
+        })) as [string, string, bigint, bigint, number, number, bigint, boolean, boolean];
 
         const deposit: DepositData = {
           user: result[0] as `0x${string}`,
@@ -238,6 +244,8 @@ async function fetchPositionsForChain(
           totalPeriods: result[4],
           periodsWithdrawn: result[5],
           nextWithdrawalTime: result[6],
+          remittanceEnabled: result[7],
+          createdAsRemit: result[8],
         };
 
         // Check if this deposit belongs to the user and is still active
@@ -299,6 +307,8 @@ async function fetchPositionsForChain(
             canWithdraw,
             withdrawableNow,
             tokenAddress: deposit.token,
+            remittanceEnabled: deposit.remittanceEnabled,
+            createdAsRemit: deposit.createdAsRemit,
           });
         }
       } catch {
@@ -314,7 +324,7 @@ async function fetchPositionsForChain(
           abi: warehouseAbi,
           functionName: "lockups",
           args: [i],
-        })) as [string, string, bigint, bigint, boolean, boolean, bigint];
+        })) as [string, string, bigint, bigint, boolean, boolean, bigint, boolean, boolean];
 
         const lockup: LockupData = {
           user: result[0] as `0x${string}`,
@@ -324,6 +334,8 @@ async function fetchPositionsForChain(
           withdrawn: result[4],
           isDiscountActive: result[5],
           createTime: result[6],
+          remittanceEnabled: result[7],
+          createdAsRemit: result[8],
         };
 
         // Check if this lockup belongs to the user and is not withdrawn
@@ -367,6 +379,8 @@ async function fetchPositionsForChain(
             unlockTime,
             canWithdraw,
             tokenAddress: lockup.token,
+            remittanceEnabled: lockup.remittanceEnabled,
+            createdAsRemit: lockup.createdAsRemit,
           });
         }
       } catch {

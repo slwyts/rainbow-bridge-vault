@@ -137,6 +137,10 @@ export const translations = {
         chainExists: "This chain already exists",
         chainFieldsRequired: "Please fill in all fields",
       },
+      remittance: {
+        depositOption: "Remittance option (allow payout to another address)",
+        lockupOption: "Remittance option (withdraw to another address at unlock)",
+      },
     },
     chains: {
       gas: {
@@ -389,6 +393,10 @@ export const translations = {
         subtitle: "选择链和要存入的币种",
         selectChain: "选择链",
         searchPlaceholder: "搜索币种...",
+        remittance: {
+          depositOption: "汇款选项（允许汇至其他地址）",
+          lockupOption: "汇款选项（解锁时提现到其他地址）",
+        },
         noResults: "未找到币种",
         addOther: "添加自定义币种",
         addCustomTitle: "添加自定义代币",

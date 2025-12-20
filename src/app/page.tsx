@@ -27,6 +27,8 @@ export type Position = {
   unlockTime?: number; // Unix timestamp for unlock (coin-based)
   canWithdraw: boolean; // Whether withdrawal is currently possible
   withdrawableNow?: number; // How many periods can be withdrawn now (u-based)
+  remittanceEnabled?: boolean;
+  createdAsRemit?: boolean;
 };
 
 function HomePage() {

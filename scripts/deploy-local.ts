@@ -58,6 +58,7 @@ async function main() {
   const warehouse = await viem.deployContract("RainbowWarehouse", [
     ownerAddress,
     xwaifu.address,
+    usdt.address, // local Hardhat uses injected USDT
   ]);
   console.log("RainbowWarehouse deployed to:", warehouse.address);
 
