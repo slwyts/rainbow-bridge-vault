@@ -88,14 +88,13 @@ async function main() {
     }
   }
 
-  // 4. Generate .env.local
+  // 4. Generate .env.local (临时文件，由 start-local.js 处理)
   const envContent = `NEXT_PUBLIC_LOCALNET_WAREHOUSE_ADDRESS=${warehouse.address}
 NEXT_PUBLIC_LOCALNET_USDT_ADDRESS=${usdt.address}
 NEXT_PUBLIC_LOCALNET_USDC_ADDRESS=${usdc.address}
-NEXT_PUBLIC_LOCALNET_XWAIFU_ADDRESS=${xwaifu.address}
-NEXT_PUBLIC_LOCAL_CHAIN_ID=31337`;
+NEXT_PUBLIC_LOCALNET_XWAIFU_ADDRESS=${xwaifu.address}`;
 
-  const envPath = path.join(process.cwd(), "../.env.local");
+  const envPath = path.join(process.cwd(), ".env.local");
   fs.writeFileSync(envPath, envContent);
   console.log(`Generated .env.local at ${envPath}`);
 }

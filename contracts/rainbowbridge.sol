@@ -92,7 +92,8 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
         if (_token == address(0)) {
             require(msg.value == totalPrincipal + fee, "Incorrect value");
             if (fee > 0) {
-                payable(owner()).transfer(fee);
+                (bool okFee, ) = payable(owner()).call{value: fee}("");
+                require(okFee, "Fee transfer failed");
             }
         } else {
             require(msg.value == 0, "No value needed");
@@ -127,15 +128,28 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
         require(d.periodsWithdrawn < d.totalPeriods, "Completed");
         require(block.timestamp >= d.nextWithdrawalTime, "Too soon");
 
-        d.periodsWithdrawn++;
-        d.nextWithdrawalTime += d.periodSeconds;
-
-        if (d.token == address(0)) {
-            payable(msg.sender).transfer(d.amountPerPeriod);
-        } else {
-            IERC20(d.token).safeTransfer(msg.sender, d.amountPerPeriod);
+        // How many periods are available since nextWithdrawalTime
+        uint256 remaining = d.totalPeriods - d.periodsWithdrawn;
+        uint256 available = 1 + (block.timestamp - d.nextWithdrawalTime) / d.periodSeconds; // at least 1
+        if (available > remaining) {
+            available = remaining; // cap to remaining
         }
-        emit DepositWithdrawn(_id, d.amountPerPeriod);
+
+        // Update state
+        d.periodsWithdrawn += uint32(available);
+        if (d.periodsWithdrawn < d.totalPeriods) {
+            d.nextWithdrawalTime += d.periodSeconds * available;
+        }
+
+        // Payout all available periods at once
+        uint256 payout = d.amountPerPeriod * available;
+        if (d.token == address(0)) {
+            (bool ok, ) = payable(msg.sender).call{value: payout}("");
+            require(ok, "Native transfer failed");
+        } else {
+            IERC20(d.token).safeTransfer(msg.sender, payout);
+        }
+        emit DepositWithdrawn(_id, payout);
     }
 
     function emergencyCancel(uint256 _id) external nonReentrant {
@@ -148,7 +162,8 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
 
         if (remaining > 0) {
             if (d.token == address(0)) {
-                payable(msg.sender).transfer(remaining);
+                (bool ok, ) = payable(msg.sender).call{value: remaining}("");
+                require(ok, "Native transfer failed");
             } else {
                 IERC20(d.token).safeTransfer(msg.sender, remaining);
             }
@@ -164,7 +179,8 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
         l.withdrawn = true;
 
         if (l.token == address(0)) {
-            payable(msg.sender).transfer(l.amount);
+            (bool ok, ) = payable(msg.sender).call{value: l.amount}("");
+            require(ok, "Native transfer failed");
         } else {
             IERC20(l.token).safeTransfer(msg.sender, l.amount);
         }
@@ -184,7 +200,8 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
             fee = (amountLocked * 5) / 1000; // 0.5%
             amountLocked -= fee;
             
-            payable(owner()).transfer(fee);
+            (bool okFee, ) = payable(owner()).call{value: fee}("");
+            require(okFee, "Fee transfer failed");
         } else {
             require(msg.value == 0, "No value needed");
             uint256 total = _amount;
@@ -219,7 +236,8 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
         l.withdrawn = true;
 
         if (l.token == address(0)) {
-            payable(msg.sender).transfer(l.amount);
+            (bool ok, ) = payable(msg.sender).call{value: l.amount}("");
+            require(ok, "Native transfer failed");
         } else {
             IERC20(l.token).safeTransfer(msg.sender, l.amount);
         }
@@ -265,6 +283,7 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
     }
     
     receive() external payable {
-        payable(owner()).transfer(msg.value);
+        (bool ok, ) = payable(owner()).call{value: msg.value}("");
+        require(ok, "Native transfer failed");
     }
 }

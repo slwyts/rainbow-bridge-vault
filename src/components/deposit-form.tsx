@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import type { Position } from "@/app/page";
 import {
   AssetSelectorCard,
-  defaultChains,
   getCurrenciesForChain,
   CurrencyIcon,
   ChainIcon,
@@ -63,10 +62,15 @@ import { writeContract, waitForTransactionReceipt } from "@wagmi/core";
 import { config as wagmiConfig } from "@/lib/web3";
 import { warehouseAbi, erc20Abi } from "@/lib/abi";
 import {
+  CHAIN_IDS,
+  CHAIN_CONFIGS,
+  getAllChainIds,
   getWarehouseAddress,
   getTokenAddress,
-  CHAIN_IDS,
-} from "@/lib/constants";
+  getChainNumericId,
+  getChainStringId,
+  type SupportedChainId,
+} from "@/lib/chains";
 import {
   useTokenAllowance,
   useTokenDecimals,
@@ -76,24 +80,6 @@ import {
   calculateLockupFee,
   useWarehouseAddress,
 } from "@/lib/contracts";
-
-// Map chain string ID to numeric chain ID
-function getNumericChainId(chainStringId: string): number {
-  switch (chainStringId) {
-    case "localnet":
-      return CHAIN_IDS.HARDHAT;
-    case "x-layer":
-      return CHAIN_IDS.XLAYER;
-    case "binance-smart-chain":
-      return CHAIN_IDS.BSC;
-    case "bsc-testnet":
-      return CHAIN_IDS.BSC_TESTNET;
-    case "arbitrum-one":
-      return CHAIN_IDS.ARBITRUM;
-    default:
-      return CHAIN_IDS.HARDHAT;
-  }
-}
 
 interface DepositFormProps {
   onAddPosition: () => void; // Called after successful tx to trigger refetch
@@ -123,22 +109,25 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   const [disbursementAmount, setDisbursementAmount] = useState("50");
   const [frequency, setFrequency] = useState("30");
   const [period, setPeriod] = useState("1");
-  const [selectedChain, setSelectedChain] = useState("localnet");
+  
+  // 默认选择第一个启用的链
+  const defaultChainStringId = getChainStringId(getAllChainIds()[0] || CHAIN_IDS.HARDHAT);
+  const [selectedChain, setSelectedChain] = useState(defaultChainStringId);
 
   // Get currencies for the selected chain
   const getDefaultCurrency = useCallback((chainStringId: string) => {
-    const numericChainId = getNumericChainId(chainStringId);
+    const numericChainId = getChainNumericId(chainStringId);
     const currencies = getCurrenciesForChain(numericChainId);
     // Default to USDT if available, otherwise first currency
     return currencies.find((c) => c.symbol === "USDT") || currencies[0];
   }, []);
 
   const [selectedCurrency, setSelectedCurrency] = useState(
-    () => getDefaultCurrency("localnet").symbol
+    () => getDefaultCurrency(defaultChainStringId).symbol
   );
   const [selectedCurrencyData, setSelectedCurrencyData] =
-    useState<Currency | null>(() => getDefaultCurrency("localnet"));
-  const [selectedChainSymbol, setSelectedChainSymbol] = useState("localnet");
+    useState<Currency | null>(() => getDefaultCurrency(defaultChainStringId));
+  const [selectedChainSymbol, setSelectedChainSymbol] = useState(defaultChainStringId);
   const [amount, setAmount] = useState("");
   const [lockPeriod, setLockPeriod] = useState("30");
   const [unlockDate, setUnlockDate] = useState<number>(() => Date.now());
@@ -149,7 +138,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   );
 
   // Get current chain's token addresses
-  const currentNumericChainId = getNumericChainId(selectedChain);
+  const currentNumericChainId = getChainNumericId(selectedChain);
   const uBasedToken = getTokenAddress(
     currentNumericChainId,
     uBasedTokenSymbol
@@ -262,58 +251,19 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
   const quickAmounts = ["10", "20", "30", "50", "100"];
 
-  // Multi-chain support - localnet for development, others for production
-  const chains = [
-    {
-      id: "localnet",
-      name: "Localnet",
-      icon: (
-        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm ring-1 ring-violet-400/30">
-          <span className="text-[10px] font-bold text-white">L</span>
-        </div>
-      ),
-      gas: "<0.001",
-      gasLevel: "low" as const,
-      symbol: "localnet",
-      chainId: CHAIN_IDS.HARDHAT,
-    },
-    {
-      id: "x-layer",
-      name: "X Layer",
-      icon: <NetworkXLayer className="h-5 w-5" variant="branded" />,
-      gas: "$0.001",
-      gasLevel: "low" as const,
-      symbol: "x-layer",
-      chainId: CHAIN_IDS.XLAYER,
-    },
-    {
-      id: "binance-smart-chain",
-      name: "BNB Chain",
-      icon: <NetworkBinanceSmartChain className="h-5 w-5" variant="branded" />,
-      gas: "$0.05",
-      gasLevel: "low" as const,
-      symbol: "binance-smart-chain",
-      chainId: CHAIN_IDS.BSC,
-    },
-    {
-      id: "bsc-testnet",
-      name: "BSC Testnet",
-      icon: <NetworkBinanceSmartChain className="h-5 w-5" variant="branded" />,
-      gas: "<0.001",
-      gasLevel: "low" as const,
-      symbol: "bsc-testnet",
-      chainId: CHAIN_IDS.BSC_TESTNET,
-    },
-    {
-      id: "arbitrum-one",
-      name: "Arbitrum",
-      icon: <NetworkArbitrumOne className="h-5 w-5" variant="branded" />,
-      gas: "$0.10",
-      gasLevel: "medium" as const,
-      symbol: "arbitrum-one",
-      chainId: CHAIN_IDS.ARBITRUM,
-    },
-  ];
+  // 从统一配置生成链列表（带UI图标）
+  const chains = getAllChainIds().map((chainId) => {
+    const config = CHAIN_CONFIGS[chainId as SupportedChainId];
+    return {
+      id: config.stringId,
+      name: config.name,
+      icon: <ChainIcon symbol={config.stringId} className="h-5 w-5" />,
+      gas: config.gasEstimate,
+      gasLevel: config.gasLevel,
+      symbol: config.stringId,
+      chainId: config.chainId,
+    };
+  });
 
   // Get expected chainId for selected chain
   const expectedChainId =
@@ -562,7 +512,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
   const handleChainChange = (chainStringId: string) => {
     setSelectedChain(chainStringId);
-    const chain = [...defaultChains].find((c) => c.id === chainStringId);
+    const chain = chains.find((c) => c.id === chainStringId);
     if (chain) {
       setSelectedChainSymbol(chain.symbol);
     }

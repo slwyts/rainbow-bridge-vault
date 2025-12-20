@@ -19,7 +19,7 @@ import {
 import { toast } from "sonner";
 import { useAccount } from "wagmi";
 import type { Position } from "@/app/page";
-import { useWithdraw, useWithdrawLockup } from "@/lib/contracts";
+import { useWithdraw, useWithdrawLockup, useBlockchainTime } from "@/lib/contracts";
 import { formatUnits } from "viem";
 
 // Helper to format token amount based on token type
@@ -54,10 +54,9 @@ function formatTokenAmount(
   }
 }
 
-// Helper to format countdown
-function formatCountdown(targetTimestamp: number): string {
-  const now = Math.floor(Date.now() / 1000);
-  const diff = targetTimestamp - now;
+// Helper to format countdown (使用区块链时间)
+function formatCountdown(targetTimestamp: number, blockchainNow: number): string {
+  const diff = targetTimestamp - blockchainNow;
 
   if (diff <= 0) return "可取出";
 
@@ -74,37 +73,47 @@ function formatCountdown(targetTimestamp: number): string {
   }
 }
 
-// Countdown component that updates every second
+// Countdown component - uses initial blockchain time offset for display
+// The actual canWithdraw is computed server-side with blockchain time
 function Countdown({
   targetTimestamp,
-  onReady,
+  initialBlockchainTime,
 }: {
   targetTimestamp: number;
-  onReady?: () => void;
+  initialBlockchainTime: number | undefined;
 }) {
-  const [timeLeft, setTimeLeft] = useState(formatCountdown(targetTimestamp));
+  const [displayTime, setDisplayTime] = useState<string>("");
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Check initial state on mount to avoid hydration mismatch
-    const now = Math.floor(Date.now() / 1000);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsReady(targetTimestamp <= now);
+    if (initialBlockchainTime === undefined) return;
 
-    const timer = setInterval(() => {
-      const currentNow = Math.floor(Date.now() / 1000);
-      if (targetTimestamp <= currentNow) {
-        setTimeLeft("可取出");
-        setIsReady(true);
-        onReady?.();
-        clearInterval(timer);
-      } else {
-        setTimeLeft(formatCountdown(targetTimestamp));
-      }
-    }, 1000);
+    // 计算区块链时间和本地时间的偏移
+    const localNow = Math.floor(Date.now() / 1000);
+    const offset = initialBlockchainTime - localNow;
 
-    return () => clearInterval(timer);
-  }, [targetTimestamp, onReady]);
+    const updateDisplay = () => {
+      // 用本地时间 + 偏移来估算当前区块链时间
+      const estimatedBlockchainTime = Math.floor(Date.now() / 1000) + offset;
+      const ready = targetTimestamp <= estimatedBlockchainTime;
+      setIsReady(ready);
+      setDisplayTime(formatCountdown(targetTimestamp, estimatedBlockchainTime));
+    };
+
+    updateDisplay();
+    const interval = setInterval(updateDisplay, 1000);
+    return () => clearInterval(interval);
+  }, [targetTimestamp, initialBlockchainTime]);
+
+  // 如果区块链时间未加载，显示加载中
+  if (initialBlockchainTime === undefined) {
+    return (
+      <span className="text-muted-foreground flex items-center gap-1">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        加载中...
+      </span>
+    );
+  }
 
   return (
     <span
@@ -113,12 +122,12 @@ function Countdown({
       {isReady ? (
         <span className="flex items-center gap-1">
           <Unlock className="h-3 w-3" />
-          {timeLeft}
+          {displayTime}
         </span>
       ) : (
         <span className="flex items-center gap-1">
           <Lock className="h-3 w-3" />
-          {timeLeft}
+          {displayTime}
         </span>
       )}
     </span>
@@ -140,9 +149,19 @@ export function PositionsList({
 }: PositionsListProps) {
   const { t } = useI18n();
   const { isConnected } = useAccount();
-  const { withdraw, isPending: isWithdrawing } = useWithdraw();
-  const { withdrawLockup, isPending: isWithdrawingLockup } =
-    useWithdrawLockup();
+  const {
+    withdraw,
+    isPending: isWithdrawing,
+    isSuccess: isWithdrawSuccess,
+  } = useWithdraw();
+  const {
+    withdrawLockup,
+    isPending: isWithdrawingLockup,
+    isSuccess: isWithdrawLockupSuccess,
+  } = useWithdrawLockup();
+  
+  // 获取区块链时间（严格从链上读取）
+  const { timestamp: blockchainTime } = useBlockchainTime();
 
   // Fix hydration mismatch - only use wallet state after client mount
   const [mounted, setMounted] = useState(false);
@@ -151,19 +170,27 @@ export function PositionsList({
     setMounted(true);
   }, []);
 
+  // Auto refresh once after a successful tx (avoid multiple triggers)
+  useEffect(() => {
+    if (isWithdrawSuccess || isWithdrawLockupSuccess) {
+      setTimeout(() => onRefresh?.(), 800);
+    }
+  }, [isWithdrawSuccess, isWithdrawLockupSuccess, onRefresh]);
+
   const handleWithdraw = async (position: Position) => {
     try {
-      // Parse ID to get type and index
-      const [type, idStr] = position.id.split("-");
-      const id = BigInt(idStr);
+      // Parse ID: format is "deposit-{chainId}-{index}" or "lockup-{chainId}-{index}"
+      const parts = position.id.split("-");
+      const type = parts[0]; // "deposit" or "lockup"
+      const index = BigInt(parts[2]); // The actual contract index
 
       if (type === "deposit") {
-        await withdraw(id);
+        await withdraw(index);
         toast.success(t("toast.withdrawSuccess.title"), {
           description: "Withdrawal initiated. Please confirm in your wallet.",
         });
       } else if (type === "lockup") {
-        await withdrawLockup(id);
+        await withdrawLockup(index);
         toast.success(t("toast.withdrawSuccess.title"), {
           description:
             "Lockup withdrawal initiated. Please confirm in your wallet.",
@@ -178,6 +205,9 @@ export function PositionsList({
       });
     }
   };
+
+  const showInitialLoading = isLoading && positions.length === 0;
+  const showEmpty = positions.length === 0 && !showInitialLoading;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200/50 bg-white/50 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
@@ -195,12 +225,15 @@ export function PositionsList({
               {t("positions.title")}
             </h2>
           </div>
+          {isLoading && positions.length > 0 && (
+            <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+          )}
           {onRefresh && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onRefresh}
-              disabled={isLoading}
+              disabled={isLoading && positions.length === 0}
               className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
             >
               {isLoading ? (
@@ -226,14 +259,14 @@ export function PositionsList({
               Connect wallet to view positions
             </p>
           </div>
-        ) : isLoading ? (
+        ) : showInitialLoading ? (
           <div className="py-8 text-center">
             <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-emerald-500" />
             <p className="text-slate-500 dark:text-slate-400">
               Loading positions from chain...
             </p>
           </div>
-        ) : positions.length === 0 ? (
+        ) : showEmpty ? (
           <div className="py-8 text-center">
             <p className="text-slate-500 dark:text-slate-400">
               {t("positions.empty")}
@@ -371,7 +404,7 @@ export function PositionsList({
                               </p>
                               <Countdown
                                 targetTimestamp={nextWithdrawTime}
-                                onReady={() => onRefresh?.()}
+                                initialBlockchainTime={blockchainTime}
                               />
                             </div>
                           </div>
@@ -397,10 +430,11 @@ export function PositionsList({
                         canWithdrawNow && (
                           <p className="text-xs text-emerald-600 dark:text-emerald-400">
                             当前可取出 {position.withdrawableNow} 期，共{" "}
-                            {(
-                              parseFloat(position.amount) *
-                              (position.withdrawableNow ?? 0)
-                            ).toFixed(2)}{" "}
+                            {formatTokenAmount(
+                              (BigInt(position.amount) * BigInt(position.withdrawableNow ?? 0)).toString(),
+                              position.currency,
+                              position.decimals
+                            )}{" "}
                             {position.currency}
                           </p>
                         )}

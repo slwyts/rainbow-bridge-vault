@@ -1,0 +1,435 @@
+/**
+ * 统一的多链配置文件
+ * 所有链相关的配置都从这里导出，避免在多处重复定义
+ */
+
+import { hardhat, bsc, bscTestnet, arbitrum, xLayer } from "viem/chains";
+import type { Chain as ViemChain } from "viem";
+
+// ============ Chain IDs ============
+export const CHAIN_IDS = {
+  HARDHAT: 31337,
+  XLAYER: 196,
+  BSC_TESTNET: 97,
+  BSC: 56,
+  ARBITRUM: 42161,
+} as const;
+
+export type SupportedChainId = (typeof CHAIN_IDS)[keyof typeof CHAIN_IDS];
+
+// ============ Chain String IDs (用于UI组件) ============
+export const CHAIN_STRING_IDS = {
+  [CHAIN_IDS.HARDHAT]: "localnet",
+  [CHAIN_IDS.XLAYER]: "x-layer",
+  [CHAIN_IDS.BSC]: "binance-smart-chain",
+  [CHAIN_IDS.BSC_TESTNET]: "bsc-testnet",
+  [CHAIN_IDS.ARBITRUM]: "arbitrum-one",
+} as const;
+
+// ============ Trust Wallet Assets 映射 ============
+export const CHAIN_TO_TRUST_WALLET: Record<string, string> = {
+  localnet: "ethereum",
+  "x-layer": "xlayer",
+  "binance-smart-chain": "smartchain",
+  "bsc-testnet": "smartchain",
+  "arbitrum-one": "arbitrum",
+};
+
+// ============ 代币类型定义 ============
+export interface TokenConfig {
+  symbol: string;
+  name: string;
+  decimals: number;
+  isNative?: boolean;
+  // 地址从环境变量读取，undefined表示未配置
+  address?: `0x${string}`;
+}
+
+// ============ 链配置类型定义 ============
+export interface ChainConfig {
+  // 基础信息
+  chainId: number;
+  stringId: string;
+  name: string;
+  shortName: string;
+
+  // Viem chain 对象
+  viemChain: ViemChain;
+
+  // RPC URL
+  rpcUrl: string;
+
+  // 合约地址
+  warehouseAddress?: `0x${string}`;
+
+  // 代币配置
+  tokens: {
+    native: TokenConfig;
+    USDT?: TokenConfig;
+    USDC?: TokenConfig;
+    XWAIFU?: TokenConfig;
+  };
+
+  // UI 相关
+  gasEstimate: string;
+  gasLevel: "low" | "medium" | "high";
+
+  // Trust Wallet 图标名
+  trustWalletName: string;
+}
+
+// ============ 从环境变量读取地址的辅助函数 ============
+// 注意：Next.js 只在构建时替换字面量 process.env.XXX，不能用动态 key
+function toAddress(value: string | undefined): `0x${string}` | undefined {
+  if (value && value.startsWith("0x") && value.length === 42) {
+    return value as `0x${string}`;
+  }
+  return undefined;
+}
+
+// 直接字面量访问环境变量，确保 Next.js 正确内联
+const ENV_ADDRESSES = {
+  // Localnet
+  LOCALNET_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_LOCALNET_WAREHOUSE_ADDRESS),
+  LOCALNET_USDT: toAddress(process.env.NEXT_PUBLIC_LOCALNET_USDT_ADDRESS),
+  LOCALNET_USDC: toAddress(process.env.NEXT_PUBLIC_LOCALNET_USDC_ADDRESS),
+  LOCALNET_XWAIFU: toAddress(process.env.NEXT_PUBLIC_LOCALNET_XWAIFU_ADDRESS),
+  // X Layer
+  XLAYER_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_XLAYER_WAREHOUSE_ADDRESS),
+  XLAYER_USDT: toAddress(process.env.NEXT_PUBLIC_XLAYER_USDT_ADDRESS),
+  XLAYER_USDC: toAddress(process.env.NEXT_PUBLIC_XLAYER_USDC_ADDRESS),
+  XLAYER_XWAIFU: toAddress(process.env.NEXT_PUBLIC_XLAYER_XWAIFU_ADDRESS),
+  // BSC
+  BSC_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_BSC_WAREHOUSE_ADDRESS),
+  BSC_USDT: toAddress(process.env.NEXT_PUBLIC_BSC_USDT_ADDRESS),
+  BSC_USDC: toAddress(process.env.NEXT_PUBLIC_BSC_USDC_ADDRESS),
+  // BSC Testnet
+  BSC_TESTNET_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_BSC_TESTNET_WAREHOUSE_ADDRESS),
+  BSC_TESTNET_USDT: toAddress(process.env.NEXT_PUBLIC_BSC_TESTNET_USDT_ADDRESS),
+  BSC_TESTNET_USDC: toAddress(process.env.NEXT_PUBLIC_BSC_TESTNET_USDC_ADDRESS),
+  // Arbitrum
+  ARBITRUM_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_ARBITRUM_WAREHOUSE_ADDRESS),
+  ARBITRUM_USDT: toAddress(process.env.NEXT_PUBLIC_ARBITRUM_USDT_ADDRESS),
+  ARBITRUM_USDC: toAddress(process.env.NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS),
+} as const;
+
+// ============ 所有支持的链配置 ============
+export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
+  // Hardhat / Localnet (开发环境)
+  [CHAIN_IDS.HARDHAT]: {
+    chainId: CHAIN_IDS.HARDHAT,
+    stringId: "localnet",
+    name: "Localnet",
+    shortName: "Local",
+    viemChain: hardhat,
+    rpcUrl: "http://127.0.0.1:8545",
+    warehouseAddress: ENV_ADDRESSES.LOCALNET_WAREHOUSE,
+    tokens: {
+      native: { symbol: "ETH", name: "Localnet ETH", decimals: 18, isNative: true },
+      USDT: {
+        symbol: "USDT",
+        name: "Mock USDT",
+        decimals: 6,
+        address: ENV_ADDRESSES.LOCALNET_USDT,
+      },
+      USDC: {
+        symbol: "USDC",
+        name: "Mock USDC",
+        decimals: 6,
+        address: ENV_ADDRESSES.LOCALNET_USDC,
+      },
+      XWAIFU: {
+        symbol: "xWaifu",
+        name: "xWaifu Token",
+        decimals: 18,
+        address: ENV_ADDRESSES.LOCALNET_XWAIFU,
+      },
+    },
+    gasEstimate: "<0.001",
+    gasLevel: "low",
+    trustWalletName: "ethereum",
+  },
+
+  // X Layer
+  [CHAIN_IDS.XLAYER]: {
+    chainId: CHAIN_IDS.XLAYER,
+    stringId: "x-layer",
+    name: "X Layer",
+    shortName: "XLayer",
+    viemChain: xLayer,
+    rpcUrl: "https://rpc.xlayer.tech",
+    warehouseAddress: ENV_ADDRESSES.XLAYER_WAREHOUSE,
+    tokens: {
+      native: { symbol: "OKB", name: "OKB", decimals: 18, isNative: true },
+      USDT: {
+        symbol: "USDT",
+        name: "USDT",
+        decimals: 6,
+        address: ENV_ADDRESSES.XLAYER_USDT,
+      },
+      USDC: {
+        symbol: "USDC",
+        name: "USDC",
+        decimals: 6,
+        address: ENV_ADDRESSES.XLAYER_USDC,
+      },
+      XWAIFU: {
+        symbol: "xWaifu",
+        name: "xWaifu",
+        decimals: 18,
+        address: ENV_ADDRESSES.XLAYER_XWAIFU,
+      },
+    },
+    gasEstimate: "$0.001",
+    gasLevel: "low",
+    trustWalletName: "xlayer",
+  },
+
+  // BSC Mainnet
+  [CHAIN_IDS.BSC]: {
+    chainId: CHAIN_IDS.BSC,
+    stringId: "binance-smart-chain",
+    name: "BNB Smart Chain",
+    shortName: "BSC",
+    viemChain: bsc,
+    rpcUrl: "https://bsc-dataseed.binance.org",
+    warehouseAddress: ENV_ADDRESSES.BSC_WAREHOUSE,
+    tokens: {
+      native: { symbol: "BNB", name: "BNB", decimals: 18, isNative: true },
+      USDT: {
+        symbol: "USDT",
+        name: "USDT",
+        decimals: 18, // BSC USDT is 18 decimals
+        address: ENV_ADDRESSES.BSC_USDT,
+      },
+      USDC: {
+        symbol: "USDC",
+        name: "USDC",
+        decimals: 18,
+        address: ENV_ADDRESSES.BSC_USDC,
+      },
+    },
+    gasEstimate: "$0.05",
+    gasLevel: "low",
+    trustWalletName: "smartchain",
+  },
+
+  // BSC Testnet
+  [CHAIN_IDS.BSC_TESTNET]: {
+    chainId: CHAIN_IDS.BSC_TESTNET,
+    stringId: "bsc-testnet",
+    name: "BSC Testnet",
+    shortName: "tBSC",
+    viemChain: bscTestnet,
+    rpcUrl: "https://data-seed-prebsc-1-s1.binance.org:8545",
+    warehouseAddress: ENV_ADDRESSES.BSC_TESTNET_WAREHOUSE,
+    tokens: {
+      native: { symbol: "tBNB", name: "Test BNB", decimals: 18, isNative: true },
+      USDT: {
+        symbol: "USDT",
+        name: "Test USDT",
+        decimals: 18,
+        address: ENV_ADDRESSES.BSC_TESTNET_USDT,
+      },
+      USDC: {
+        symbol: "USDC",
+        name: "Test USDC",
+        decimals: 18,
+        address: ENV_ADDRESSES.BSC_TESTNET_USDC,
+      },
+    },
+    gasEstimate: "<0.001",
+    gasLevel: "low",
+    trustWalletName: "smartchain",
+  },
+
+  // Arbitrum
+  [CHAIN_IDS.ARBITRUM]: {
+    chainId: CHAIN_IDS.ARBITRUM,
+    stringId: "arbitrum-one",
+    name: "Arbitrum One",
+    shortName: "Arb",
+    viemChain: arbitrum,
+    rpcUrl: "https://arb1.arbitrum.io/rpc",
+    warehouseAddress: ENV_ADDRESSES.ARBITRUM_WAREHOUSE,
+    tokens: {
+      native: { symbol: "ETH", name: "Ethereum", decimals: 18, isNative: true },
+      USDT: {
+        symbol: "USDT",
+        name: "USDT",
+        decimals: 6,
+        address: ENV_ADDRESSES.ARBITRUM_USDT,
+      },
+      USDC: {
+        symbol: "USDC",
+        name: "USDC",
+        decimals: 6,
+        address: ENV_ADDRESSES.ARBITRUM_USDC,
+      },
+    },
+    gasEstimate: "$0.10",
+    gasLevel: "medium",
+    trustWalletName: "arbitrum",
+  },
+};
+
+// ============ 辅助函数 ============
+
+/**
+ * 获取链配置
+ */
+export function getChainConfig(chainId: number): ChainConfig | undefined {
+  return CHAIN_CONFIGS[chainId as SupportedChainId];
+}
+
+/**
+ * 获取所有定义的链ID列表（包括未配置的）
+ */
+export function getAllDefinedChainIds(): SupportedChainId[] {
+  return Object.keys(CHAIN_CONFIGS).map(Number) as SupportedChainId[];
+}
+
+/**
+ * 获取所有启用的链ID（配置了仓库地址的链）
+ * 这是主要使用的函数，UI组件应该使用这个
+ */
+export function getAllChainIds(): SupportedChainId[] {
+  return getAllDefinedChainIds().filter(
+    (id) => CHAIN_CONFIGS[id].warehouseAddress
+  );
+}
+
+/**
+ * @deprecated 使用 getAllChainIds() 替代
+ */
+export function getActiveChainIds(): SupportedChainId[] {
+  return getAllChainIds();
+}
+
+/**
+ * 检查链是否已启用（配置了仓库地址）
+ */
+export function isChainEnabled(chainId: number): boolean {
+  return !!CHAIN_CONFIGS[chainId as SupportedChainId]?.warehouseAddress;
+}
+
+/**
+ * 通过字符串ID获取链配置
+ */
+export function getChainByStringId(stringId: string): ChainConfig | undefined {
+  return Object.values(CHAIN_CONFIGS).find((c) => c.stringId === stringId);
+}
+
+/**
+ * 获取链的字符串ID
+ */
+export function getChainStringId(chainId: number): string {
+  return CHAIN_CONFIGS[chainId as SupportedChainId]?.stringId || "unknown";
+}
+
+/**
+ * 获取链的数字ID（从字符串ID）
+ */
+export function getChainNumericId(stringId: string): number {
+  return getChainByStringId(stringId)?.chainId || CHAIN_IDS.HARDHAT;
+}
+
+/**
+ * 获取链名称
+ */
+export function getChainName(chainId: number): string {
+  return CHAIN_CONFIGS[chainId as SupportedChainId]?.name || `Chain ${chainId}`;
+}
+
+/**
+ * 获取仓库合约地址
+ */
+export function getWarehouseAddress(chainId: number): `0x${string}` | undefined {
+  return CHAIN_CONFIGS[chainId as SupportedChainId]?.warehouseAddress;
+}
+
+/**
+ * 获取代币地址
+ */
+export function getTokenAddress(
+  chainId: number,
+  symbol: "USDT" | "USDC" | "XWAIFU"
+): `0x${string}` | undefined {
+  return CHAIN_CONFIGS[chainId as SupportedChainId]?.tokens[symbol]?.address;
+}
+
+/**
+ * 获取代币信息
+ */
+export function getTokenConfig(
+  chainId: number,
+  symbol: string
+): TokenConfig | undefined {
+  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
+  if (!config) return undefined;
+
+  if (symbol === config.tokens.native.symbol) {
+    return config.tokens.native;
+  }
+  return config.tokens[symbol as "USDT" | "USDC" | "XWAIFU"];
+}
+
+/**
+ * 获取原生代币符号
+ */
+export function getNativeTokenSymbol(chainId: number): string {
+  return CHAIN_CONFIGS[chainId as SupportedChainId]?.tokens.native.symbol || "ETH";
+}
+
+/**
+ * 获取链上所有代币列表（用于UI显示）
+ */
+export function getChainTokenList(chainId: number): TokenConfig[] {
+  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
+  if (!config) return [];
+
+  const tokens: TokenConfig[] = [config.tokens.native];
+
+  if (config.tokens.USDT?.address) tokens.push(config.tokens.USDT);
+  if (config.tokens.USDC?.address) tokens.push(config.tokens.USDC);
+  if (config.tokens.XWAIFU?.address) tokens.push(config.tokens.XWAIFU);
+
+  return tokens;
+}
+
+/**
+ * 获取 Trust Wallet 图标 URL
+ */
+export function getTrustWalletIconUrl(
+  contractAddress: string,
+  chainId: number
+): string {
+  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
+  const trustWalletChain = config?.trustWalletName || "ethereum";
+  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${trustWalletChain}/assets/${contractAddress}/logo.png`;
+}
+
+// ============ Wagmi/Viem 相关 ============
+
+/**
+ * 获取所有 viem chain 对象（用于 wagmi config）
+ */
+export function getAllViemChains(): ViemChain[] {
+  return Object.values(CHAIN_CONFIGS).map((c) => c.viemChain);
+}
+
+/**
+ * 获取所有 RPC transports（用于 wagmi config）
+ */
+export function getAllTransports(): Record<number, string> {
+  const transports: Record<number, string> = {};
+  for (const config of Object.values(CHAIN_CONFIGS)) {
+    transports[config.chainId] = config.rpcUrl;
+  }
+  return transports;
+}
+
+// ============ 默认值 ============
+export const DEFAULT_CHAIN_ID = Number(
+  process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID || CHAIN_IDS.HARDHAT
+) as SupportedChainId;

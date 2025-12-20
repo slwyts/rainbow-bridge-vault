@@ -550,3 +550,34 @@ export function parseLockup(
     createTime: data[6],
   };
 }
+
+// ============ Blockchain Time Hook ============
+
+import { useBlockNumber, useBlock } from "wagmi";
+
+/**
+ * 获取区块链当前时间（block.timestamp）
+ * 严格按照链上时间计算，不使用本地时间
+ * 注意：不使用 watch 避免频繁轮询，手动调用 refetch 来更新
+ */
+export function useBlockchainTime() {
+  const chainId = useContractChainId();
+  
+  // 获取最新区块信息
+  const { data: block, refetch, isLoading } = useBlock({
+    chainId,
+    query: {
+      staleTime: 10000, // 10 秒内认为数据是新鲜的
+    },
+  });
+
+  // 返回区块链时间（秒级 Unix 时间戳）
+  const timestamp = block?.timestamp ? Number(block.timestamp) : undefined;
+
+  return {
+    timestamp,
+    blockNumber: block?.number ? Number(block.number) : undefined,
+    refetch,
+    isLoading,
+  };
+}

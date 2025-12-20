@@ -2,16 +2,23 @@
   "name": "rainbow-bridge-vault",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "dev:tbsc": "dotenv -e .env.bsc-testnet -- next dev",
-    "build": "next build",
-    "build:tbsc": "dotenv -e .env.bsc-testnet -- next build",
+    "dev": "dotenv -e env/global.env -e env/localnet.env -e env/bsc-testnet.env -e env/bsc.env -e env/xlayer.env -e env/arbitrum.env -- next dev",
+    "dev:local": "node scripts/start-local.js",
+    "build": "npx hardhat compile && dotenv -e env/global.env -e env/localnet.env -e env/bsc-testnet.env -e env/bsc.env -e env/xlayer.env -e env/arbitrum.env -- next build",
     "start": "next start",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "compile": "hardhat compile",
+    "clean": "hardhat clean",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "time": "node scripts/time-jump.js",
+    "deploy:tbsc": "dotenv -e env/bsc-testnet.env -- hardhat run scripts/deploy-tbsc.ts --network bscTestnet"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
     "@radix-ui/react-alert-dialog": "1.1.15",
     "@radix-ui/react-dialog": "1.1.15",
     "@radix-ui/react-popover": "1.1.15",
@@ -24,6 +31,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
+    "dotenv": "^17.2.3",
     "framer-motion": "^12.23.25",
     "jiti": "^2.6.1",
     "lucide-react": "^0.555.0",
@@ -37,6 +45,8 @@
     "wagmi": "^3.1.0"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-ignition": "^3.0.5",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.1",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
@@ -44,6 +54,7 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.6",
+    "hardhat": "^3.0.15",
     "postcss": "^8.5.6",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",

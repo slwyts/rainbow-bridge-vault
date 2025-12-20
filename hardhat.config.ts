@@ -1,8 +1,9 @@
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
-import { defineConfig } from "hardhat/config";
-import * as dotenv from "dotenv";
+import { defineConfig, configVariable } from "hardhat/config";
+import dotenv from "dotenv";
 
-dotenv.config();
+// 加载合约相关的环境变量
+dotenv.config({ path: "env/bsc-testnet.env" });
 
 export default defineConfig({
   plugins: [hardhatToolboxViemPlugin],
@@ -34,16 +35,21 @@ export default defineConfig({
     hardhat: {
       type: "edr-simulated",
       chainType: "l1",
-      chainId: 31337, // Use 31337 for local dev to enable mock token injection
+      chainId: 31337,
     },
     hardhatBsc: {
       type: "edr-simulated",
       chainType: "l1",
-      chainId: 56, // BSC Mainnet for testing
+      chainId: 56,
     },
     hardhatMainnet: {
       type: "edr-simulated",
       chainType: "l1",
+    },
+    localhost: {
+      type: "http",
+      chainType: "l1",
+      url: "http://127.0.0.1:8545",
     },
     bscTestnet: {
       type: "http",

@@ -3,12 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { createPublicClient, http, zeroAddress } from "viem";
-import { hardhat, bsc, bscTestnet, arbitrum, xLayer } from "viem/chains";
 import {
   CHAIN_IDS,
+  CHAIN_CONFIGS,
+  getAllChainIds,
   getWarehouseAddress,
   getTokenAddress,
-} from "@/lib/constants";
+  getNativeTokenSymbol,
+  type SupportedChainId,
+} from "@/lib/chains";
 import { warehouseAbi, erc20Abi } from "@/lib/abi";
 
 // Helper to get token symbol from address
@@ -20,17 +23,7 @@ function getKnownTokenSymbol(
 
   // Native token (address(0))
   if (addr === zeroAddress.toLowerCase()) {
-    switch (chainId) {
-      case CHAIN_IDS.XLAYER:
-        return "OKB";
-      case CHAIN_IDS.BSC:
-      case CHAIN_IDS.BSC_TESTNET:
-        return "BNB";
-      case CHAIN_IDS.ARBITRUM:
-        return "ETH";
-      default:
-        return "ETH";
-    }
+    return getNativeTokenSymbol(chainId);
   }
 
   // Check known tokens from constants
@@ -121,35 +114,16 @@ async function fetchTokenDecimals(
   }
 }
 
-// Define supported chains with their configurations
-const SUPPORTED_CHAINS = [
-  {
-    chainId: CHAIN_IDS.HARDHAT,
-    chain: hardhat,
-    rpcUrl: "http://127.0.0.1:8545",
-    name: "Localnet",
-  },
-  {
-    chainId: CHAIN_IDS.XLAYER,
-    chain: xLayer,
-    name: "X Layer",
-  },
-  {
-    chainId: CHAIN_IDS.BSC,
-    chain: bsc,
-    name: "BNB Chain",
-  },
-  {
-    chainId: CHAIN_IDS.BSC_TESTNET,
-    chain: bscTestnet,
-    name: "BSC Testnet",
-  },
-  {
-    chainId: CHAIN_IDS.ARBITRUM,
-    chain: arbitrum,
-    name: "Arbitrum",
-  },
-];
+// 从统一配置生成支持的链列表
+const SUPPORTED_CHAINS = getAllChainIds().map((chainId) => {
+  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
+  return {
+    chainId: config.chainId,
+    chain: config.viemChain,
+    rpcUrl: config.rpcUrl,
+    name: config.name,
+  };
+});
 
 export interface Position {
   id: string;
@@ -216,6 +190,10 @@ async function fetchPositionsForChain(
       transport: http(chainConfig.rpcUrl),
     });
 
+    // 获取区块链时间（严格使用链上时间，不用本地时间）
+    const block = await client.getBlock();
+    const blockchainNow = Number(block.timestamp);
+
     // Fetch next IDs to know the range
     let nextDepositId = 0n;
     let nextLockupId = 0n;
@@ -272,15 +250,14 @@ async function fetchPositionsForChain(
           const periodsWithdrawn = deposit.periodsWithdrawn;
           const periodDays = Math.round(periodSeconds / 86400);
 
-          const now = Math.floor(Date.now() / 1000);
           const nextWithdrawTime = Number(deposit.nextWithdrawalTime);
           const remaining = totalPeriods - periodsWithdrawn;
-          const canWithdraw = now >= nextWithdrawTime && remaining > 0;
+          const canWithdraw = blockchainNow >= nextWithdrawTime && remaining > 0;
 
           // Calculate withdrawable periods
           let withdrawableNow = 0;
           if (canWithdraw) {
-            const timeSinceNext = now - nextWithdrawTime;
+            const timeSinceNext = blockchainNow - nextWithdrawTime;
             withdrawableNow = Math.min(
               remaining,
               1 + Math.floor(timeSinceNext / periodSeconds)
@@ -356,8 +333,7 @@ async function fetchPositionsForChain(
         ) {
           const unlockTime = Number(lockup.unlockTime);
           const createTime = Number(lockup.createTime);
-          const now = Math.floor(Date.now() / 1000);
-          const canWithdraw = now >= unlockTime;
+          const canWithdraw = blockchainNow >= unlockTime;
 
           // Calculate period in days (from create to unlock)
           const periodDays = Math.max(

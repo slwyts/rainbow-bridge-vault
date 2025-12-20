@@ -34,7 +34,16 @@ import {
 import { useTokenInfo, useTokenBalance } from "@/lib/contracts";
 import { useAccount, useChainId } from "wagmi";
 import { formatUnits } from "viem";
-import { CHAIN_IDS, getChainConfig, getTokenAddress } from "@/lib/constants";
+import {
+  CHAIN_IDS,
+  CHAIN_CONFIGS,
+  getAllChainIds,
+  getTokenAddress,
+  getChainTokenList,
+  getTrustWalletIconUrl,
+  CHAIN_TO_TRUST_WALLET,
+  type SupportedChainId,
+} from "@/lib/chains";
 
 // Chain type definition
 export interface Chain {
@@ -58,14 +67,6 @@ export interface Currency {
   isNative?: boolean; // true for native chain tokens like ETH, BNB
 }
 
-// Chain ID to Trust Wallet assets chain name mapping
-const CHAIN_TO_TRUST_WALLET: Record<string, string> = {
-  localnet: "ethereum", // Use ethereum icons for localnet
-  "x-layer": "xlayer", // X Layer might not be supported, fallback
-  "binance-smart-chain": "smartchain",
-  "arbitrum-one": "arbitrum",
-};
-
 // Get token icon URL from Trust Wallet Assets
 export function getTokenIconUrl(
   contractAddress: string,
@@ -76,185 +77,62 @@ export function getTokenIconUrl(
   return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${trustWalletChain}/assets/${checksumAddress}/logo.png`;
 }
 
-// Define supported chains with their numeric IDs
-export const defaultChains: Chain[] = [
-  {
-    id: "localnet",
-    name: "Localnet",
-    symbol: "localnet",
-    chainId: CHAIN_IDS.HARDHAT,
-  },
-  {
-    id: "x-layer",
-    name: "X Layer",
-    symbol: "x-layer",
-    chainId: CHAIN_IDS.XLAYER,
-  },
-  {
-    id: "binance-smart-chain",
-    name: "BNB Smart Chain",
-    symbol: "binance-smart-chain",
-    chainId: CHAIN_IDS.BSC,
-  },
-  {
-    id: "arbitrum-one",
-    name: "Arbitrum",
-    symbol: "arbitrum-one",
-    chainId: CHAIN_IDS.ARBITRUM,
-  },
-];
+// 从统一配置生成 defaultChains（只包含已启用的链）
+export const defaultChains: Chain[] = getAllChainIds().map((chainId) => {
+  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
+  return {
+    id: config.stringId,
+    name: config.name,
+    symbol: config.stringId,
+    chainId: config.chainId,
+  };
+});
 
-// Get chain ID string from numeric ID
-export function getChainStringId(numericChainId: number): string {
-  const chain = defaultChains.find((c) => c.chainId === numericChainId);
-  return chain?.id || "unknown";
-}
+// 重新导出 getChainStringId (从 chains.ts)
+export { getChainStringId } from "@/lib/chains";
 
-// Per-chain currency configurations
+// 从统一配置生成链上代币列表
 export function getCurrenciesForChain(chainId: number): Currency[] {
-  switch (chainId) {
-    case CHAIN_IDS.HARDHAT:
-      return [
-        {
-          id: "localnet-eth",
-          name: "Localnet ETH",
-          symbol: "ETH",
-          isNative: true,
-          decimals: 18,
-          chainId: "localnet",
-        },
-        {
-          id: "localnet-usdt",
-          name: "Mock USDT",
-          symbol: "USDT",
-          contractAddress: getTokenAddress(CHAIN_IDS.HARDHAT, "USDT"),
-          decimals: 6,
-          chainId: "localnet",
-        },
-        {
-          id: "localnet-usdc",
-          name: "Mock USDC",
-          symbol: "USDC",
-          contractAddress: getTokenAddress(CHAIN_IDS.HARDHAT, "USDC"),
-          decimals: 6,
-          chainId: "localnet",
-        },
-        {
-          id: "localnet-xwaifu",
-          name: "xWaifu Token",
-          symbol: "xWaifu",
-          contractAddress: getTokenAddress(CHAIN_IDS.HARDHAT, "XWAIFU"),
-          decimals: 18,
-          chainId: "localnet",
-        },
-      ];
-
-    case CHAIN_IDS.XLAYER:
-      return [
-        {
-          id: "xlayer-okb",
-          name: "OKB",
-          symbol: "OKB",
-          isNative: true,
-          decimals: 18,
-          chainId: "x-layer",
-        },
-        {
-          id: "xlayer-usdt",
-          name: "USDT",
-          symbol: "USDT",
-          contractAddress: getTokenAddress(CHAIN_IDS.XLAYER, "USDT"),
-          decimals: 6,
-          chainId: "x-layer",
-        },
-        {
-          id: "xlayer-usdc",
-          name: "USDC",
-          symbol: "USDC",
-          contractAddress: getTokenAddress(CHAIN_IDS.XLAYER, "USDC"),
-          decimals: 6,
-          chainId: "x-layer",
-        },
-        {
-          id: "xlayer-xwaifu",
-          name: "xWaifu",
-          symbol: "xWaifu",
-          contractAddress: getTokenAddress(CHAIN_IDS.XLAYER, "XWAIFU"),
-          decimals: 18,
-          chainId: "x-layer",
-        },
-      ];
-
-    case CHAIN_IDS.BSC:
-      return [
-        {
-          id: "bsc-bnb",
-          name: "BNB",
-          symbol: "BNB",
-          isNative: true,
-          decimals: 18,
-          chainId: "binance-smart-chain",
-        },
-        {
-          id: "bsc-usdt",
-          name: "USDT",
-          symbol: "USDT",
-          contractAddress: getTokenAddress(CHAIN_IDS.BSC, "USDT"),
-          decimals: 18, // BSC USDT is 18 decimals
-          chainId: "binance-smart-chain",
-        },
-        {
-          id: "bsc-usdc",
-          name: "USDC",
-          symbol: "USDC",
-          contractAddress: getTokenAddress(CHAIN_IDS.BSC, "USDC"),
-          decimals: 18,
-          chainId: "binance-smart-chain",
-        },
-      ];
-
-    case CHAIN_IDS.ARBITRUM:
-      return [
-        {
-          id: "arb-eth",
-          name: "Ethereum",
-          symbol: "ETH",
-          isNative: true,
-          decimals: 18,
-          chainId: "arbitrum-one",
-        },
-        {
-          id: "arb-usdt",
-          name: "USDT",
-          symbol: "USDT",
-          contractAddress: getTokenAddress(CHAIN_IDS.ARBITRUM, "USDT"),
-          decimals: 6,
-          chainId: "arbitrum-one",
-        },
-        {
-          id: "arb-usdc",
-          name: "USDC",
-          symbol: "USDC",
-          contractAddress: getTokenAddress(CHAIN_IDS.ARBITRUM, "USDC"),
-          decimals: 6,
-          chainId: "arbitrum-one",
-        },
-      ];
-
-    default:
-      // Fallback to generic tokens
-      return [
-        {
-          id: "ETH",
-          name: "Ethereum",
-          symbol: "ETH",
-          isNative: true,
-          decimals: 18,
-        },
-        { id: "USDT", name: "Tether", symbol: "USDT", decimals: 6 },
-        { id: "USDC", name: "USD Coin", symbol: "USDC", decimals: 6 },
-      ];
+  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
+  if (!config) {
+    // Fallback to generic tokens
+    return [
+      { id: "ETH", name: "Ethereum", symbol: "ETH", isNative: true, decimals: 18 },
+      { id: "USDT", name: "Tether", symbol: "USDT", decimals: 6 },
+      { id: "USDC", name: "USD Coin", symbol: "USDC", decimals: 6 },
+    ];
   }
+
+  const currencies: Currency[] = [];
+  const stringId = config.stringId;
+
+  // 添加原生代币
+  currencies.push({
+    id: `${stringId}-${config.tokens.native.symbol.toLowerCase()}`,
+    name: config.tokens.native.name,
+    symbol: config.tokens.native.symbol,
+    isNative: true,
+    decimals: config.tokens.native.decimals,
+    chainId: stringId,
+  });
+
+  // 添加其他代币
+  const tokenKeys = ["USDT", "USDC", "XWAIFU"] as const;
+  for (const key of tokenKeys) {
+    const token = config.tokens[key];
+    if (token?.address) {
+      currencies.push({
+        id: `${stringId}-${token.symbol.toLowerCase()}`,
+        name: token.name,
+        symbol: token.symbol,
+        contractAddress: token.address,
+        decimals: token.decimals,
+        chainId: stringId,
+      });
+    }
+  }
+
+  return currencies;
 }
 
 // Default currencies - fallback when chain is not connected
