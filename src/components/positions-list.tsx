@@ -55,21 +55,25 @@ function formatTokenAmount(
 }
 
 // Helper to format countdown (使用区块链时间)
-function formatCountdown(targetTimestamp: number, blockchainNow: number): string {
+function formatCountdown(
+  targetTimestamp: number,
+  blockchainNow: number,
+  t: (key: string) => string
+): string {
   const diff = targetTimestamp - blockchainNow;
 
-  if (diff <= 0) return "可取出";
+  if (diff <= 0) return t("positions.countdown.canWithdraw");
 
   const days = Math.floor(diff / 86400);
   const hours = Math.floor((diff % 86400) / 3600);
   const minutes = Math.floor((diff % 3600) / 60);
 
   if (days > 0) {
-    return `${days}天 ${hours}小时`;
+    return `${days}${t("positions.countdown.days")} ${hours}${t("positions.countdown.hours")}`;
   } else if (hours > 0) {
-    return `${hours}小时 ${minutes}分钟`;
+    return `${hours}${t("positions.countdown.hours")} ${minutes}${t("positions.countdown.minutes")}`;
   } else {
-    return `${minutes}分钟`;
+    return `${minutes}${t("positions.countdown.minutes")}`;
   }
 }
 
@@ -78,9 +82,11 @@ function formatCountdown(targetTimestamp: number, blockchainNow: number): string
 function Countdown({
   targetTimestamp,
   initialBlockchainTime,
+  t,
 }: {
   targetTimestamp: number;
   initialBlockchainTime: number | undefined;
+  t: (key: string) => string;
 }) {
   const [displayTime, setDisplayTime] = useState<string>("");
   const [isReady, setIsReady] = useState(false);
@@ -88,29 +94,29 @@ function Countdown({
   useEffect(() => {
     if (initialBlockchainTime === undefined) return;
 
-    // 计算区块链时间和本地时间的偏移
+    // Calculate offset between blockchain time and local time
     const localNow = Math.floor(Date.now() / 1000);
     const offset = initialBlockchainTime - localNow;
 
     const updateDisplay = () => {
-      // 用本地时间 + 偏移来估算当前区块链时间
+      // Use local time + offset to estimate current blockchain time
       const estimatedBlockchainTime = Math.floor(Date.now() / 1000) + offset;
       const ready = targetTimestamp <= estimatedBlockchainTime;
       setIsReady(ready);
-      setDisplayTime(formatCountdown(targetTimestamp, estimatedBlockchainTime));
+      setDisplayTime(formatCountdown(targetTimestamp, estimatedBlockchainTime, t));
     };
 
     updateDisplay();
     const interval = setInterval(updateDisplay, 1000);
     return () => clearInterval(interval);
-  }, [targetTimestamp, initialBlockchainTime]);
+  }, [targetTimestamp, initialBlockchainTime, t]);
 
-  // 如果区块链时间未加载，显示加载中
+  // If blockchain time is not loaded, show loading
   if (initialBlockchainTime === undefined) {
     return (
       <span className="text-muted-foreground flex items-center gap-1">
         <Loader2 className="h-3 w-3 animate-spin" />
-        加载中...
+        {t("positions.countdown.loading")}
       </span>
     );
   }
@@ -330,7 +336,7 @@ export function PositionsList({
                           <div className="min-w-0">
                             <p className="text-xs text-slate-800 dark:text-slate-300">
                               {position.type === "u-based"
-                                ? "总金额"
+                                ? t("positions.fields.totalAmount")
                                 : t("positions.fields.amount")}
                             </p>
                             <p className="truncate font-semibold text-slate-800 dark:text-slate-200">
@@ -351,7 +357,7 @@ export function PositionsList({
                               <Coins className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
                               <div className="min-w-0">
                                 <p className="text-xs text-slate-800 dark:text-slate-300">
-                                  每期金额
+                                  {t("positions.fields.perPeriod")}
                                 </p>
                                 <p className="truncate font-semibold text-slate-800 dark:text-slate-200">
                                   {formatTokenAmount(
@@ -384,7 +390,7 @@ export function PositionsList({
                             <p className="text-xs text-slate-800 dark:text-slate-300">
                               {position.type === "u-based"
                                 ? t("positions.fields.period")
-                                : "锁定期"}
+                                : t("positions.fields.lockPeriod")}
                             </p>
                             <p className="font-semibold text-slate-800 dark:text-slate-200">
                               {position.period} {t("positions.fields.days")}
@@ -399,12 +405,13 @@ export function PositionsList({
                             <div className="min-w-0">
                               <p className="text-xs text-slate-800 dark:text-slate-300">
                                 {position.type === "u-based"
-                                  ? "下次可取"
-                                  : "解锁倒计时"}
+                                  ? t("positions.fields.nextWithdraw")
+                                  : t("positions.fields.unlockCountdown")}
                               </p>
                               <Countdown
                                 targetTimestamp={nextWithdrawTime}
                                 initialBlockchainTime={blockchainTime}
+                                t={t}
                               />
                             </div>
                           </div>
@@ -429,13 +436,14 @@ export function PositionsList({
                         (position.withdrawableNow ?? 0) > 0 &&
                         canWithdrawNow && (
                           <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                            当前可取出 {position.withdrawableNow} 期，共{" "}
-                            {formatTokenAmount(
-                              (BigInt(position.amount) * BigInt(position.withdrawableNow ?? 0)).toString(),
-                              position.currency,
-                              position.decimals
-                            )}{" "}
-                            {position.currency}
+                            {t("positions.withdrawableHint")
+                              .replace("{periods}", String(position.withdrawableNow))
+                              .replace("{amount}", formatTokenAmount(
+                                (BigInt(position.amount) * BigInt(position.withdrawableNow ?? 0)).toString(),
+                                position.currency,
+                                position.decimals
+                              ))
+                              .replace("{currency}", position.currency)}
                           </p>
                         )}
                     </div>
