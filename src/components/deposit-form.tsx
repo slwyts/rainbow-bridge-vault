@@ -78,6 +78,7 @@ import {
   calculateFee as calcContractFee,
   calculateLockupFee,
   useWarehouseAddress,
+  useBlockchainTime,
 } from "@/lib/contracts";
 
 interface DepositFormProps {
@@ -98,6 +99,9 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
   // Get warehouse address for current chain
   const warehouseAddress = useWarehouseAddress();
+
+  // Get blockchain time for accurate unlock time calculation
+  const { timestamp: blockchainTime } = useBlockchainTime();
 
   // Transaction states (managed locally instead of via hooks)
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -230,10 +234,12 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   }, [selectedChain, getDefaultCurrency]);
 
   useEffect(() => {
+    // Use blockchain time if available, fallback to local time
+    const baseTime = blockchainTime ? blockchainTime * 1000 : Date.now();
     setUnlockDate(
-      Date.now() + Number.parseInt(lockPeriod) * 24 * 60 * 60 * 1000
+      baseTime + Number.parseInt(lockPeriod) * 24 * 60 * 60 * 1000
     );
-  }, [lockPeriod]);
+  }, [lockPeriod, blockchainTime]);
 
   const validateDisbursementAmount = (value: string) => {
     const amount = Number.parseFloat(value);
@@ -403,6 +409,9 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
         });
         await waitForTransactionReceipt(wagmiConfig, { hash: depositHash });
 
+        // Refetch allowance after deposit (transferFrom consumes allowance)
+        await refetchUBasedAllowance();
+
         toast.success(t("toast.depositCreated.title"), {
           description: "Deposit created successfully!",
         });
@@ -449,11 +458,18 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
         throw new Error("Warehouse not configured for this chain");
       }
 
-      // For ERC20 tokens, check and handle approval
+      // For ERC20 tokens, always refetch allowance and approve if needed
       if (!isNativeToken) {
+        // Force refetch to get latest on-chain allowance
+        const { data: freshAllowance } = await refetchLockupAllowance();
         const currentLockupAllowance =
-          typeof lockupAllowance === "bigint" ? lockupAllowance : 0n;
-        if (currentLockupAllowance < totalNeeded) {
+          typeof freshAllowance === "bigint" ? freshAllowance : 0n;
+
+        console.log("[Lockup Debug] Amount:", lockAmount.toString());
+        console.log("[Lockup Debug] Total needed:", totalNeeded.toString());
+        console.log("[Lockup Debug] Current allowance:", currentLockupAllowance.toString());
+
+        if (currentLockupAllowance < lockAmount) {
           toast.info(`Approving ${selectedCurrency}...`, {
             description: "Please confirm the approval transaction",
           });
@@ -483,6 +499,18 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
         description: "Please confirm the transaction in your wallet",
       });
 
+      // Debug: Log all parameters before sending
+      console.log("[Lockup Debug] Sending createLockup with params:");
+      console.log("  - Warehouse:", currentWarehouseAddress);
+      console.log("  - Token:", tokenAddressForContract);
+      console.log("  - Amount:", lockAmount.toString());
+      console.log("  - UnlockTime:", unlockTimestamp.toString(), "=", new Date(Number(unlockTimestamp) * 1000).toISOString());
+      console.log("  - Remittance:", lockupRemittance);
+      console.log("  - IsNative:", isNativeToken);
+      if (isNativeToken) {
+        console.log("  - Value:", totalNeeded.toString());
+      }
+
       const lockupHash = await writeContract(wagmiConfig, {
         address: currentWarehouseAddress,
         abi: warehouseAbi,
@@ -503,13 +531,33 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
       });
       await waitForTransactionReceipt(wagmiConfig, { hash: lockupHash });
 
+      // Refetch allowance after lockup (transferFrom consumes allowance)
+      if (!isNativeToken) {
+        await refetchLockupAllowance();
+      }
+
       toast.success(t("toast.depositLocked.title"), {
         description: "Lockup created successfully!",
       });
       onAddPosition();
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Please try again";
+      // Log full error for debugging
+      console.error("[Lockup Error] Full error:", err);
+
+      // Try to extract detailed error message
+      let errorMessage = "Please try again";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        // Check for nested cause
+        if ('cause' in err && err.cause) {
+          console.error("[Lockup Error] Cause:", err.cause);
+        }
+        // Check for shortMessage (viem errors)
+        if ('shortMessage' in err) {
+          errorMessage = (err as { shortMessage: string }).shortMessage;
+        }
+      }
+
       toast.error("Transaction failed", {
         description: errorMessage,
       });
