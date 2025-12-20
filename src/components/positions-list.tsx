@@ -219,6 +219,7 @@ export function PositionsList({
   const [isEarlyProcessing, setIsEarlyProcessing] = useState(false);
   const [isWithdrawingAction, setIsWithdrawingAction] = useState(false);
   const [isEnablingAction, setIsEnablingAction] = useState(false);
+  const [positionFilter, setPositionFilter] = useState<"current" | "history">("current");
   
   // 获取区块链时间（严格从链上读取）
   const { timestamp: blockchainTime } = useBlockchainTime();
@@ -407,8 +408,15 @@ export function PositionsList({
     }
   };
 
+  // Filter positions based on current/history selection
+  const filteredPositions = positions.filter((p) =>
+    positionFilter === "current"
+      ? p.status === "active"
+      : p.status === "completed"
+  );
+
   const showInitialLoading = isLoading && positions.length === 0;
-  const showEmpty = positions.length === 0 && !showInitialLoading;
+  const showEmpty = filteredPositions.length === 0 && !showInitialLoading;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200/50 bg-white/50 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
@@ -425,6 +433,31 @@ export function PositionsList({
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
               {t("positions.title")}
             </h2>
+          </div>
+          {/* Current/History Filter Selector */}
+          <div className="flex items-center gap-1 rounded-lg bg-slate-200/80 p-1 dark:bg-slate-700/80">
+            <button
+              type="button"
+              onClick={() => setPositionFilter("current")}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+                positionFilter === "current"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              }`}
+            >
+              {t("positions.filter.current")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPositionFilter("history")}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+                positionFilter === "history"
+                  ? "bg-slate-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              }`}
+            >
+              {t("positions.filter.history")}
+            </button>
           </div>
           {isLoading && positions.length > 0 && (
             <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
@@ -470,12 +503,14 @@ export function PositionsList({
         ) : showEmpty ? (
           <div className="py-8 text-center">
             <p className="text-slate-500 dark:text-slate-400">
-              {t("positions.empty")}
+              {positionFilter === "current"
+                ? t("positions.empty")
+                : t("positions.emptyHistory")}
             </p>
           </div>
         ) : (
           <div className="grid gap-4">
-            {positions.map((position) => {
+            {filteredPositions.map((position) => {
               // Determine if withdraw button should be enabled
               const isProcessing =
                 isWithdrawing ||

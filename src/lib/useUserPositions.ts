@@ -248,11 +248,8 @@ async function fetchPositionsForChain(
           createdAsRemit: result[8],
         };
 
-        // Check if this deposit belongs to the user and is still active
-        if (
-          deposit.user.toLowerCase() === userAddressLower &&
-          deposit.periodsWithdrawn < deposit.totalPeriods
-        ) {
+        // Check if this deposit belongs to the user (include completed ones for history)
+        if (deposit.user.toLowerCase() === userAddressLower) {
           const periodSeconds = Number(deposit.periodSeconds);
           const totalPeriods = deposit.totalPeriods;
           const periodsWithdrawn = deposit.periodsWithdrawn;
@@ -338,11 +335,8 @@ async function fetchPositionsForChain(
           createdAsRemit: result[8],
         };
 
-        // Check if this lockup belongs to the user and is not withdrawn
-        if (
-          lockup.user.toLowerCase() === userAddressLower &&
-          !lockup.withdrawn
-        ) {
+        // Check if this lockup belongs to the user (include withdrawn ones for history)
+        if (lockup.user.toLowerCase() === userAddressLower) {
           const unlockTime = Number(lockup.unlockTime);
           const createTime = Number(lockup.createTime);
           const canWithdraw = blockchainNow >= unlockTime;
@@ -373,7 +367,7 @@ async function fetchPositionsForChain(
             decimals: tokenDecimals,
             period: periodDays,
             startDate: new Date(createTime * 1000).toISOString().split("T")[0],
-            status: canWithdraw ? "completed" : "active",
+            status: lockup.withdrawn ? "completed" : "active",
             chain: chainConfig.name,
             chainId: chainConfig.chainId,
             unlockTime,

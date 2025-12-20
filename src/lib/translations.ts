@@ -156,6 +156,11 @@ export const translations = {
     positions: {
       title: "My Positions",
       empty: "No active positions yet",
+      emptyHistory: "No historical positions",
+      filter: {
+        current: "Current",
+        history: "History",
+      },
       types: {
         uBased: "U-Based",
         coinBased: "Coin-Based",
@@ -474,6 +479,11 @@ export const translations = {
     positions: {
       title: "我的仓库",
       empty: "暂无活跃仓库",
+      emptyHistory: "暂无历史仓库",
+      filter: {
+        current: "当前",
+        history: "历史",
+      },
       types: {
         uBased: "U本位",
         coinBased: "币本位",
