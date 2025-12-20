@@ -277,7 +277,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     try {
       await switchChain({ chainId: expectedChainId });
     } catch (err) {
-      toast.error("切换网络失败", {
+      toast.error(t("form.errors.switchNetworkFailed"), {
         description: err instanceof Error ? err.message : "Please try again",
       });
     }
@@ -310,7 +310,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
   const handleCreateDeposit = async () => {
     try {
-      if (!address) throw new Error("请先连接钱包");
+      if (!address) throw new Error(t("form.errors.connectWalletFirst"));
 
       if (connectedChainId !== expectedChainId) {
         await switchChain?.({ chainId: expectedChainId });

@@ -141,6 +141,10 @@ export const translations = {
         depositOption: "Remittance option (allow payout to another address)",
         lockupOption: "Remittance option (withdraw to another address at unlock)",
       },
+      errors: {
+        switchNetworkFailed: "Network switch failed",
+        connectWalletFirst: "Please connect wallet first",
+      },
     },
     chains: {
       gas: {
@@ -183,6 +187,39 @@ export const translations = {
       actions: {
         details: "Details",
         withdraw: "Withdraw",
+        earlyWithdraw: "Early Withdraw",
+        enableRemittance: "Enable Remittance (0.1 USDT)",
+      },
+      remittance: {
+        recipientHint: "Remittance recipient (leave empty to withdraw to self)",
+      },
+      errors: {
+        chainSwitchFailed: "Chain switch failed, transaction blocked",
+        warehouseNotConfigured: "Warehouse not configured for this chain",
+        usdtNotConfigured: "USDT not configured for this chain",
+        onlyNativeRemittance: "Only native remittance positions can be early withdrawn",
+        connectWallet: "Please connect wallet first",
+        cannotGetFee: "Cannot get remittance fee",
+      },
+      toast: {
+        earlyWithdrawSubmitted: {
+          title: "Early Withdraw Submitted",
+          description: "Please confirm in wallet, funds will be settled directly",
+        },
+        earlyWithdrawFailed: {
+          title: "Early Withdraw Failed",
+        },
+        enableRemittanceSubmitted: {
+          title: "Enable Remittance Submitted",
+          description: "Please confirm 0.1 USDT fee in wallet",
+        },
+        enableRemittanceFailed: {
+          title: "Enable Remittance Failed",
+        },
+        approveRemittanceFee: {
+          title: "Approve 0.1 USDT Fee",
+          description: "Need to authorize warehouse contract to deduct USDT",
+        },
       },
     },
     validation: {
@@ -418,6 +455,14 @@ export const translations = {
         chainExists: "该链已存在",
         chainFieldsRequired: "请填写所有字段",
       },
+      remittance: {
+        depositOption: "汇付选项（允许派发到其他地址）",
+        lockupOption: "汇付选项（解锁时提现到其他地址）",
+      },
+      errors: {
+        switchNetworkFailed: "切换网络失败",
+        connectWalletFirst: "请先连接钱包",
+      },
     },
     chains: {
       gas: {
@@ -460,6 +505,39 @@ export const translations = {
       actions: {
         details: "详情",
         withdraw: "取出",
+        earlyWithdraw: "提前取出",
+        enableRemittance: "开启汇付 (0.1 USDT)",
+      },
+      remittance: {
+        recipientHint: "汇付收款地址（留空则提到自己）",
+      },
+      errors: {
+        chainSwitchFailed: "网络切换失败，已阻止交易",
+        warehouseNotConfigured: "当前链未配置仓库合约",
+        usdtNotConfigured: "当前链未配置 USDT 地址",
+        onlyNativeRemittance: "仅原生汇付仓位可提前取款",
+        connectWallet: "请先连接钱包",
+        cannotGetFee: "无法获取汇付手续费",
+      },
+      toast: {
+        earlyWithdrawSubmitted: {
+          title: "汇付仓位提前取款已提交",
+          description: "请在钱包确认交易，资金将直接结算",
+        },
+        earlyWithdrawFailed: {
+          title: "提前取款失败",
+        },
+        enableRemittanceSubmitted: {
+          title: "已提交开启汇付",
+          description: "请在钱包确认支付 0.1 USDT 手续费",
+        },
+        enableRemittanceFailed: {
+          title: "开启汇付失败",
+        },
+        approveRemittanceFee: {
+          title: "请先批准 0.1 USDT 手续费",
+          description: "需要授权仓库合约扣除 USDT",
+        },
       },
     },
     toast: {

@@ -241,13 +241,13 @@ export function PositionsList({
       if (position.chainId && position.chainId !== chainId) {
         const switched = await switchChainAsync?.({ chainId: position.chainId });
         if (!switched || switched.id !== position.chainId) {
-          throw new Error("网络切换失败，未执行交易");
+          throw new Error(t("positions.errors.chainSwitchFailed"));
         }
       }
 
       const targetWarehouse = getWarehouseAddress(position.chainId as SupportedChainId);
       if (!targetWarehouse) {
-        throw new Error("当前链未配置仓库地址");
+        throw new Error(t("positions.errors.warehouseNotConfigured"));
       }
 
       // Parse ID: format is "deposit-{chainId}-{index}" or "lockup-{chainId}-{index}"
@@ -295,17 +295,17 @@ export function PositionsList({
       if (position.chainId && position.chainId !== chainId) {
         const switched = await switchChainAsync?.({ chainId: position.chainId });
         if (!switched || switched.id !== position.chainId) {
-          throw new Error("网络切换失败，未执行交易");
+          throw new Error(t("positions.errors.chainSwitchFailed"));
         }
       }
 
       const targetWarehouse = getWarehouseAddress(position.chainId as SupportedChainId);
       if (!targetWarehouse) {
-        throw new Error("当前链未配置仓库地址");
+        throw new Error(t("positions.errors.warehouseNotConfigured"));
       }
 
       if (!position.createdAsRemit) {
-        throw new Error("仅原生汇付仓位可提前取款");
+        throw new Error(t("positions.errors.onlyNativeRemittance"));
       }
 
       const recipient = (recipientMap[position.id] || "").trim();
@@ -328,12 +328,12 @@ export function PositionsList({
         await waitForTransactionReceipt(wagmiConfig, { hash: txHash });
       }
 
-      toast.success("汇付仓位提前取款已提交", {
-        description: "请在钱包确认交易，资金将直接结算",
+      toast.success(t("positions.toast.earlyWithdrawSubmitted.title"), {
+        description: t("positions.toast.earlyWithdrawSubmitted.description"),
       });
       setTimeout(() => onRefresh?.(), 1500);
     } catch (err) {
-      toast.error("提前取款失败", {
+      toast.error(t("positions.toast.earlyWithdrawFailed.title"), {
         description: err instanceof Error ? err.message : "Please try again",
       });
     } finally {
@@ -345,29 +345,29 @@ export function PositionsList({
     setEnablingId(position.id);
     setIsEnablingAction(true);
     try {
-      if (!address) throw new Error("请先连接钱包");
+      if (!address) throw new Error(t("positions.errors.connectWallet"));
       const targetWarehouse = getWarehouseAddress(position.chainId as SupportedChainId);
       const targetUsdt = getTokenAddress(position.chainId as SupportedChainId, "USDT");
-      if (!targetWarehouse) throw new Error("当前链未配置仓库合约");
-      if (!targetUsdt) throw new Error("当前链未配置 USDT 地址");
+      if (!targetWarehouse) throw new Error(t("positions.errors.warehouseNotConfigured"));
+      if (!targetUsdt) throw new Error(t("positions.errors.usdtNotConfigured"));
 
       if (position.chainId && position.chainId !== chainId) {
         const switched = await switchChainAsync?.({ chainId: position.chainId });
         if (!switched || switched.id !== position.chainId) {
-          throw new Error("网络切换失败，已阻止交易");
+          throw new Error(t("positions.errors.chainSwitchFailed"));
         }
       }
 
       const fee = (remittanceFee as bigint | undefined) ?? 0n;
-      if (fee === 0n) throw new Error("无法获取汇付手续费");
+      if (fee === 0n) throw new Error(t("positions.errors.cannotGetFee"));
 
       const parts = position.id.split("-");
       const type = parts[0];
       const index = BigInt(parts[2]);
 
       // Approve fee
-      toast.info("请先批准 0.1 USDT 手续费", {
-        description: "需要授权仓库合约扣除 USDT",
+      toast.info(t("positions.toast.approveRemittanceFee.title"), {
+        description: t("positions.toast.approveRemittanceFee.description"),
       });
       const approveHash = await writeContract(wagmiConfig, {
         address: targetUsdt,
@@ -391,14 +391,14 @@ export function PositionsList({
         await waitForTransactionReceipt(wagmiConfig, { hash: txHash });
       }
 
-      toast.success("已提交开启汇付", {
-        description: "请在钱包确认支付 0.1 USDT 手续费",
+      toast.success(t("positions.toast.enableRemittanceSubmitted.title"), {
+        description: t("positions.toast.enableRemittanceSubmitted.description"),
       });
 
       setTimeout(() => onRefresh?.(), 2000);
     } catch (err) {
       const msg = (err as any)?.shortMessage || (err as Error)?.message || "Please try again";
-      toast.error("开启汇付失败", {
+      toast.error(t("positions.toast.enableRemittanceFailed.title"), {
         description: msg,
       });
     } finally {
@@ -662,7 +662,7 @@ export function PositionsList({
                       {(position.remittanceEnabled || position.createdAsRemit) && position.status === "active" && (
                         <div className="space-y-2">
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            汇付收款地址（留空则提到自己）
+                            {t("positions.remittance.recipientHint")}
                           </p>
                           <Input
                             placeholder="0x..."
@@ -687,23 +687,23 @@ export function PositionsList({
                           {isEnabling ? (
                             <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                           ) : null}
-                          开启汇付 (0.1 USDT)
+                          {t("positions.actions.enableRemittance")}
                         </Button>
                       )}
 
-                      {/* 新增：原生汇付仓位提前取出按钮（仅原生汇付仓位） */}
+                      {/* 原生汇付仓位提前取出按钮（蓝色强调） */}
                       {position.status === "active" && position.createdAsRemit && (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 sm:flex-none border-amber-400 text-amber-600 hover:bg-amber-50 dark:border-amber-500/70 dark:text-amber-300"
+                          className="flex-1 sm:flex-none border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-200"
                           onClick={() => handleEarlyRemitWithdraw(position)}
                           disabled={isEarlyProcessing || isProcessing}
                         >
                           {isEarlyProcessing ? (
                             <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                           ) : null}
-                          提前取出
+                          {t("positions.actions.earlyWithdraw")}
                         </Button>
                       )}
 
