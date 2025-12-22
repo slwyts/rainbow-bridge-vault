@@ -292,10 +292,16 @@ function AboutContent() {
                 </p>
               </div>
 
-              <Button className="h-12 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 px-8 font-bold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] hover:from-amber-600 hover:to-orange-600">
-                {t("about.tokenInfo.buyButton")}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              <a
+                href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button className="h-12 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 px-8 font-bold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] hover:from-amber-600 hover:to-orange-600">
+                  {t("about.tokenInfo.buyButton")}
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </a>
             </div>
           </div>
         </div>

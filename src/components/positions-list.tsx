@@ -16,6 +16,7 @@ import {
   Clock,
   Lock,
   Unlock,
+  Crown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAccount, useSwitchChain } from "wagmi";
@@ -33,6 +34,9 @@ import {
   useWarehouseAddress,
   useEmergencyCancel,
   useEmergencyCancelLockup,
+  useActivateVIP,
+  useXwaifuToken,
+  canActivateVIP,
 } from "@/lib/contracts";
 import { getTokenAddress, getWarehouseAddress, CHAIN_IDS, type SupportedChainId } from "@/lib/chains";
 import { useChainId } from "wagmi";
@@ -213,6 +217,11 @@ export function PositionsList({
   const { emergencyCancel, isPending: isEmergencyDeposit } = useEmergencyCancel();
   const { emergencyCancelLockup, isPending: isEmergencyLockup } = useEmergencyCancelLockup();
 
+  // VIP activation
+  const { activateVIP, isPending: isActivatingVIP } = useActivateVIP();
+  const { data: xwaifuTokenAddress } = useXwaifuToken();
+  const [activatingVIPId, setActivatingVIPId] = useState<string | null>(null);
+
   const [recipientMap, setRecipientMap] = useState<Record<string, string>>({});
   const [enablingId, setEnablingId] = useState<string | null>(null);
   const [earlyClickMap, setEarlyClickMap] = useState<Record<string, number>>({});
@@ -339,6 +348,45 @@ export function PositionsList({
       });
     } finally {
       setIsEarlyProcessing(false);
+    }
+  };
+
+  // Handle VIP activation for xwaifu lockups on X Layer
+  const handleActivateVIP = async (position: Position) => {
+    setActivatingVIPId(position.id);
+    try {
+      if (position.chainId && position.chainId !== chainId) {
+        const switched = await switchChainAsync?.({ chainId: position.chainId });
+        if (!switched || switched.id !== position.chainId) {
+          throw new Error(t("positions.errors.chainSwitchFailed"));
+        }
+      }
+
+      // Parse lockup ID from position.id: "lockup-{chainId}-{index}"
+      const parts = position.id.split("-");
+      const index = BigInt(parts[2]);
+
+      toast.info(t("positions.vip.activating"), {
+        description: t("positions.vip.activatingDesc"),
+      });
+
+      const txHash = await activateVIP(index);
+      if (txHash) {
+        await waitForTransactionReceipt(wagmiConfig, { hash: txHash });
+      }
+
+      toast.success(t("positions.vip.activated"), {
+        description: t("positions.vip.activatedDesc"),
+      });
+
+      setTimeout(() => onRefresh?.(), 1500);
+    } catch (err) {
+      const msg = (err as { shortMessage?: string })?.shortMessage || (err as Error)?.message || "Please try again";
+      toast.error(t("positions.vip.activateFailed"), {
+        description: msg,
+      });
+    } finally {
+      setActivatingVIPId(null);
     }
   };
 
@@ -543,6 +591,34 @@ export function PositionsList({
                   ? position.totalAmount || position.amount
                   : position.amount;
 
+              // VIP 相关判断（检查合约 xwaifuToken 是否有效，即非零地址）
+              const xwaifuAddr = xwaifuTokenAddress ? String(xwaifuTokenAddress).toLowerCase() : "";
+              const hasXwaifuSupport = xwaifuAddr && xwaifuAddr !== "0x0000000000000000000000000000000000000000";
+              const positionTokenAddr = position.tokenAddress?.toLowerCase() || "";
+
+              const isXwaifuLockup = position.type === "coin-based" &&
+                hasXwaifuSupport &&
+                positionTokenAddr === xwaifuAddr;
+
+              // 检查是否可以激活 VIP
+              const canActivateResult = canActivateVIP(
+                BigInt(position.amount),
+                position.unlockTime!,
+                position.createTime!,
+                position.isDiscountActive || false,
+                false
+              );
+
+              const canActivate = isXwaifuLockup &&
+                !position.isDiscountActive &&
+                position.status === "active" &&
+                position.createTime !== undefined &&
+                position.unlockTime !== undefined &&
+                canActivateResult;
+
+              // 是否已经是 VIP
+              const isVIP = isXwaifuLockup && position.isDiscountActive === true;
+
               return (
                 <div
                   key={position.id}
@@ -573,6 +649,13 @@ export function PositionsList({
                             ? t("positions.status.active")
                             : t("positions.status.completed")}
                         </Badge>
+                        {/* VIP 徽章 */}
+                        {isVIP && (
+                          <Badge className="border-0 bg-linear-to-r from-amber-500 to-orange-500 text-white">
+                            <Crown className="mr-1 h-3 w-3" />
+                            VIP
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4 sm:gap-4">
@@ -711,6 +794,24 @@ export function PositionsList({
                     </div>
 
                     <div className="flex gap-2 sm:flex-col">
+                      {/* VIP 激活按钮 - 仅对 X Layer 上符合条件的 xwaifu lockup 显示 */}
+                      {canActivate && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 sm:flex-none border-amber-500 text-amber-600 hover:bg-amber-50 dark:border-amber-400 dark:text-amber-200"
+                          onClick={() => handleActivateVIP(position)}
+                          disabled={isActivatingVIP && activatingVIPId === position.id}
+                        >
+                          {isActivatingVIP && activatingVIPId === position.id ? (
+                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Crown className="mr-1 h-4 w-4" />
+                          )}
+                          {t("positions.vip.activate")}
+                        </Button>
+                      )}
+
                       {!position.remittanceEnabled && position.status === "active" && (
                         <Button
                           size="sm"

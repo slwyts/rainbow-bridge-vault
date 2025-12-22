@@ -148,6 +148,9 @@ export interface Position {
   tokenAddress?: string;
   remittanceEnabled?: boolean;
   createdAsRemit?: boolean;
+  // VIP discount status (only for xwaifu lockups on X Layer)
+  isDiscountActive?: boolean;
+  createTime?: number; // Unix timestamp for lockup creation
 }
 
 // Data returned from contract - matches actual ABI
@@ -375,6 +378,8 @@ async function fetchPositionsForChain(
             tokenAddress: lockup.token,
             remittanceEnabled: lockup.remittanceEnabled,
             createdAsRemit: lockup.createdAsRemit,
+            isDiscountActive: lockup.isDiscountActive,
+            createTime,
           });
         }
       } catch {

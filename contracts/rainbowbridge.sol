@@ -16,7 +16,7 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
     uint256 public immutable REMITTANCE_FEE;
     uint256 public constant DISCOUNT_COST = 100 * 1e18;
     uint256 public constant STAKE_MIN_AMOUNT = 9800 * 1e18; // Adjusted to allow for fee + cost deduction
-    uint256 public constant STAKE_MIN_DURATION = 365 days;
+    uint256 public constant STAKE_MIN_DURATION = 363 days;
 
     struct Deposit {
         address user;
@@ -230,24 +230,38 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
     }
 
     // --- Lockup (One-time) ---
-    function createLockup(address _token, uint256 _amount, uint256 _unlockTime, bool _enableRemittance) external payable nonReentrant whenNotPaused {
+    function createLockup(address _token, uint256 _amount, uint256 _unlockTime, uint256 _discountLockupId, bool _enableRemittance) external payable nonReentrant whenNotPaused {
         require(_unlockTime > block.timestamp, "Invalid time");
-        
+
         uint256 amountLocked = _amount;
         uint256 fee = 0;
+
+        // Check VIP discount
+        bool hasDiscount = false;
+        if (_discountLockupId > 0) {
+            if (_checkDiscount(_discountLockupId)) {
+                hasDiscount = true;
+            }
+        }
 
         if (_token == address(0)) {
             require(msg.value > 0, "No value");
             amountLocked = msg.value;
             fee = (amountLocked * 5) / 1000; // 0.5%
+            if (hasDiscount) {
+                fee = fee / 2; // VIP 50% off
+            }
             amountLocked -= fee;
-            
+
             (bool okFee, ) = payable(owner()).call{value: fee}("");
             require(okFee, "Fee transfer failed");
         } else {
             require(msg.value == 0, "No value needed");
             uint256 total = _amount;
             fee = (total * 5) / 1000; // 0.5%
+            if (hasDiscount) {
+                fee = fee / 2; // VIP 50% off
+            }
             amountLocked = total - fee;
 
             IERC20(_token).safeTransferFrom(msg.sender, address(this), total);

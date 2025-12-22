@@ -79,13 +79,17 @@ import {
   calculateLockupFee,
   useWarehouseAddress,
   useBlockchainTime,
+  useXwaifuToken,
+  isValidVIPLockup,
 } from "@/lib/contracts";
+import type { Position } from "@/app/page";
 
 interface DepositFormProps {
   onAddPosition: () => void; // Called after successful tx to trigger refetch
+  positions: Position[]; // Positions passed from parent for VIP detection
 }
 
-export function DepositForm({ onAddPosition }: DepositFormProps) {
+export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
   const { t } = useI18n();
   const { isConnected, address } = useAccount();
   const connectedChainId = useChainId();
@@ -102,6 +106,9 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
 
   // Get blockchain time for accurate unlock time calculation
   const { timestamp: blockchainTime } = useBlockchainTime();
+
+  // VIP 折扣：xwaifu token 地址（positions 从 props 传入）
+  const { data: xwaifuTokenAddress } = useXwaifuToken();
 
   // Transaction states (managed locally instead of via hooks)
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,6 +143,33 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
   const [unlockDate, setUnlockDate] = useState<number>(() => Date.now());
   const [depositRemittance, setDepositRemittance] = useState(false);
   const [lockupRemittance, setLockupRemittance] = useState(false);
+
+  // 找到支持 VIP 的链上已激活 VIP 的 lockup（用于自动应用折扣）
+  // 检查合约 xwaifuToken 是否有效（非零地址）
+  const xwaifuAddr = xwaifuTokenAddress ? String(xwaifuTokenAddress).toLowerCase() : "";
+  const hasXwaifuSupport = xwaifuAddr && xwaifuAddr !== "0x0000000000000000000000000000000000000000";
+
+  const activeVIPLockup = positions.find((p) => {
+    if (p.type !== "coin-based") return false;
+    if (!hasXwaifuSupport) return false;
+    if (p.tokenAddress?.toLowerCase() !== xwaifuAddr) return false;
+    if (!p.isDiscountActive) return false;
+    if (p.status !== "active") return false;
+    if (p.createTime === undefined || p.unlockTime === undefined) return false;
+    return isValidVIPLockup(
+      BigInt(p.amount),
+      p.unlockTime,
+      p.createTime,
+      p.isDiscountActive,
+      false
+    );
+  });
+
+  // 从 position.id 解析出 lockup index: "lockup-{chainId}-{index}"
+  const vipLockupId = activeVIPLockup ? BigInt(activeVIPLockup.id.split("-")[2]) : undefined;
+
+  // 是否有有效 VIP（xwaifuToken 非零地址且有已激活的 VIP lockup）
+  const hasVIPDiscount = hasXwaifuSupport && vipLockupId !== undefined;
 
   // U-based token selection (USDT or USDC)
   const [uBasedTokenSymbol, setUBasedTokenSymbol] = useState<"USDT" | "USDC">(
@@ -198,10 +232,14 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     const amt = Number.parseFloat(disbursementAmount) || 0;
     const freq = Number.parseInt(frequency) || 0;
     const totalPrincipal = amt * freq;
-    const fee = calcContractFee(
+    let fee = calcContractFee(
       parseUnits(totalPrincipal.toString(), uBasedDecimals),
       freq
     );
+    // VIP 折扣
+    if (hasVIPDiscount) {
+      fee = fee / 2n;
+    }
     return parseUnits(totalPrincipal.toString(), uBasedDecimals) + fee;
   };
 
@@ -209,7 +247,11 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     const amt = Number.parseFloat(amount) || 0;
     if (amt <= 0) return 0n;
     const amountBigInt = parseUnits(amt.toString(), lockupTokenDecimals);
-    const fee = calculateLockupFee(amountBigInt);
+    let fee = calculateLockupFee(amountBigInt);
+    // VIP 折扣
+    if (hasVIPDiscount) {
+      fee = fee / 2n;
+    }
     return amountBigInt + fee;
   };
 
@@ -304,13 +346,20 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     if (freq >= 31 && freq <= 100) baseFeeRate = 0.01;
     if (freq >= 101) baseFeeRate = 0.02;
 
-    const baseFee = total * baseFeeRate;
-    // const disbursementFee = freq * 0.01; // Protocol fee removed
+    let baseFee = total * baseFeeRate;
+
+    // VIP 折扣 50%
+    const originalFee = baseFee;
+    if (hasVIPDiscount) {
+      baseFee = baseFee / 2;
+    }
 
     return {
       baseFee: baseFee.toFixed(2),
+      originalFee: originalFee.toFixed(2),
       disbursementFee: "0.00",
       total: baseFee.toFixed(2),
+      hasDiscount: hasVIPDiscount,
     };
   };
 
@@ -344,7 +393,11 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
       const periodSeconds = Number.parseInt(period) * 24 * 60 * 60; // Convert days to seconds
       const amountPerPeriod = parseUnits(disbursementAmount, uBasedDecimals);
       const totalAmount = amountPerPeriod * BigInt(totalPeriods);
-      const fee = calcContractFee(totalAmount, totalPeriods);
+      let fee = calcContractFee(totalAmount, totalPeriods);
+      // VIP 折扣：手续费减半
+      if (hasVIPDiscount) {
+        fee = fee / 2n;
+      }
       const totalNeeded = totalAmount + fee;
 
       setIsSubmitting(true);
@@ -398,7 +451,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
             amountPerPeriod,
             BigInt(periodSeconds),
             totalPeriods,
-            0n,
+            vipLockupId ?? 0n, // 自动应用 VIP 折扣
             depositRemittance,
           ],
         });
@@ -442,7 +495,11 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
     }
 
     const lockAmount = parseUnits(amount, lockupTokenDecimals);
-    const fee = calculateLockupFee(lockAmount);
+    let fee = calculateLockupFee(lockAmount);
+    // VIP 折扣：手续费减半
+    if (hasVIPDiscount) {
+      fee = fee / 2n;
+    }
     const totalNeeded = lockAmount + fee;
     const unlockTimestamp = BigInt(Math.floor(unlockDate / 1000));
 
@@ -464,10 +521,6 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
         const { data: freshAllowance } = await refetchLockupAllowance();
         const currentLockupAllowance =
           typeof freshAllowance === "bigint" ? freshAllowance : 0n;
-
-        console.log("[Lockup Debug] Amount:", lockAmount.toString());
-        console.log("[Lockup Debug] Total needed:", totalNeeded.toString());
-        console.log("[Lockup Debug] Current allowance:", currentLockupAllowance.toString());
 
         if (currentLockupAllowance < lockAmount) {
           toast.info(`Approving ${selectedCurrency}...`, {
@@ -499,18 +552,6 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
         description: "Please confirm the transaction in your wallet",
       });
 
-      // Debug: Log all parameters before sending
-      console.log("[Lockup Debug] Sending createLockup with params:");
-      console.log("  - Warehouse:", currentWarehouseAddress);
-      console.log("  - Token:", tokenAddressForContract);
-      console.log("  - Amount:", lockAmount.toString());
-      console.log("  - UnlockTime:", unlockTimestamp.toString(), "=", new Date(Number(unlockTimestamp) * 1000).toISOString());
-      console.log("  - Remittance:", lockupRemittance);
-      console.log("  - IsNative:", isNativeToken);
-      if (isNativeToken) {
-        console.log("  - Value:", totalNeeded.toString());
-      }
-
       const lockupHash = await writeContract(wagmiConfig, {
         address: currentWarehouseAddress,
         abi: warehouseAbi,
@@ -519,6 +560,7 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
           tokenAddressForContract,
           lockAmount,
           unlockTimestamp,
+          vipLockupId ?? 0n, // 自动应用 VIP 折扣
           lockupRemittance,
         ],
         // For native tokens, send the value with the transaction
@@ -541,17 +583,10 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
       });
       onAddPosition();
     } catch (err: unknown) {
-      // Log full error for debugging
-      console.error("[Lockup Error] Full error:", err);
-
       // Try to extract detailed error message
       let errorMessage = "Please try again";
       if (err instanceof Error) {
         errorMessage = err.message;
-        // Check for nested cause
-        if ('cause' in err && err.cause) {
-          console.error("[Lockup Error] Cause:", err.cause);
-        }
         // Check for shortMessage (viem errors)
         if ('shortMessage' in err) {
           errorMessage = (err as { shortMessage: string }).shortMessage;
@@ -1051,10 +1086,21 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                       {/* Fee Breakdown */}
                       <div className="mb-6 space-y-3">
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-500 dark:text-slate-400">
+                          <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                             {t("form.summary.baseFee")}
+                            {calculateFee().hasDiscount && (
+                              <span className="inline-flex items-center rounded bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                                <Crown className="mr-0.5 h-3 w-3" />
+                                -50%
+                              </span>
+                            )}
                           </span>
                           <span className="font-mono text-slate-800 dark:text-white">
+                            {calculateFee().hasDiscount && (
+                              <span className="mr-2 text-slate-400 line-through">
+                                {calculateFee().originalFee}
+                              </span>
+                            )}
                             {calculateFee().baseFee}
                           </span>
                         </div>
@@ -1078,34 +1124,45 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                       </div>
 
                       {/* Discount Notice */}
-                      <div className="mb-6 rounded-lg border border-amber-300 bg-amber-100 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
-                        <p className="text-xs text-amber-700 dark:text-amber-400">
-                          {t("form.summary.discount")}
-                        </p>
-                        {selectedChain === "xlayer" && (
-                          <a
-                            href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                          >
-                            {t("form.summary.buyXWaifuLink")}
-                            <svg
-                              className="h-3 w-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
+                      {hasVIPDiscount ? (
+                        <div className="mb-6 rounded-lg border border-emerald-300 bg-emerald-100 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                          <div className="flex items-center gap-2">
+                            <Crown className="h-4 w-4 text-amber-500" />
+                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                              {t("positions.vip.discountApplied")}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-6 rounded-lg border border-amber-300 bg-amber-100 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
+                          <p className="text-xs text-amber-700 dark:text-amber-400">
+                            {t("form.summary.discount")}
+                          </p>
+                          {selectedChain === "xlayer" && (
+                            <a
+                              href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                              />
-                            </svg>
-                          </a>
-                        )}
-                      </div>
+                              {t("form.summary.buyXWaifuLink")}
+                              <svg
+                                className="h-3 w-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                />
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                      )}
 
                       {/* Remittance toggle - pill style */}
                       <div className="mb-4 space-y-2">
@@ -1457,13 +1514,65 @@ export function DepositForm({ onAddPosition }: DepositFormProps) {
                       </div>
                       <div className="h-px bg-slate-300 dark:bg-slate-700" />
                       <div className="my-3 flex justify-between text-sm">
-                        <span className="text-slate-500 dark:text-slate-400">
+                        <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                           {t("form.summary.fee")}
+                          {hasVIPDiscount && (
+                            <span className="inline-flex items-center rounded bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                              <Crown className="mr-0.5 h-3 w-3" />
+                              -50%
+                            </span>
+                          )}
                         </span>
                         <span className="font-mono text-amber-600 dark:text-amber-400">
-                          0.5%
+                          {hasVIPDiscount && (
+                            <span className="mr-2 text-slate-400 line-through">
+                              0.5%
+                            </span>
+                          )}
+                          {hasVIPDiscount ? "0.25%" : "0.5%"}
                         </span>
                       </div>
+
+                      {/* VIP Discount Notice */}
+                      {hasVIPDiscount ? (
+                        <div className="mb-4 rounded-lg border border-emerald-300 bg-emerald-100 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                          <div className="flex items-center gap-2">
+                            <Crown className="h-4 w-4 text-amber-500" />
+                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                              {t("positions.vip.discountApplied")}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-100 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
+                          <p className="text-xs text-amber-700 dark:text-amber-400">
+                            {t("form.summary.discount")}
+                          </p>
+                          {selectedChain === "xlayer" && (
+                            <a
+                              href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                            >
+                              {t("form.summary.buyXWaifuLink")}
+                              <svg
+                                className="h-3 w-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                />
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                      )}
 
                       {/* Security Notice */}
                       <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">

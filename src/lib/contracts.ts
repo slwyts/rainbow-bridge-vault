@@ -328,6 +328,7 @@ export function useCreateLockup() {
     token: `0x${string}`;
     amount: bigint;
     unlockTime: bigint;
+    discountLockupId?: bigint;
     enableRemittance?: boolean;
     value?: bigint; // For native token lockups
   }) => {
@@ -337,7 +338,7 @@ export function useCreateLockup() {
       address: warehouseAddress,
       abi: warehouseAbi,
       functionName: "createLockup",
-      args: [params.token, params.amount, params.unlockTime, params.enableRemittance ?? false],
+      args: [params.token, params.amount, params.unlockTime, params.discountLockupId ?? 0n, params.enableRemittance ?? false],
       value: params.value,
     });
     return txHash;
@@ -637,7 +638,7 @@ import { useBlockNumber, useBlock } from "wagmi";
  */
 export function useBlockchainTime() {
   const chainId = useContractChainId();
-  
+
   // 获取最新区块信息
   const { data: block, refetch, isLoading } = useBlock({
     chainId,
@@ -655,4 +656,90 @@ export function useBlockchainTime() {
     refetch,
     isLoading,
   };
+}
+
+// ============ VIP Discount Hooks ============
+
+// VIP 常量（与合约保持一致）
+export const VIP_CONSTANTS = {
+  STAKE_MIN_AMOUNT: BigInt("9800000000000000000000"), // 9800 * 1e18 (合约要求，对外宣传 10000)
+  STAKE_MIN_DURATION: 363 * 24 * 60 * 60, // 363 days in seconds (与合约一致)
+  DISCOUNT_COST: BigInt("100000000000000000000"), // 100 * 1e18
+} as const;
+
+// Hook to read xwaifuToken address
+export function useXwaifuToken() {
+  const warehouseAddress = useWarehouseAddress();
+  const chainId = useContractChainId();
+
+  return useReadContract({
+    address: warehouseAddress,
+    abi: warehouseAbi,
+    functionName: "xwaifuToken",
+    chainId,
+    query: { enabled: !!warehouseAddress },
+  });
+}
+
+// Hook to activate VIP (burn 100 xwaifu from lockup position)
+export function useActivateVIP() {
+  const warehouseAddress = useWarehouseAddress();
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const activateVIP = async (lockupId: bigint) => {
+    if (!warehouseAddress)
+      throw new Error("Warehouse not deployed on this chain");
+    return writeContractAsync({
+      address: warehouseAddress,
+      abi: warehouseAbi,
+      functionName: "activateVIP",
+      args: [lockupId],
+    });
+  };
+
+  return {
+    activateVIP,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error,
+  };
+}
+
+// 检查 lockup 是否可以激活 VIP
+export function canActivateVIP(
+  amount: bigint,
+  unlockTime: number,
+  createTime: number,
+  isDiscountActive: boolean,
+  withdrawn: boolean
+): boolean {
+  if (withdrawn) return false;
+  if (isDiscountActive) return false;
+  if (amount < VIP_CONSTANTS.STAKE_MIN_AMOUNT) return false;
+  // 前端检查放宽到 364 天，实际合约要求 365 天
+  // 如果不满足合约要求，交易会失败并显示错误
+  const lockDuration = unlockTime - createTime;
+  const minDurationForUI = 364 * 24 * 60 * 60; // 364 days
+  if (lockDuration < minDurationForUI) return false;
+  return true;
+}
+
+// 检查 lockup 是否是有效的 VIP 状态（可用于折扣）
+export function isValidVIPLockup(
+  amount: bigint,
+  unlockTime: number,
+  createTime: number,
+  isDiscountActive: boolean,
+  withdrawn: boolean
+): boolean {
+  if (withdrawn) return false;
+  if (!isDiscountActive) return false;
+  if (amount < VIP_CONSTANTS.STAKE_MIN_AMOUNT) return false;
+  if (unlockTime < createTime + VIP_CONSTANTS.STAKE_MIN_DURATION) return false;
+  return true;
 }

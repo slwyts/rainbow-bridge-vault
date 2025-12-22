@@ -27,8 +27,13 @@ export type Position = {
   unlockTime?: number; // Unix timestamp for unlock (coin-based)
   canWithdraw: boolean; // Whether withdrawal is currently possible
   withdrawableNow?: number; // How many periods can be withdrawn now (u-based)
+  // Internal fields for contract operations
+  tokenAddress?: string;
   remittanceEnabled?: boolean;
   createdAsRemit?: boolean;
+  // VIP discount status (only for xwaifu lockups on X Layer)
+  isDiscountActive?: boolean;
+  createTime?: number; // Unix timestamp for lockup creation
 };
 
 function HomePage() {
@@ -58,7 +63,7 @@ function HomePage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-6xl">
-          <DepositForm onAddPosition={handlePositionAdded} />
+          <DepositForm onAddPosition={handlePositionAdded} positions={positions} />
         </div>
 
         <div className="mx-auto mt-12 max-w-6xl">

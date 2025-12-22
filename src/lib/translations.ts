@@ -78,7 +78,7 @@ export const translations = {
         totalFee: "Total Fee",
         fee: "Fee",
         discount:
-          "Stake 10,000 xwaifu and burn 100 xwaifu to get 50% off base fees!",
+          "Stake 10,000+ xWAIFU on X Layer for 365+ days, burn 100 to activate VIP for 50% off fees!",
         buyXWaifuLink: "Buy xwaifu on X Layer →",
       },
       buttons: {
@@ -226,6 +226,15 @@ export const translations = {
           description: "Need to authorize warehouse contract to deduct USDT",
         },
       },
+      vip: {
+        activate: "Activate VIP",
+        activating: "Activating VIP...",
+        activatingDesc: "Please confirm in wallet, 100 xwaifu will be deducted",
+        activated: "VIP Activated!",
+        activatedDesc: "You can now enjoy 50% off on fees",
+        activateFailed: "VIP Activation Failed",
+        discountApplied: "VIP 50% off applied",
+      },
     },
     validation: {
       minDisbursementAmount: "Disbursement amount must be at least 5 USD",
@@ -316,7 +325,7 @@ export const translations = {
         name: "Token Name",
         address: "Contract Address",
         benefits:
-          "Stake 10,000 xwaifu and burn 100 xwaifu to receive 50% discount on base fees!",
+          "Stake 10,000+ xWAIFU on X Layer for 365+ days, burn 100 to activate VIP for 50% off fees!",
         buyButton: "Buy xwaifu",
       },
     },
@@ -399,7 +408,7 @@ export const translations = {
         disbursementFee: "派发费用",
         totalFee: "总费用",
         fee: "费用",
-        discount: "质押10,000个xWAIFU并燃烧100个xWAIFU可享受基础费用5折优惠！",
+        discount: "在 X Layer 上质押 10,000+ xWAIFU 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
         buyXWaifuLink: "在 X Layer 上购买 xwaifu →",
       },
       buttons: {
@@ -549,6 +558,15 @@ export const translations = {
           description: "需要授权仓库合约扣除 USDT",
         },
       },
+      vip: {
+        activate: "激活 VIP",
+        activating: "正在激活 VIP...",
+        activatingDesc: "请在钱包确认，将扣除 100 xwaifu",
+        activated: "VIP 已激活！",
+        activatedDesc: "您现在可以享受手续费5折优惠",
+        activateFailed: "VIP 激活失败",
+        discountApplied: "已享 VIP 5折优惠",
+      },
     },
     toast: {
       depositCreated: {
@@ -632,7 +650,7 @@ export const translations = {
         chain: "链",
         name: "代币名称",
         address: "合约地址",
-        benefits: "质押10,000个xWAIFU并燃烧100个xWAIFU可享受基础费用5折优惠！",
+        benefits: "在 X Layer 上质押 10,000+ xWAIFU 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
         buyButton: "购买 xwaifu",
       },
       validation: {
