@@ -1,16 +1,13 @@
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
-import { defineConfig, configVariable } from "hardhat/config";
-import dotenv from "dotenv";
+import { defineConfig } from "hardhat/config";
 
 // 加载合约相关的环境变量
-dotenv.config({ path: "env/bsc-testnet.env" });
-
 export default defineConfig({
   plugins: [hardhatToolboxViemPlugin],
   solidity: {
     profiles: {
       default: {
-        version: "0.8.30",
+        version: "0.8.33",
         settings: {
           viaIR: true,
           optimizer: {
@@ -20,7 +17,7 @@ export default defineConfig({
         },
       },
       production: {
-        version: "0.8.30",
+        version: "0.8.33",
         settings: {
           viaIR: true,
           optimizer: {
@@ -50,12 +47,6 @@ export default defineConfig({
       type: "http",
       chainType: "l1",
       url: "http://127.0.0.1:8545",
-    },
-    bscTestnet: {
-      type: "http",
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      chainId: 97,
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-    },
+    }
   },
 });

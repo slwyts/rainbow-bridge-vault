@@ -1,31 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.33;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract RainbowWarehouse is Ownable, ReentrancyGuard {
+contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    // --- Configuration ---
     IERC20 public immutable xwaifuToken;
     IERC20 public immutable usdtToken;
-    uint256 public immutable REMITTANCE_FEE; // 0.1 USDT (decimals based)
-    
-    // Discount Config
+    uint256 public immutable REMITTANCE_FEE;
     uint256 public constant DISCOUNT_COST = 100 * 1e18;
     uint256 public constant STAKE_MIN_AMOUNT = 9800 * 1e18; // Adjusted to allow for fee + cost deduction
     uint256 public constant STAKE_MIN_DURATION = 365 days;
-    
-    address public constant XWAIFU_ADDRESS = 0x140abA9691353eD54479372c4E9580D558D954b1;
 
-    // --- State ---
     struct Deposit {
         address user;
-        address token;          // Support different tokens (USDT, USDC, etc.) or native (address(0))
+        address token;  // ERC20 or native (address(0))
         uint256 amountPerPeriod;
         uint256 periodSeconds;
         uint32 totalPeriods;
@@ -37,7 +32,7 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
 
     struct Lockup {
         address user;
-        address token;         // address(0) for native
+        address token;         // ERC20 or native (address(0))
         uint256 amount;
         uint256 unlockTime;
         bool withdrawn;
@@ -57,7 +52,6 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
     uint256 public nextDepositId;
     uint256 public nextLockupId;
 
-    // --- Events ---
     event DepositCreated(uint256 indexed id, address indexed user, address token, uint256 totalAmount);
     event DepositWithdrawn(uint256 indexed id, uint256 amount, address to);
     event DepositCancelled(uint256 indexed id, uint256 returnedAmount);
@@ -67,46 +61,33 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
     event LockupRemittanceEnabled(uint256 indexed id);
 
     constructor(address _initialOwner, address _xwaifuToken, address _usdtToken) Ownable(_initialOwner) {
-        address resolvedXwaifu = address(0);
-        address resolvedUsdt = address(0);
-
-        if (block.chainid == 196) {
-            // XLayer: require explicit USDT address from constructor for safety
-            require(_usdtToken != address(0), "USDT required on XLayer");
-            resolvedXwaifu = XWAIFU_ADDRESS;
-            resolvedUsdt = _usdtToken;
-        } else if (block.chainid == 42161) {
-            // Default Arbitrum USDT; allow override
-            address defaultUsdt = 0xfd086BC7Cd5C481dcc9C85eb1428Fa16A85c9AED;
-            resolvedUsdt = _usdtToken != address(0) ? _usdtToken : defaultUsdt;
-        } else if (block.chainid == 56) {
-            // Default BSC USDT; allow override
-            address defaultUsdt = 0x55d398326f99059fF775485246999027B3197955;
-            resolvedUsdt = _usdtToken != address(0) ? _usdtToken : defaultUsdt;
-        } else if (block.chainid == 31337) {
-            resolvedXwaifu = _xwaifuToken;
+        if (block.chainid == 196) { // X Layer
+            xwaifuToken = IERC20(0x140abA9691353eD54479372c4E9580D558D954b1);
+            usdtToken = IERC20(0x779Ded0c9e1022225f8E0630b35a9b54bE713736);
+        } else if (block.chainid == 1) { // Ethereum
+            xwaifuToken = IERC20(address(0));
+            usdtToken = IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7);
+        } else if (block.chainid == 42161) { // Arbitrum
+            xwaifuToken = IERC20(address(0));
+            usdtToken = IERC20(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9);
+        } else if (block.chainid == 56) { // BSC
+            xwaifuToken = IERC20(address(0));
+            usdtToken = IERC20(0x55d398326f99059fF775485246999027B3197955);
+        } else if (block.chainid == 137) { // Polygon
+            xwaifuToken = IERC20(address(0));
+            usdtToken = IERC20(0xc2132D05D31c914a87C6611C10748AEb04B58e8F);
+        } else if (block.chainid == 8453) { // Base
+            xwaifuToken = IERC20(address(0));
+            usdtToken = IERC20(0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2);
+        } else if (block.chainid == 31337) { // Hardhat Local
+            xwaifuToken = IERC20(_xwaifuToken);
             address defaultUsdt = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
-            resolvedUsdt = _usdtToken != address(0) ? _usdtToken : defaultUsdt;
+            usdtToken = IERC20(_usdtToken != address(0) ? _usdtToken : defaultUsdt);
         } else {
             revert("Unsupported chain");
         }
 
-        // Optional xwaifu override (for test/local)
-        if (_xwaifuToken != address(0) && resolvedXwaifu == address(0)) {
-            resolvedXwaifu = _xwaifuToken;
-        }
-
-        require(resolvedUsdt != address(0), "USDT not set");
-
-        xwaifuToken = IERC20(resolvedXwaifu);
-        usdtToken = IERC20(resolvedUsdt);
-
-        uint8 decimals = 18;
-        try IERC20Metadata(resolvedUsdt).decimals() returns (uint8 dec) {
-            decimals = dec;
-        } catch {
-            decimals = 18;
-        }
+        uint8 decimals = IERC20Metadata(address(usdtToken)).decimals();
         REMITTANCE_FEE = (10 ** decimals) / 10; // 0.1 USDT
     }
 
@@ -118,7 +99,8 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
         uint32 _totalPeriods,
         uint256 _discountLockupId,
         bool _enableRemittance
-    ) external payable nonReentrant {
+    ) external payable nonReentrant whenNotPaused {
+        require(_periodSeconds > 0, "Period must be > 0");
         require(_totalPeriods > 0 && _totalPeriods <= 365, "Invalid periods");
         require(_amountPerPeriod > 0, "Amount > 0");
 
@@ -206,14 +188,14 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
         Deposit storage d = deposits[_id];
         require(msg.sender == d.user, "Not owner");
         require(d.periodsWithdrawn < d.totalPeriods, "Completed");
-    // Only native remittance (created at open) can be emergency cancelled
-    require(d.createdAsRemit, "Cancel not allowed");
+        // Only native remittance (created at open) can be emergency cancelled
+        require(d.createdAsRemit, "Cancel not allowed");
 
         uint256 remaining = d.amountPerPeriod * (d.totalPeriods - d.periodsWithdrawn);
         d.periodsWithdrawn = d.totalPeriods; // Mark complete
 
-    address recipient = _to == address(0) ? msg.sender : _to;
-    require(recipient != address(0), "Invalid recipient");
+        address recipient = _to == address(0) ? msg.sender : _to;
+        require(recipient != address(0), "Invalid recipient");
 
         if (remaining > 0) {
             if (d.token == address(0)) {
@@ -248,7 +230,7 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
     }
 
     // --- Lockup (One-time) ---
-    function createLockup(address _token, uint256 _amount, uint256 _unlockTime, bool _enableRemittance) external payable nonReentrant {
+    function createLockup(address _token, uint256 _amount, uint256 _unlockTime, bool _enableRemittance) external payable nonReentrant whenNotPaused {
         require(_unlockTime > block.timestamp, "Invalid time");
         
         uint256 amountLocked = _amount;
@@ -382,8 +364,17 @@ contract RainbowWarehouse is Ownable, ReentrancyGuard {
         usdtToken.safeTransferFrom(msg.sender, owner(), REMITTANCE_FEE);
     }
     
-    receive() external payable {
+    receive() external payable nonReentrant {
         (bool ok, ) = payable(owner()).call{value: msg.value}("");
         require(ok, "Native transfer failed");
+    }
+
+    // --- Admin ---
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
 }
