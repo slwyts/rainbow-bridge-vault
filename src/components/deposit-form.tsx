@@ -82,7 +82,6 @@ import {
   useXwaifuToken,
   isValidVIPLockup,
 } from "@/lib/contracts";
-import type { Position } from "@/app/page";
 
 interface DepositFormProps {
   onAddPosition: () => void; // Called after successful tx to trigger refetch
@@ -828,7 +827,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           <div className="flex items-center justify-between text-xs">
                             <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                               <Wallet className="h-3 w-3" />
-                              余额:
+                              {t("form.balance.label")}
                             </span>
                             <span
                               className={`font-mono ${hasInsufficientUBasedBalance ? "text-red-500" : "text-slate-600 dark:text-slate-300"}`}
@@ -884,7 +883,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                             className="h-14 rounded-xl border-slate-300 bg-slate-100 pr-16 pl-4 text-xl font-bold text-slate-800 focus:border-violet-500 focus:ring-violet-500/20 sm:text-2xl dark:border-slate-600 dark:bg-slate-800/50 dark:text-white"
                           />
                           <span className="absolute top-1/2 right-4 -translate-y-1/2 text-sm font-bold text-violet-500 dark:text-violet-400">
-                            次
+                            {t("form.frequency.times")}
                           </span>
                         </div>
                         <p className="dark:text-white-500 text-xs text-slate-400">
@@ -1179,7 +1178,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                             }`}
                             onClick={() => setDepositRemittance(false)}
                           >
-                            仅自己收款
+                            {t("form.remittance.selfOnly")}
                           </button>
                           <button
                             type="button"
@@ -1190,7 +1189,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                             }`}
                             onClick={() => setDepositRemittance(true)}
                           >
-                            开启汇付
+                            {t("form.remittance.enableRemittance")}
                           </button>
                         </div>
                       </div>
@@ -1228,7 +1227,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           disabled
                           className="h-14 w-full cursor-not-allowed rounded-xl bg-red-500/80 text-lg font-bold text-white shadow-lg transition-all"
                         >
-                          余额不足
+                          {t("form.balance.insufficient")}
                         </Button>
                       ) : (
                         <Button
@@ -1373,7 +1372,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                         <div className="flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                             <Wallet className="h-3 w-3" />
-                            余额:
+                            {t("form.balance.label")}
                           </span>
                           <span
                             className={`font-mono ${hasInsufficientLockupBalance ? "text-red-500" : "text-slate-600 dark:text-slate-300"}`}
@@ -1602,7 +1601,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                             }`}
                             onClick={() => setLockupRemittance(false)}
                           >
-                            仅自己收款
+                            {t("form.remittance.selfOnly")}
                           </button>
                           <button
                             type="button"
@@ -1613,7 +1612,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                             }`}
                             onClick={() => setLockupRemittance(true)}
                           >
-                            开启汇付
+                            {t("form.remittance.enableRemittance")}
                           </button>
                         </div>
                       </div>
@@ -1651,7 +1650,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           disabled
                           className="h-14 w-full cursor-not-allowed rounded-xl bg-red-500/80 text-lg font-bold text-white shadow-lg transition-all"
                         >
-                          余额不足
+                          {t("form.balance.insufficient")}
                         </Button>
                       ) : (
                         <Button

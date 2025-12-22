@@ -442,7 +442,7 @@ function AddCurrencyCard({
                         {t("form.assetSelector.addCustomTitle")}
                       </h3>
                       <p className="text-sm text-slate-500">
-                        输入代币合约地址自动获取信息
+                        {t("form.customToken.inputHint")}
                       </p>
                     </div>
                   </div>
@@ -462,7 +462,7 @@ function AddCurrencyCard({
                 {/* Chain Selector */}
                 <div className="space-y-2">
                   <label className="text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400">
-                    选择链
+                    {t("form.customToken.selectChain")}
                   </label>
                   <div className="grid grid-cols-4 gap-2">
                     {defaultChains.map((chain) => (
@@ -527,7 +527,7 @@ function AddCurrencyCard({
                       <div className="flex items-center justify-center gap-2 py-4">
                         <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
                         <span className="text-sm text-slate-500">
-                          获取代币信息中...
+                          {t("form.customToken.fetchingInfo")}
                         </span>
                       </div>
                     ) : tokenValid ? (
@@ -548,7 +548,7 @@ function AddCurrencyCard({
                         <div className="flex items-center justify-between border-t border-slate-200 pt-2 dark:border-slate-700">
                           <span className="flex items-center gap-1.5 text-sm text-slate-500">
                             <Wallet className="h-4 w-4" />
-                            你的余额
+                            {t("form.customToken.yourBalance")}
                           </span>
                           <span className="font-mono font-medium text-slate-900 dark:text-white">
                             {formatBalance(
@@ -559,14 +559,14 @@ function AddCurrencyCard({
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-xs text-slate-400">
-                          <span>精度: {decimals} 位</span>
+                          <span>{t("form.customToken.decimals").replace("{decimals}", String(decimals))}</span>
                         </div>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 py-2 text-red-500">
                         <AlertCircle className="h-4 w-4" />
                         <span className="text-sm">
-                          无效的代币合约或无法获取信息
+                          {t("form.customToken.invalidToken")}
                         </span>
                       </div>
                     )}
@@ -581,7 +581,7 @@ function AddCurrencyCard({
                   {tokenLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      获取中...
+                      {t("form.customToken.fetching")}
                     </>
                   ) : (
                     <>

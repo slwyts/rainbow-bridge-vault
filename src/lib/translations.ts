@@ -140,6 +140,24 @@ export const translations = {
       remittance: {
         depositOption: "Remittance option (allow payout to another address)",
         lockupOption: "Remittance option (withdraw to another address at unlock)",
+        selfOnly: "Self Only",
+        enableRemittance: "Enable Remittance",
+      },
+      balance: {
+        label: "Balance:",
+        insufficient: "Insufficient Balance",
+      },
+      frequency: {
+        times: "times",
+      },
+      customToken: {
+        inputHint: "Enter token contract address to auto-fetch info",
+        selectChain: "Select Chain",
+        fetching: "Fetching...",
+        fetchingInfo: "Fetching token info...",
+        yourBalance: "Your Balance",
+        decimals: "Decimals: {decimals}",
+        invalidToken: "Invalid token contract or unable to fetch info",
       },
       errors: {
         switchNetworkFailed: "Network switch failed",
@@ -472,6 +490,24 @@ export const translations = {
       remittance: {
         depositOption: "汇付选项（允许派发到其他地址）",
         lockupOption: "汇付选项（解锁时提现到其他地址）",
+        selfOnly: "仅自己收款",
+        enableRemittance: "开启汇付",
+      },
+      balance: {
+        label: "余额:",
+        insufficient: "余额不足",
+      },
+      frequency: {
+        times: "次",
+      },
+      customToken: {
+        inputHint: "输入代币合约地址自动获取信息",
+        selectChain: "选择链",
+        fetching: "获取中...",
+        fetchingInfo: "获取代币信息中...",
+        yourBalance: "你的余额",
+        decimals: "精度: {decimals} 位",
+        invalidToken: "无效的代币合约或无法获取信息",
       },
       errors: {
         switchNetworkFailed: "切换网络失败",
