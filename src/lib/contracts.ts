@@ -120,9 +120,11 @@ export function useUserLockupId(
 // Read ERC20 balance
 export function useTokenBalance(
   tokenAddress: `0x${string}` | undefined,
-  userAddress: `0x${string}` | undefined
+  userAddress: `0x${string}` | undefined,
+  overrideChainId?: number
 ) {
-  const chainId = useContractChainId();
+  const walletChainId = useContractChainId();
+  const chainId = overrideChainId ?? walletChainId;
 
   return useReadContract({
     address: tokenAddress,
@@ -146,8 +148,12 @@ export function useNativeBalance(userAddress: `0x${string}` | undefined) {
 }
 
 // Read ERC20 decimals
-export function useTokenDecimals(tokenAddress: `0x${string}` | undefined) {
-  const chainId = useContractChainId();
+export function useTokenDecimals(
+  tokenAddress: `0x${string}` | undefined,
+  overrideChainId?: number
+) {
+  const walletChainId = useContractChainId();
+  const chainId = overrideChainId ?? walletChainId;
 
   return useReadContract({
     address: tokenAddress,
@@ -159,8 +165,12 @@ export function useTokenDecimals(tokenAddress: `0x${string}` | undefined) {
 }
 
 // Read ERC20 name
-export function useTokenName(tokenAddress: `0x${string}` | undefined) {
-  const chainId = useContractChainId();
+export function useTokenName(
+  tokenAddress: `0x${string}` | undefined,
+  overrideChainId?: number
+) {
+  const walletChainId = useContractChainId();
+  const chainId = overrideChainId ?? walletChainId;
 
   return useReadContract({
     address: tokenAddress,
@@ -172,8 +182,12 @@ export function useTokenName(tokenAddress: `0x${string}` | undefined) {
 }
 
 // Read ERC20 symbol
-export function useTokenSymbol(tokenAddress: `0x${string}` | undefined) {
-  const chainId = useContractChainId();
+export function useTokenSymbol(
+  tokenAddress: `0x${string}` | undefined,
+  overrideChainId?: number
+) {
+  const walletChainId = useContractChainId();
+  const chainId = overrideChainId ?? walletChainId;
 
   return useReadContract({
     address: tokenAddress,
@@ -185,22 +199,25 @@ export function useTokenSymbol(tokenAddress: `0x${string}` | undefined) {
 }
 
 // Combined hook to get all token info
-export function useTokenInfo(tokenAddress: `0x${string}` | undefined) {
+export function useTokenInfo(
+  tokenAddress: `0x${string}` | undefined,
+  overrideChainId?: number
+) {
   const {
     data: name,
     isLoading: nameLoading,
     error: nameError,
-  } = useTokenName(tokenAddress);
+  } = useTokenName(tokenAddress, overrideChainId);
   const {
     data: symbol,
     isLoading: symbolLoading,
     error: symbolError,
-  } = useTokenSymbol(tokenAddress);
+  } = useTokenSymbol(tokenAddress, overrideChainId);
   const {
     data: decimals,
     isLoading: decimalsLoading,
     error: decimalsError,
-  } = useTokenDecimals(tokenAddress);
+  } = useTokenDecimals(tokenAddress, overrideChainId);
 
   const isLoading = nameLoading || symbolLoading || decimalsLoading;
   const error = nameError || symbolError || decimalsError;

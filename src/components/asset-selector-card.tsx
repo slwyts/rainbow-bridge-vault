@@ -30,10 +30,19 @@ import {
   NetworkXLayer,
   NetworkArbitrumOne,
   NetworkEthereum,
+  // Native token icons
+  TokenETH,
+  TokenBNB,
+  TokenMATIC,
+  TokenAVAX,
+  TokenSOL,
+  TokenFTM,
+  TokenOP,
+  TokenOKB,
 } from "@web3icons/react";
 import { useTokenInfo, useTokenBalance } from "@/lib/contracts";
 import { useAccount, useChainId } from "wagmi";
-import { formatUnits } from "viem";
+import { formatUnits, getAddress } from "viem";
 import {
   CHAIN_IDS,
   CHAIN_CONFIGS,
@@ -42,6 +51,8 @@ import {
   getChainTokenList,
   getTrustWalletIconUrl,
   CHAIN_TO_TRUST_WALLET,
+  getOKLinkTokenIconUrl,
+  getChainNumericId,
   type SupportedChainId,
 } from "@/lib/chains";
 
@@ -73,7 +84,8 @@ export function getTokenIconUrl(
   chainId: string
 ): string {
   const trustWalletChain = CHAIN_TO_TRUST_WALLET[chainId] || "ethereum";
-  const checksumAddress = contractAddress; // Ideally should be checksummed
+  // Trust Wallet requires checksum address (mixed case)
+  const checksumAddress = getAddress(contractAddress);
   return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${trustWalletChain}/assets/${checksumAddress}/logo.png`;
 }
 
@@ -244,44 +256,95 @@ function TokenBalanceDisplay({
   );
 }
 
-// CurrencyIcon with fallback chain for custom icon URLs
+// 原生代币图标映射
+const NATIVE_TOKEN_ICONS: Record<string, typeof TokenETH> = {
+  ETH: TokenETH,
+  BNB: TokenBNB,
+  MATIC: TokenMATIC,
+  POL: TokenMATIC,
+  AVAX: TokenAVAX,
+  SOL: TokenSOL,
+  FTM: TokenFTM,
+  OP: TokenOP,
+  OKB: TokenOKB,
+};
+
+// CurrencyIcon with fallback: Native -> Trust Wallet -> OKLink -> Generic
 export function CurrencyIcon({
   symbol,
   className = "w-8 h-8",
   iconUrl,
   contractAddress,
   chainId,
+  isNative,
 }: {
   symbol: string;
   className?: string;
   iconUrl?: string;
   contractAddress?: string;
   chainId?: string;
+  isNative?: boolean;
 }) {
-  const [imgError, setImgError] = useState(false);
+  // 原生代币优先使用库图标
+  if (isNative || !contractAddress) {
+    const NativeIcon = NATIVE_TOKEN_ICONS[symbol.toUpperCase()];
+    if (NativeIcon) {
+      return <NativeIcon className={className} variant="branded" />;
+    }
+  }
 
-  // Try to get icon URL from Trust Wallet if we have contract address
-  const fallbackIconUrl =
+  // fallback 级别: 0=custom, 1=TrustWallet, 2-5=OKLink(107,109,105,110), 6=generic
+  const [fallbackLevel, setFallbackLevel] = useState(0);
+
+  // 当代币变化时重置 fallback 级别
+  useEffect(() => {
+    setFallbackLevel(0);
+  }, [contractAddress, chainId]);
+
+  // OKLink tokenType 尝试顺序
+  const oklinkTokenTypes = [107, 109, 105, 110];
+
+  // 生成 Trust Wallet URL (checksum address)
+  const trustWalletUrl =
     contractAddress && chainId
       ? getTokenIconUrl(contractAddress, chainId)
       : undefined;
 
-  const imageUrl = iconUrl || fallbackIconUrl;
+  // 根据 fallback 级别选择 URL
+  const getImageUrl = () => {
+    // Level 0: 自定义 iconUrl
+    if (fallbackLevel === 0 && iconUrl) return iconUrl;
+    // Level 1: Trust Wallet (checksum address)
+    if (fallbackLevel <= 1 && trustWalletUrl) return trustWalletUrl;
+    // Level 2-5: OKLink 尝试不同 tokenType
+    const oklinkIndex = fallbackLevel - 2;
+    if (oklinkIndex >= 0 && oklinkIndex < oklinkTokenTypes.length && contractAddress && chainId) {
+      return getOKLinkTokenIconUrl(contractAddress, chainId, oklinkTokenTypes[oklinkIndex]);
+    }
+    return null;
+  };
 
-  // If we have a valid image URL and it hasn't errored, use it
-  if (imageUrl && !imgError) {
+  const imageUrl = getImageUrl();
+
+  // 图片加载失败时，尝试下一个来源
+  const handleError = () => {
+    setFallbackLevel((prev) => prev + 1);
+  };
+
+  // 如果有有效的图片 URL，显示图片
+  if (imageUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={imageUrl}
         alt={symbol}
         className={cn("rounded-full", className)}
-        onError={() => setImgError(true)}
+        onError={handleError}
       />
     );
   }
 
-  // Fallback to generic icon (no dynamic TokenIcon to avoid chunk explosion)
+  // 所有来源都失败，显示通用图标
   return <GenericTokenIcon symbol={symbol} className={className} />;
 }
 
@@ -347,7 +410,10 @@ function AddCurrencyCard({
     ? (customAddress as `0x${string}`)
     : undefined;
 
-  // Auto-fetch token info when address is valid
+  // Get numeric chain ID for the selected chain
+  const selectedNumericChainId = getChainNumericId(selectedChainForImport);
+
+  // Auto-fetch token info when address is valid (use selected chain, not wallet chain)
   const {
     name,
     symbol,
@@ -355,10 +421,10 @@ function AddCurrencyCard({
     isLoading: tokenLoading,
     isValid: tokenValid,
     error: tokenError,
-  } = useTokenInfo(tokenAddress);
+  } = useTokenInfo(tokenAddress, selectedNumericChainId);
 
-  // Fetch user balance
-  const { data: balance } = useTokenBalance(tokenAddress, address);
+  // Fetch user balance on the selected chain
+  const { data: balance } = useTokenBalance(tokenAddress, address, selectedNumericChainId);
 
   const formatBalance = (bal: bigint | undefined, dec: number | undefined) => {
     if (bal === undefined || dec === undefined) return "0";
@@ -874,6 +940,7 @@ export function AssetSelectorCard({
                                   iconUrl={currency.iconUrl}
                                   contractAddress={currency.contractAddress}
                                   chainId={currency.chainId}
+                                  isNative={currency.isNative}
                                 />
                               </div>
 

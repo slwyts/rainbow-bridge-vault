@@ -1294,6 +1294,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                               selectedCurrencyData?.contractAddress
                             }
                             chainId={selectedCurrencyData?.chainId}
+                            isNative={selectedCurrencyData?.isNative}
                           />
                           <div className="text-left">
                             <div className="font-bold">{selectedCurrency}</div>

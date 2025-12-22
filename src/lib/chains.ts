@@ -35,6 +35,28 @@ export const CHAIN_TO_TRUST_WALLET: Record<string, string> = {
   "arbitrum-one": "arbitrum",
 };
 
+// ============ OKLink Chain ID 映射 (用于获取代币图标) ============
+// OKLink CDN 格式: {chainId}-{contractAddress}-{tokenType}/type=default_90_0
+// tokenType 107 覆盖面较广，作为默认值
+export const CHAIN_TO_OKLINK_ID: Record<string, number> = {
+  localnet: 1, // Ethereum
+  "x-layer": 196,
+  "binance-smart-chain": 56,
+  "bsc-testnet": 56,
+  "arbitrum-one": 42161,
+};
+
+// 获取 OKLink 代币图标 URL
+export function getOKLinkTokenIconUrl(
+  contractAddress: string,
+  chainId: string,
+  tokenType: number = 107
+): string | undefined {
+  const oklinkChainId = CHAIN_TO_OKLINK_ID[chainId];
+  if (!oklinkChainId) return undefined;
+  return `https://static.oklink.com/cdn/web3/currency/token/large/${oklinkChainId}-${contractAddress}-${tokenType}/type=default_90_0`;
+}
+
 // ============ 代币类型定义 ============
 export interface TokenConfig {
   symbol: string;
