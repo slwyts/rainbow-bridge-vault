@@ -15,7 +15,8 @@
     "test": "hardhat test",
     "node": "hardhat node",
     "time": "node scripts/time-jump.js",
-    "deploy:tbsc": "dotenv -e env/bsc-testnet.env -- hardhat run scripts/deploy-tbsc.ts --network bscTestnet"
+    "deploy:tbsc": "dotenv -e env/bsc-testnet.env -- hardhat run scripts/deploy-tbsc.ts --network bscTestnet",
+    "deploy": "node scripts/deploy.cjs"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
