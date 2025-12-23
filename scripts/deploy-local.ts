@@ -45,6 +45,9 @@ async function main() {
   const usdc = await viem.deployContract("MockERC20", ["USD Coin", "USDC", 6]);
   console.log("USDC deployed to:", usdc.address);
 
+  const usdg = await viem.deployContract("MockERC20", ["USDG", "USDG", 6]);
+  console.log("USDG deployed to:", usdg.address);
+
   const xwaifu = await viem.deployContract("MockERC20", [
     "xWaifu",
     "xWAIFU",
@@ -66,6 +69,7 @@ async function main() {
   const tokens = [
     { contract: usdt, name: "USDT", decimals: 6, amount: "100000" },
     { contract: usdc, name: "USDC", decimals: 6, amount: "100000" },
+    { contract: usdg, name: "USDG", decimals: 6, amount: "100000" },
     { contract: xwaifu, name: "xWaifu", decimals: 18, amount: "100000" },
   ];
 
@@ -93,6 +97,7 @@ async function main() {
   const envContent = `NEXT_PUBLIC_LOCALNET_WAREHOUSE_ADDRESS=${warehouse.address}
 NEXT_PUBLIC_LOCALNET_USDT_ADDRESS=${usdt.address}
 NEXT_PUBLIC_LOCALNET_USDC_ADDRESS=${usdc.address}
+NEXT_PUBLIC_LOCALNET_USDG_ADDRESS=${usdg.address}
 NEXT_PUBLIC_LOCALNET_XWAIFU_ADDRESS=${xwaifu.address}`;
 
   const envPath = path.join(process.cwd(), ".env.local");

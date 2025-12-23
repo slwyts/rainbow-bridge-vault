@@ -89,6 +89,7 @@ export interface ChainConfig {
     native: TokenConfig;
     USDT?: TokenConfig;
     USDC?: TokenConfig;
+    USDG?: TokenConfig;
     XWAIFU?: TokenConfig;
   };
 
@@ -115,11 +116,13 @@ const ENV_ADDRESSES = {
   LOCALNET_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_LOCALNET_WAREHOUSE_ADDRESS),
   LOCALNET_USDT: toAddress(process.env.NEXT_PUBLIC_LOCALNET_USDT_ADDRESS),
   LOCALNET_USDC: toAddress(process.env.NEXT_PUBLIC_LOCALNET_USDC_ADDRESS),
+  LOCALNET_USDG: toAddress(process.env.NEXT_PUBLIC_LOCALNET_USDG_ADDRESS),
   LOCALNET_XWAIFU: toAddress(process.env.NEXT_PUBLIC_LOCALNET_XWAIFU_ADDRESS),
   // X Layer
   XLAYER_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_XLAYER_WAREHOUSE_ADDRESS),
   XLAYER_USDT: toAddress(process.env.NEXT_PUBLIC_XLAYER_USDT_ADDRESS),
   XLAYER_USDC: toAddress(process.env.NEXT_PUBLIC_XLAYER_USDC_ADDRESS),
+  XLAYER_USDG: toAddress(process.env.NEXT_PUBLIC_XLAYER_USDG_ADDRESS),
   XLAYER_XWAIFU: toAddress(process.env.NEXT_PUBLIC_XLAYER_XWAIFU_ADDRESS),
   // BSC
   BSC_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_BSC_WAREHOUSE_ADDRESS),
@@ -160,6 +163,12 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         decimals: 6,
         address: ENV_ADDRESSES.LOCALNET_USDC,
       },
+      USDG: {
+        symbol: "USDG",
+        name: "Mock USDG",
+        decimals: 6,
+        address: ENV_ADDRESSES.LOCALNET_USDG,
+      },
       XWAIFU: {
         symbol: "xWaifu",
         name: "xWaifu Token",
@@ -194,6 +203,12 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         name: "USDC",
         decimals: 6,
         address: ENV_ADDRESSES.XLAYER_USDC,
+      },
+      USDG: {
+        symbol: "USDG",
+        name: "USDG",
+        decimals: 6,
+        address: ENV_ADDRESSES.XLAYER_USDG,
       },
       XWAIFU: {
         symbol: "xWaifu",
@@ -375,7 +390,7 @@ export function getWarehouseAddress(chainId: number): `0x${string}` | undefined 
  */
 export function getTokenAddress(
   chainId: number,
-  symbol: "USDT" | "USDC" | "XWAIFU"
+  symbol: "USDT" | "USDC" | "USDG" | "XWAIFU"
 ): `0x${string}` | undefined {
   return CHAIN_CONFIGS[chainId as SupportedChainId]?.tokens[symbol]?.address;
 }
@@ -393,7 +408,7 @@ export function getTokenConfig(
   if (symbol === config.tokens.native.symbol) {
     return config.tokens.native;
   }
-  return config.tokens[symbol as "USDT" | "USDC" | "XWAIFU"];
+  return config.tokens[symbol as "USDT" | "USDC" | "USDG" | "XWAIFU"];
 }
 
 /**
@@ -414,6 +429,7 @@ export function getChainTokenList(chainId: number): TokenConfig[] {
 
   if (config.tokens.USDT?.address) tokens.push(config.tokens.USDT);
   if (config.tokens.USDC?.address) tokens.push(config.tokens.USDC);
+  if (config.tokens.USDG?.address) tokens.push(config.tokens.USDG);
   if (config.tokens.XWAIFU?.address) tokens.push(config.tokens.XWAIFU);
 
   return tokens;

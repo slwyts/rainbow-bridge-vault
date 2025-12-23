@@ -129,7 +129,7 @@ export function getCurrenciesForChain(chainId: number): Currency[] {
   });
 
   // 添加其他代币
-  const tokenKeys = ["USDT", "USDC", "XWAIFU"] as const;
+  const tokenKeys = ["USDT", "USDC", "USDG", "XWAIFU"] as const;
   for (const key of tokenKeys) {
     const token = config.tokens[key];
     if (token?.address) {

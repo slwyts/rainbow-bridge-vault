@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -170,13 +170,36 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
   // 是否有有效 VIP（xwaifuToken 非零地址且有已激活的 VIP lockup）
   const hasVIPDiscount = hasXwaifuSupport && vipLockupId !== undefined;
 
-  // U-based token selection (USDT or USDC)
-  const [uBasedTokenSymbol, setUBasedTokenSymbol] = useState<"USDT" | "USDC">(
+  // U-based token selection (USDT, USDC, or USDG)
+  const [uBasedTokenSymbol, setUBasedTokenSymbol] = useState<"USDT" | "USDC" | "USDG">(
     "USDT"
   );
 
   // Get current chain's token addresses
   const currentNumericChainId = getChainNumericId(selectedChain);
+
+  // Get available stablecoins for current chain
+  const availableStablecoins = useMemo(() => {
+    const coins: Array<{ symbol: "USDT" | "USDC" | "USDG"; color: string }> = [];
+    if (getTokenAddress(currentNumericChainId, "USDT")) {
+      coins.push({ symbol: "USDT", color: "emerald" });
+    }
+    if (getTokenAddress(currentNumericChainId, "USDC")) {
+      coins.push({ symbol: "USDC", color: "blue" });
+    }
+    if (getTokenAddress(currentNumericChainId, "USDG")) {
+      coins.push({ symbol: "USDG", color: "amber" });
+    }
+    return coins;
+  }, [currentNumericChainId]);
+
+  // Auto-select first available stablecoin when chain changes
+  useEffect(() => {
+    if (availableStablecoins.length > 0 && !availableStablecoins.find(c => c.symbol === uBasedTokenSymbol)) {
+      setUBasedTokenSymbol(availableStablecoins[0].symbol);
+    }
+  }, [availableStablecoins, uBasedTokenSymbol]);
+
   const uBasedToken = getTokenAddress(
     currentNumericChainId,
     uBasedTokenSymbol
@@ -796,30 +819,27 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                                 : "focus:border-emerald-500"
                             }`}
                           />
-                          {/* USDT/USDC Selector */}
+                          {/* Stablecoin Selector */}
                           <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setUBasedTokenSymbol("USDT")}
-                              className={`rounded px-2 py-1 text-xs font-bold transition-all ${
-                                uBasedTokenSymbol === "USDT"
-                                  ? "bg-emerald-500 text-white"
-                                  : "bg-slate-200 text-slate-500 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600"
-                              }`}
-                            >
-                              USDT
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setUBasedTokenSymbol("USDC")}
-                              className={`rounded px-2 py-1 text-xs font-bold transition-all ${
-                                uBasedTokenSymbol === "USDC"
-                                  ? "bg-blue-500 text-white"
-                                  : "bg-slate-200 text-slate-500 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600"
-                              }`}
-                            >
-                              USDC
-                            </button>
+                            {availableStablecoins.map((coin) => (
+                              <button
+                                key={coin.symbol}
+                                type="button"
+                                onClick={() => setUBasedTokenSymbol(coin.symbol)}
+                                className={`rounded px-2 py-1 text-xs font-bold transition-all ${
+                                  uBasedTokenSymbol === coin.symbol
+                                    ? `bg-${coin.color}-500 text-white`
+                                    : "bg-slate-200 text-slate-500 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600"
+                                }`}
+                                style={uBasedTokenSymbol === coin.symbol ? {
+                                  backgroundColor: coin.color === "emerald" ? "#10b981" :
+                                                   coin.color === "blue" ? "#3b82f6" :
+                                                   coin.color === "amber" ? "#f59e0b" : "#10b981"
+                                } : undefined}
+                              >
+                                {coin.symbol}
+                              </button>
+                            ))}
                           </div>
                         </div>
                         {/* Balance display for U-based */}
