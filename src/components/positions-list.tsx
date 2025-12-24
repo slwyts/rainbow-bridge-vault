@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/components/i18n-provider";
+import { Inbox } from "lucide-react";
 import {
   TrendingUp,
   Calendar,
@@ -38,7 +38,11 @@ import {
   useXwaifuToken,
   canActivateVIP,
 } from "@/lib/contracts";
-import { getTokenAddress, getWarehouseAddress, CHAIN_IDS, type SupportedChainId } from "@/lib/chains";
+import {
+  getTokenAddress,
+  getWarehouseAddress,
+  type SupportedChainId,
+} from "@/lib/chains";
 import { useChainId } from "wagmi";
 import { waitForTransactionReceipt } from "@wagmi/core";
 import { config as wagmiConfig } from "@/lib/web3";
@@ -52,11 +56,11 @@ import { zeroAddress } from "viem";
 function formatTokenAmount(
   amount: string,
   currency: string,
-  decimals: number = 18
+  decimals = 18
 ): string {
   try {
     const formatted = formatUnits(BigInt(amount), decimals);
-    const num = parseFloat(formatted);
+    const num = Number.parseFloat(formatted);
 
     // Check if it's a stablecoin (USDC/USDT)
     const isStablecoin =
@@ -128,7 +132,9 @@ function Countdown({
       const estimatedBlockchainTime = Math.floor(Date.now() / 1000) + offset;
       const ready = targetTimestamp <= estimatedBlockchainTime;
       setIsReady(ready);
-      setDisplayTime(formatCountdown(targetTimestamp, estimatedBlockchainTime, t));
+      setDisplayTime(
+        formatCountdown(targetTimestamp, estimatedBlockchainTime, t)
+      );
     };
 
     updateDisplay();
@@ -195,27 +201,23 @@ export function PositionsList({
     isSuccess: isWithdrawLockupSuccess,
   } = useWithdrawLockup();
 
-  const {
-    enableDepositRemittance,
-    isPending: isEnablingDeposit,
-  } = useEnableDepositRemittance();
+  const { enableDepositRemittance, isPending: isEnablingDeposit } =
+    useEnableDepositRemittance();
 
-  const {
-    enableLockupRemittance,
-    isPending: isEnablingLockup,
-  } = useEnableLockupRemittance();
+  const { enableLockupRemittance, isPending: isEnablingLockup } =
+    useEnableLockupRemittance();
 
   const { data: remittanceFee } = useRemittanceFee();
-  const { data: usdtAllowance, refetch: refetchUsdtAllowance } = useTokenAllowance(
-    usdtAddress,
-    address,
-    warehouseAddress
-  );
+  const { data: usdtAllowance, refetch: refetchUsdtAllowance } =
+    useTokenAllowance(usdtAddress, address, warehouseAddress);
   const { data: usdtBalance } = useTokenBalance(usdtAddress, address);
-  const { approve: approveUsdt, isPending: isApprovingRemitFee } = useApproveToken();
+  const { approve: approveUsdt, isPending: isApprovingRemitFee } =
+    useApproveToken();
 
-  const { emergencyCancel, isPending: isEmergencyDeposit } = useEmergencyCancel();
-  const { emergencyCancelLockup, isPending: isEmergencyLockup } = useEmergencyCancelLockup();
+  const { emergencyCancel, isPending: isEmergencyDeposit } =
+    useEmergencyCancel();
+  const { emergencyCancelLockup, isPending: isEmergencyLockup } =
+    useEmergencyCancelLockup();
 
   // VIP activation
   const { activateVIP, isPending: isActivatingVIP } = useActivateVIP();
@@ -224,12 +226,16 @@ export function PositionsList({
 
   const [recipientMap, setRecipientMap] = useState<Record<string, string>>({});
   const [enablingId, setEnablingId] = useState<string | null>(null);
-  const [earlyClickMap, setEarlyClickMap] = useState<Record<string, number>>({});
+  const [earlyClickMap, setEarlyClickMap] = useState<Record<string, number>>(
+    {}
+  );
   const [isEarlyProcessing, setIsEarlyProcessing] = useState(false);
   const [isWithdrawingAction, setIsWithdrawingAction] = useState(false);
   const [isEnablingAction, setIsEnablingAction] = useState(false);
-  const [positionFilter, setPositionFilter] = useState<"current" | "history">("current");
-  
+  const [positionFilter, setPositionFilter] = useState<"current" | "history">(
+    "current"
+  );
+
   // 获取区块链时间（严格从链上读取）
   const { timestamp: blockchainTime } = useBlockchainTime();
 
@@ -249,13 +255,17 @@ export function PositionsList({
   const handleWithdraw = async (position: Position) => {
     try {
       if (position.chainId && position.chainId !== chainId) {
-        const switched = await switchChainAsync?.({ chainId: position.chainId });
+        const switched = await switchChainAsync?.({
+          chainId: position.chainId,
+        });
         if (!switched || switched.id !== position.chainId) {
           throw new Error(t("positions.errors.chainSwitchFailed"));
         }
       }
 
-      const targetWarehouse = getWarehouseAddress(position.chainId as SupportedChainId);
+      const targetWarehouse = getWarehouseAddress(
+        position.chainId as SupportedChainId
+      );
       if (!targetWarehouse) {
         throw new Error(t("positions.errors.warehouseNotConfigured"));
       }
@@ -303,13 +313,17 @@ export function PositionsList({
     setIsEarlyProcessing(true);
     try {
       if (position.chainId && position.chainId !== chainId) {
-        const switched = await switchChainAsync?.({ chainId: position.chainId });
+        const switched = await switchChainAsync?.({
+          chainId: position.chainId,
+        });
         if (!switched || switched.id !== position.chainId) {
           throw new Error(t("positions.errors.chainSwitchFailed"));
         }
       }
 
-      const targetWarehouse = getWarehouseAddress(position.chainId as SupportedChainId);
+      const targetWarehouse = getWarehouseAddress(
+        position.chainId as SupportedChainId
+      );
       if (!targetWarehouse) {
         throw new Error(t("positions.errors.warehouseNotConfigured"));
       }
@@ -319,13 +333,17 @@ export function PositionsList({
       }
 
       const recipient = (recipientMap[position.id] || "").trim();
-      const toAddress = recipient.startsWith("0x") && recipient.length === 42 ? (recipient as `0x${string}`) : undefined;
+      const toAddress =
+        recipient.startsWith("0x") && recipient.length === 42
+          ? (recipient as `0x${string}`)
+          : undefined;
 
       const parts = position.id.split("-");
       const type = parts[0];
       const index = BigInt(parts[2]);
 
-      const functionName = type === "deposit" ? "emergencyCancel" : "emergencyCancelLockup";
+      const functionName =
+        type === "deposit" ? "emergencyCancel" : "emergencyCancelLockup";
       const txHash = await writeContract(wagmiConfig, {
         address: targetWarehouse,
         abi: warehouseAbi,
@@ -356,7 +374,9 @@ export function PositionsList({
     setActivatingVIPId(position.id);
     try {
       if (position.chainId && position.chainId !== chainId) {
-        const switched = await switchChainAsync?.({ chainId: position.chainId });
+        const switched = await switchChainAsync?.({
+          chainId: position.chainId,
+        });
         if (!switched || switched.id !== position.chainId) {
           throw new Error(t("positions.errors.chainSwitchFailed"));
         }
@@ -381,7 +401,10 @@ export function PositionsList({
 
       setTimeout(() => onRefresh?.(), 1500);
     } catch (err) {
-      const msg = (err as { shortMessage?: string })?.shortMessage || (err as Error)?.message || "Please try again";
+      const msg =
+        (err as { shortMessage?: string })?.shortMessage ||
+        (err as Error)?.message ||
+        "Please try again";
       toast.error(t("positions.vip.activateFailed"), {
         description: msg,
       });
@@ -395,13 +418,21 @@ export function PositionsList({
     setIsEnablingAction(true);
     try {
       if (!address) throw new Error(t("positions.errors.connectWallet"));
-      const targetWarehouse = getWarehouseAddress(position.chainId as SupportedChainId);
-      const targetUsdt = getTokenAddress(position.chainId as SupportedChainId, "USDT");
-      if (!targetWarehouse) throw new Error(t("positions.errors.warehouseNotConfigured"));
+      const targetWarehouse = getWarehouseAddress(
+        position.chainId as SupportedChainId
+      );
+      const targetUsdt = getTokenAddress(
+        position.chainId as SupportedChainId,
+        "USDT"
+      );
+      if (!targetWarehouse)
+        throw new Error(t("positions.errors.warehouseNotConfigured"));
       if (!targetUsdt) throw new Error(t("positions.errors.usdtNotConfigured"));
 
       if (position.chainId && position.chainId !== chainId) {
-        const switched = await switchChainAsync?.({ chainId: position.chainId });
+        const switched = await switchChainAsync?.({
+          chainId: position.chainId,
+        });
         if (!switched || switched.id !== position.chainId) {
           throw new Error(t("positions.errors.chainSwitchFailed"));
         }
@@ -427,7 +458,10 @@ export function PositionsList({
       });
       await waitForTransactionReceipt(wagmiConfig, { hash: approveHash });
 
-      const functionName = type === "deposit" ? "enableDepositRemittance" : "enableLockupRemittance";
+      const functionName =
+        type === "deposit"
+          ? "enableDepositRemittance"
+          : "enableLockupRemittance";
       const txHash = await writeContract(wagmiConfig, {
         address: targetWarehouse,
         abi: warehouseAbi,
@@ -446,7 +480,10 @@ export function PositionsList({
 
       setTimeout(() => onRefresh?.(), 2000);
     } catch (err) {
-      const msg = (err as any)?.shortMessage || (err as Error)?.message || "Please try again";
+      const msg =
+        (err as any)?.shortMessage ||
+        (err as Error)?.message ||
+        "Please try again";
       toast.error(t("positions.toast.enableRemittanceFailed.title"), {
         description: msg,
       });
@@ -530,33 +567,27 @@ export function PositionsList({
 
       {/* Content area */}
       <div className="space-y-4 p-4 sm:p-6">
-        {!mounted ? (
-          <div className="py-8 text-center">
-            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-emerald-500" />
-            <p className="text-slate-500 dark:text-slate-400">Loading...</p>
+        {/* Loading State */}
+        {isLoading && positions.length === 0 && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
           </div>
-        ) : !isConnected ? (
-          <div className="py-8 text-center">
-            <p className="text-slate-500 dark:text-slate-400">
-              Connect wallet to view positions
-            </p>
-          </div>
-        ) : showInitialLoading ? (
-          <div className="py-8 text-center">
-            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-emerald-500" />
-            <p className="text-slate-500 dark:text-slate-400">
-              Loading positions from chain...
-            </p>
-          </div>
-        ) : showEmpty ? (
-          <div className="py-8 text-center">
-            <p className="text-slate-500 dark:text-slate-400">
+        )}
+
+        {/* Empty State */}
+        {!isLoading && filteredPositions.length === 0 && (
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 py-12 dark:border-slate-700">
+            <Inbox className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {positionFilter === "current"
-                ? t("positions.empty")
-                : t("positions.emptyHistory")}
+                ? t("positions.empty.current")
+                : t("positions.empty.history")}
             </p>
           </div>
-        ) : (
+        )}
+
+        {/* Positions Grid */}
+        {filteredPositions.length > 0 && (
           <div className="grid gap-4">
             {filteredPositions.map((position) => {
               // Determine if withdraw button should be enabled
@@ -592,11 +623,17 @@ export function PositionsList({
                   : position.amount;
 
               // VIP 相关判断（检查合约 xwaifuToken 是否有效，即非零地址）
-              const xwaifuAddr = xwaifuTokenAddress ? String(xwaifuTokenAddress).toLowerCase() : "";
-              const hasXwaifuSupport = xwaifuAddr && xwaifuAddr !== "0x0000000000000000000000000000000000000000";
-              const positionTokenAddr = position.tokenAddress?.toLowerCase() || "";
+              const xwaifuAddr = xwaifuTokenAddress
+                ? String(xwaifuTokenAddress).toLowerCase()
+                : "";
+              const hasXwaifuSupport =
+                xwaifuAddr &&
+                xwaifuAddr !== "0x0000000000000000000000000000000000000000";
+              const positionTokenAddr =
+                position.tokenAddress?.toLowerCase() || "";
 
-              const isXwaifuLockup = position.type === "coin-based" &&
+              const isXwaifuLockup =
+                position.type === "coin-based" &&
                 hasXwaifuSupport &&
                 positionTokenAddr === xwaifuAddr;
 
@@ -609,7 +646,8 @@ export function PositionsList({
                 false
               );
 
-              const canActivate = isXwaifuLockup &&
+              const canActivate =
+                isXwaifuLockup &&
                 !position.isDiscountActive &&
                 position.status === "active" &&
                 position.createTime !== undefined &&
@@ -617,193 +655,162 @@ export function PositionsList({
                 canActivateResult;
 
               // 是否已经是 VIP
-              const isVIP = isXwaifuLockup && position.isDiscountActive === true;
+              const isVIP =
+                isXwaifuLockup && position.isDiscountActive === true;
 
               return (
                 <div
                   key={position.id}
                   className="rounded-lg border border-slate-200/50 bg-slate-100/80 p-4 transition-colors hover:border-emerald-500/50 sm:p-5 dark:border-slate-700/50 dark:bg-slate-800/50"
                 >
-                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className="border-0 bg-linear-to-r from-emerald-500 to-green-500 text-white">
-                          {position.type === "u-based"
-                            ? t("positions.types.uBased")
-                            : t("positions.types.coinBased")}
+                  <div className="flex flex-col gap-4">
+                    {/* Top Row - Status Badge and VIP */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className="border-0 bg-linear-to-r from-emerald-500 to-green-500 text-white">
+                        {position.type === "u-based"
+                          ? t("positions.types.uBased")
+                          : t("positions.types.coinBased")}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-300"
+                      >
+                        {position.chain}
+                      </Badge>
+                      <Badge
+                        variant={
+                          position.status === "active" ? "default" : "secondary"
+                        }
+                      >
+                        {position.status === "active"
+                          ? t("positions.status.active")
+                          : t("positions.status.completed")}
+                      </Badge>
+                      {/* VIP 徽章 */}
+                      {isVIP && (
+                        <Badge className="border-0 bg-linear-to-r from-amber-500 to-orange-500 text-white">
+                          <Crown className="mr-1 h-3 w-3" />
+                          VIP
                         </Badge>
-                        <Badge
-                          variant="outline"
-                          className="border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-300"
-                        >
-                          {position.chain}
-                        </Badge>
-                        <Badge
-                          variant={
-                            position.status === "active"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {position.status === "active"
-                            ? t("positions.status.active")
-                            : t("positions.status.completed")}
-                        </Badge>
-                        {/* VIP 徽章 */}
-                        {isVIP && (
-                          <Badge className="border-0 bg-linear-to-r from-amber-500 to-orange-500 text-white">
-                            <Crown className="mr-1 h-3 w-3" />
-                            VIP
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4 sm:gap-4">
-                        {/* Total Amount */}
-                        <div className="flex items-center gap-2">
-                          <Coins className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                          <div className="min-w-0">
-                            <p className="text-xs text-slate-800 dark:text-slate-300">
-                              {position.type === "u-based"
-                                ? t("positions.fields.totalAmount")
-                                : t("positions.fields.amount")}
-                            </p>
-                            <p className="truncate font-semibold text-slate-800 dark:text-slate-200">
-                              {formatTokenAmount(
-                                displayAmount,
-                                position.currency,
-                                position.decimals
-                              )}{" "}
-                              {position.currency}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* For u-based: show per-period amount and remaining */}
-                        {position.type === "u-based" && (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <Coins className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                              <div className="min-w-0">
-                                <p className="text-xs text-slate-800 dark:text-slate-300">
-                                  {t("positions.fields.perPeriod")}
-                                </p>
-                                <p className="truncate font-semibold text-slate-800 dark:text-slate-200">
-                                  {formatTokenAmount(
-                                    position.amount,
-                                    position.currency,
-                                    position.decimals
-                                  )}{" "}
-                                  {position.currency}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Repeat className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                              <div className="min-w-0">
-                                <p className="text-xs text-slate-800 dark:text-slate-300">
-                                  {t("positions.fields.remaining")}
-                                </p>
-                                <p className="font-semibold text-slate-800 dark:text-slate-200">
-                                  {position.remaining}/{position.frequency}
-                                </p>
-                              </div>
-                            </div>
-                          </>
-                        )}
-
-                        {/* Period/Lock time */}
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                          <div className="min-w-0">
-                            <p className="text-xs text-slate-800 dark:text-slate-300">
-                              {position.type === "u-based"
-                                ? t("positions.fields.period")
-                                : t("positions.fields.lockPeriod")}
-                            </p>
-                            <p className="font-semibold text-slate-800 dark:text-slate-200">
-                              {position.period} {t("positions.fields.days")}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Countdown / Next withdraw time */}
-                        {position.status === "active" && nextWithdrawTime && (
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                            <div className="min-w-0">
-                              <p className="text-xs text-slate-800 dark:text-slate-300">
-                                {position.type === "u-based"
-                                  ? t("positions.fields.nextWithdraw")
-                                  : t("positions.fields.unlockCountdown")}
-                              </p>
-                              <Countdown
-                                targetTimestamp={nextWithdrawTime}
-                                initialBlockchainTime={blockchainTime}
-                                t={t}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Start date */}
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                          <div className="min-w-0">
-                            <p className="text-xs text-slate-800 dark:text-slate-300">
-                              {t("positions.fields.startDate")}
-                            </p>
-                            <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                              {position.startDate}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Withdrawable amount hint for u-based */}
-                      {position.type === "u-based" &&
-                        (position.withdrawableNow ?? 0) > 0 &&
-                        canWithdrawNow && (
-                          <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                            {t("positions.withdrawableHint")
-                              .replace("{periods}", String(position.withdrawableNow))
-                              .replace("{amount}", formatTokenAmount(
-                                (BigInt(position.amount) * BigInt(position.withdrawableNow ?? 0)).toString(),
-                                position.currency,
-                                position.decimals
-                              ))
-                              .replace("{currency}", position.currency)}
-                          </p>
-                        )}
-
-                      {/* Remittance recipient input */}
-                      {(position.remittanceEnabled || position.createdAsRemit) && position.status === "active" && (
-                        <div className="space-y-2">
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {t("positions.remittance.recipientHint")}
-                          </p>
-                          <Input
-                            placeholder="0x..."
-                            value={recipientMap[position.id] || ""}
-                            onChange={(e) =>
-                              setRecipientMap((prev) => ({ ...prev, [position.id]: e.target.value }))
-                            }
-                          />
-                        </div>
                       )}
                     </div>
 
-                    <div className="flex gap-2 sm:flex-col">
+                    <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                      {/* Total Amount */}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Coins className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                            {position.type === "u-based"
+                              ? t("positions.fields.totalAmount")
+                              : t("positions.fields.amount")}
+                          </p>
+                          <p className="truncate font-semibold text-slate-800 dark:text-slate-200">
+                            {formatTokenAmount(
+                              displayAmount,
+                              position.currency,
+                              position.decimals
+                            )}{" "}
+                            {position.currency}
+                          </p>
+                        </div>
+                      </div>
+
+                      {position.type === "u-based" && (
+                        <>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Coins className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                                {t("positions.fields.perPeriod")}
+                              </p>
+                              <p className="truncate font-semibold text-slate-800 dark:text-slate-200">
+                                {formatTokenAmount(
+                                  position.amount,
+                                  position.currency,
+                                  position.decimals
+                                )}{" "}
+                                {position.currency}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Repeat className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                                {t("positions.fields.remaining")}
+                              </p>
+                              <p className="truncate font-semibold text-slate-800 dark:text-slate-200">
+                                {position.remaining}/{position.frequency}
+                              </p>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Period/Lock time */}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Calendar className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                            {position.type === "u-based"
+                              ? t("positions.fields.period")
+                              : t("positions.fields.lockPeriod")}
+                          </p>
+                          <p className="truncate font-semibold text-slate-800 dark:text-slate-200">
+                            {position.period} {t("positions.fields.days")}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Countdown / Next withdraw time */}
+                      {position.status === "active" && nextWithdrawTime && (
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Clock className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                              {position.type === "u-based"
+                                ? t("positions.fields.nextWithdraw")
+                                : t("positions.fields.unlockCountdown")}
+                            </p>
+                            <Countdown
+                              targetTimestamp={nextWithdrawTime}
+                              initialBlockchainTime={blockchainTime}
+                              t={t}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Start date */}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Calendar className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                            {t("positions.fields.startDate")}
+                          </p>
+                          <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200">
+                            {position.startDate}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons - Stack on mobile */}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                       {/* VIP 激活按钮 - 仅对 X Layer 上符合条件的 xwaifu lockup 显示 */}
                       {canActivate && (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 sm:flex-none border-amber-500 text-amber-600 hover:bg-amber-50 dark:border-amber-400 dark:text-amber-200"
+                          className="flex-1 border-amber-500 bg-transparent text-amber-600 hover:bg-amber-50 sm:flex-none dark:border-amber-400 dark:text-amber-200"
                           onClick={() => handleActivateVIP(position)}
-                          disabled={isActivatingVIP && activatingVIPId === position.id}
+                          disabled={
+                            isActivatingVIP && activatingVIPId === position.id
+                          }
                         >
-                          {isActivatingVIP && activatingVIPId === position.id ? (
+                          {isActivatingVIP &&
+                          activatingVIPId === position.id ? (
                             <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                           ) : (
                             <Crown className="mr-1 h-4 w-4" />
@@ -812,46 +819,44 @@ export function PositionsList({
                         </Button>
                       )}
 
-                      {!position.remittanceEnabled && position.status === "active" && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="flex-1 sm:flex-none"
-                          onClick={() => handleEnableRemittance(position)}
-                          disabled={isEnabling}
-                        >
-                          {isEnabling ? (
-                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                          ) : null}
-                          {t("positions.actions.enableRemittance")}
-                        </Button>
-                      )}
+                      {!position.remittanceEnabled &&
+                        position.status === "active" && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleEnableRemittance(position)}
+                            disabled={isEnabling}
+                          >
+                            {isEnabling ? (
+                              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            ) : null}
+                            {t("positions.actions.enableRemittance")}
+                          </Button>
+                        )}
 
                       {/* 原生汇付仓位提前取出按钮（蓝色强调） */}
-                      {position.status === "active" && position.createdAsRemit && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 sm:flex-none border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-200"
-                          onClick={() => handleEarlyRemitWithdraw(position)}
-                          disabled={isEarlyProcessing || isProcessing}
-                        >
-                          {isEarlyProcessing ? (
-                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                          ) : null}
-                          {t("positions.actions.earlyWithdraw")}
-                        </Button>
-                      )}
+                      {position.status === "active" &&
+                        position.createdAsRemit && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 border-blue-500 bg-transparent text-blue-600 hover:bg-blue-50 sm:flex-none dark:border-blue-400 dark:text-blue-200"
+                            onClick={() => handleEarlyRemitWithdraw(position)}
+                            disabled={isEarlyProcessing || isProcessing}
+                          >
+                            {isEarlyProcessing ? (
+                              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            ) : null}
+                            {t("positions.actions.earlyWithdraw")}
+                          </Button>
+                        )}
 
                       {position.status === "active" && (
                         <Button
                           size="sm"
                           variant="destructive"
-                          className={`flex-1 sm:flex-none ${
-                            isWithdrawDisabled
-                              ? "cursor-not-allowed opacity-60"
-                              : ""
-                          }`}
+                          className={`flex-1 sm:flex-none ${isWithdrawDisabled ? "cursor-not-allowed opacity-60" : ""}`}
                           onClick={() => {
                             if (!canWithdrawNow) {
                               // 禁用时不再触发彩蛋，直接拦截

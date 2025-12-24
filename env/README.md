@@ -19,13 +19,17 @@ env/
 **只有配置了 `WAREHOUSE_ADDRESS` 的链才会在前端显示。**
 
 ### 启用链
+
 取消对应文件中 `WAREHOUSE_ADDRESS` 的注释并填入地址：
+
 ```bash
 NEXT_PUBLIC_BSC_WAREHOUSE_ADDRESS=0x1234...
 ```
 
 ### 禁用链
+
 注释掉或删除 `WAREHOUSE_ADDRESS`：
+
 ```bash
 # NEXT_PUBLIC_BSC_WAREHOUSE_ADDRESS=0x1234...
 ```

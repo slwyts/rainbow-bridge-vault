@@ -13,8 +13,12 @@ const owner = args[1];
 
 if (!network || !owner) {
   console.log("Usage: npm run deploy <network> <owner>");
-  console.log("Example: npm run deploy xlayer 0x7383a08989bfe10a8b59b1529a2a48d46f3ef006");
-  console.log("\nSupported networks: xlayer, bsc, arbitrum, ethereum, polygon, base, bscTestnet");
+  console.log(
+    "Example: npm run deploy xlayer 0x7383a08989bfe10a8b59b1529a2a48d46f3ef006"
+  );
+  console.log(
+    "\nSupported networks: xlayer, bsc, arbitrum, ethereum, polygon, base, bscTestnet"
+  );
   process.exit(1);
 }
 

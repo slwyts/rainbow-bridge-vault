@@ -17,14 +17,14 @@ export function useWarehouseAddress(): `0x${string}` | undefined {
 }
 
 // Hook to get current chain ID (for contract operations)
-export function useContractChainId(): number {
+function useContractChainId(): number {
   return useChainId();
 }
 
 // ============ Read Hooks ============
 
 // Read a deposit by ID
-export function useDeposit(depositId: bigint) {
+function useDeposit(depositId: bigint) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
 
@@ -39,7 +39,7 @@ export function useDeposit(depositId: bigint) {
 }
 
 // Read a lockup by ID
-export function useLockup(lockupId: bigint) {
+function useLockup(lockupId: bigint) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
 
@@ -54,7 +54,7 @@ export function useLockup(lockupId: bigint) {
 }
 
 // Read next deposit ID (to know how many deposits exist)
-export function useNextDepositId() {
+function useNextDepositId() {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
 
@@ -68,7 +68,7 @@ export function useNextDepositId() {
 }
 
 // Read next lockup ID
-export function useNextLockupId() {
+function useNextLockupId() {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
 
@@ -82,7 +82,7 @@ export function useNextLockupId() {
 }
 
 // Read user's deposit IDs
-export function useUserDepositId(
+function useUserDepositId(
   userAddress: `0x${string}` | undefined,
   index: bigint
 ) {
@@ -100,7 +100,7 @@ export function useUserDepositId(
 }
 
 // Read user's lockup IDs
-export function useUserLockupId(
+function useUserLockupId(
   userAddress: `0x${string}` | undefined,
   index: bigint
 ) {
@@ -165,7 +165,7 @@ export function useTokenDecimals(
 }
 
 // Read ERC20 name
-export function useTokenName(
+function useTokenName(
   tokenAddress: `0x${string}` | undefined,
   overrideChainId?: number
 ) {
@@ -182,7 +182,7 @@ export function useTokenName(
 }
 
 // Read ERC20 symbol
-export function useTokenSymbol(
+function useTokenSymbol(
   tokenAddress: `0x${string}` | undefined,
   overrideChainId?: number
 ) {
@@ -285,7 +285,7 @@ export function useApproveToken() {
 }
 
 // Hook to create a U-based deposit
-export function useCreateDeposit() {
+function useCreateDeposit() {
   const warehouseAddress = useWarehouseAddress();
   const {
     writeContractAsync,
@@ -329,7 +329,7 @@ export function useCreateDeposit() {
 }
 
 // Hook to create a coin-based lockup
-export function useCreateLockup() {
+function useCreateLockup() {
   const warehouseAddress = useWarehouseAddress();
   const {
     writeContractAsync,
@@ -355,7 +355,13 @@ export function useCreateLockup() {
       address: warehouseAddress,
       abi: warehouseAbi,
       functionName: "createLockup",
-      args: [params.token, params.amount, params.unlockTime, params.discountLockupId ?? 0n, params.enableRemittance ?? false],
+      args: [
+        params.token,
+        params.amount,
+        params.unlockTime,
+        params.discountLockupId ?? 0n,
+        params.enableRemittance ?? false,
+      ],
       value: params.value,
     });
     return txHash;
@@ -411,7 +417,12 @@ export function useWithdrawLockup() {
 // Hook to emergency cancel a deposit
 export function useEmergencyCancel() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  const {
+    writeContractAsync,
+    data: hash,
+    isPending,
+    error,
+  } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -433,12 +444,20 @@ export function useEmergencyCancel() {
 // Hook to emergency cancel a lockup
 export function useEmergencyCancelLockup() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  const {
+    writeContractAsync,
+    data: hash,
+    isPending,
+    error,
+  } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
-  const emergencyCancelLockup = async (lockupId: bigint, to?: `0x${string}`) => {
+  const emergencyCancelLockup = async (
+    lockupId: bigint,
+    to?: `0x${string}`
+  ) => {
     if (!warehouseAddress)
       throw new Error("Warehouse not deployed on this chain");
     return writeContractAsync({
@@ -462,7 +481,12 @@ export function useEmergencyCancelLockup() {
 // Hook to enable remittance for a deposit (pay 0.1 USDT fee)
 export function useEnableDepositRemittance() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  const {
+    writeContractAsync,
+    data: hash,
+    isPending,
+    error,
+  } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -491,7 +515,12 @@ export function useEnableDepositRemittance() {
 // Hook to enable remittance for a lockup
 export function useEnableLockupRemittance() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  const {
+    writeContractAsync,
+    data: hash,
+    isPending,
+    error,
+  } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -558,7 +587,7 @@ export function calculateLockupFee(amount: bigint): bigint {
 
 // ============ Type Definitions ============
 
-export interface DepositData {
+interface DepositData {
   id: bigint;
   user: `0x${string}`;
   token: `0x${string}`;
@@ -569,7 +598,7 @@ export interface DepositData {
   nextWithdrawalTime: bigint;
 }
 
-export interface LockupData {
+interface LockupData {
   id: bigint;
   user: `0x${string}`;
   token: `0x${string}`;
@@ -581,7 +610,7 @@ export interface LockupData {
 }
 
 // Hook to read a single deposit with proper typing
-export function useDepositById(depositId: bigint | undefined) {
+function useDepositById(depositId: bigint | undefined) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
 
@@ -596,7 +625,7 @@ export function useDepositById(depositId: bigint | undefined) {
 }
 
 // Hook to read a single lockup with proper typing
-export function useLockupById(lockupId: bigint | undefined) {
+function useLockupById(lockupId: bigint | undefined) {
   const warehouseAddress = useWarehouseAddress();
   const chainId = useContractChainId();
 
@@ -611,7 +640,7 @@ export function useLockupById(lockupId: bigint | undefined) {
 }
 
 // Parse deposit tuple from contract
-export function parseDeposit(
+function parseDeposit(
   id: bigint,
   data: readonly [string, string, bigint, bigint, number, number, bigint]
 ): DepositData {
@@ -628,7 +657,7 @@ export function parseDeposit(
 }
 
 // Parse lockup tuple from contract
-export function parseLockup(
+function parseLockup(
   id: bigint,
   data: readonly [string, string, bigint, bigint, boolean, boolean, bigint]
 ): LockupData {
@@ -657,7 +686,11 @@ export function useBlockchainTime() {
   const chainId = useContractChainId();
 
   // 获取最新区块信息
-  const { data: block, refetch, isLoading } = useBlock({
+  const {
+    data: block,
+    refetch,
+    isLoading,
+  } = useBlock({
     chainId,
     query: {
       staleTime: 10000, // 10 秒内认为数据是新鲜的
@@ -678,7 +711,7 @@ export function useBlockchainTime() {
 // ============ VIP Discount Hooks ============
 
 // VIP 常量（与合约保持一致）
-export const VIP_CONSTANTS = {
+const VIP_CONSTANTS = {
   STAKE_MIN_AMOUNT: BigInt("9800000000000000000000"), // 9800 * 1e18 (合约要求，对外宣传 10000)
   STAKE_MIN_DURATION: 363 * 24 * 60 * 60, // 363 days in seconds (与合约一致)
   DISCOUNT_COST: BigInt("100000000000000000000"), // 100 * 1e18
@@ -701,7 +734,12 @@ export function useXwaifuToken() {
 // Hook to activate VIP (burn 100 xwaifu from lockup position)
 export function useActivateVIP() {
   const warehouseAddress = useWarehouseAddress();
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  const {
+    writeContractAsync,
+    data: hash,
+    isPending,
+    error,
+  } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });

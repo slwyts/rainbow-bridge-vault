@@ -139,7 +139,8 @@ export const translations = {
       },
       remittance: {
         depositOption: "Remittance option (allow payout to another address)",
-        lockupOption: "Remittance option (withdraw to another address at unlock)",
+        lockupOption:
+          "Remittance option (withdraw to another address at unlock)",
         selfOnly: "Self Only",
         enableRemittance: "Enable Remittance",
       },
@@ -206,7 +207,8 @@ export const translations = {
         minutes: "m",
         loading: "Loading...",
       },
-      withdrawableHint: "Currently withdrawable: {periods} period(s), total {amount} {currency}",
+      withdrawableHint:
+        "Currently withdrawable: {periods} period(s), total {amount} {currency}",
       actions: {
         details: "Details",
         withdraw: "Withdraw",
@@ -220,14 +222,16 @@ export const translations = {
         chainSwitchFailed: "Chain switch failed, transaction blocked",
         warehouseNotConfigured: "Warehouse not configured for this chain",
         usdtNotConfigured: "USDT not configured for this chain",
-        onlyNativeRemittance: "Only native remittance positions can be early withdrawn",
+        onlyNativeRemittance:
+          "Only native remittance positions can be early withdrawn",
         connectWallet: "Please connect wallet first",
         cannotGetFee: "Cannot get remittance fee",
       },
       toast: {
         earlyWithdrawSubmitted: {
           title: "Early Withdraw Submitted",
-          description: "Please confirm in wallet, funds will be settled directly",
+          description:
+            "Please confirm in wallet, funds will be settled directly",
         },
         earlyWithdrawFailed: {
           title: "Early Withdraw Failed",
@@ -426,7 +430,8 @@ export const translations = {
         disbursementFee: "派发费用",
         totalFee: "总费用",
         fee: "费用",
-        discount: "在 X Layer 上质押 10,000+ xWAIFU 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
+        discount:
+          "在 X Layer 上质押 10,000+ xWAIFU 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
         buyXWaifuLink: "在 X Layer 上购买 xwaifu →",
       },
       buttons: {
@@ -686,7 +691,8 @@ export const translations = {
         chain: "链",
         name: "代币名称",
         address: "合约地址",
-        benefits: "在 X Layer 上质押 10,000+ xWAIFU 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
+        benefits:
+          "在 X Layer 上质押 10,000+ xWAIFU 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
         buyButton: "购买 xwaifu",
       },
       validation: {

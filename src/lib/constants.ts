@@ -6,17 +6,17 @@
 // 从统一配置重新导出
 export {
   CHAIN_IDS,
-  type SupportedChainId,
-  getChainConfig,
+  
+  
   getWarehouseAddress,
-  getTokenAddress,
+  
   getChainName,
-  getActiveChainIds as getSupportedChainIds,
-  DEFAULT_CHAIN_ID,
+  
+  
 } from "./chains";
 
 // 旧版 ChainConfig 接口（向后兼容）
-export interface ChainConfig {
+interface ChainConfig {
   chainId: number;
   name: string;
   warehouseAddress: `0x${string}` | undefined;
@@ -31,7 +31,7 @@ export interface ChainConfig {
 // @deprecated 使用 chains.ts 中的函数替代
 import { CHAIN_IDS, getTokenAddress as getToken } from "./chains";
 
-export const ENV = {
+const ENV = {
   LOCALNET_WAREHOUSE_ADDRESS: process.env
     .NEXT_PUBLIC_LOCALNET_WAREHOUSE_ADDRESS as `0x${string}`,
   LOCALNET_USDT_ADDRESS: getToken(CHAIN_IDS.HARDHAT, "USDT"),
@@ -41,7 +41,7 @@ export const ENV = {
 } as const;
 
 // Helper to check if we are missing any required env vars
-export function checkEnv() {
+function checkEnv() {
   const missing = Object.entries(ENV).filter(
     ([key, value]) => !value && key !== "LOCAL_CHAIN_ID"
   );

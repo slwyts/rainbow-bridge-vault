@@ -63,7 +63,10 @@ function HomePage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-6xl">
-          <DepositForm onAddPosition={handlePositionAdded} positions={positions} />
+          <DepositForm
+            onAddPosition={handlePositionAdded}
+            positions={positions}
+          />
         </div>
 
         <div className="mx-auto mt-12 max-w-6xl">

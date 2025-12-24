@@ -18,7 +18,7 @@ export const CHAIN_IDS = {
 export type SupportedChainId = (typeof CHAIN_IDS)[keyof typeof CHAIN_IDS];
 
 // ============ Chain String IDs (用于UI组件) ============
-export const CHAIN_STRING_IDS = {
+const CHAIN_STRING_IDS = {
   [CHAIN_IDS.HARDHAT]: "localnet",
   [CHAIN_IDS.XLAYER]: "x-layer",
   [CHAIN_IDS.BSC]: "binance-smart-chain",
@@ -38,7 +38,7 @@ export const CHAIN_TO_TRUST_WALLET: Record<string, string> = {
 // ============ OKLink Chain ID 映射 (用于获取代币图标) ============
 // OKLink CDN 格式: {chainId}-{contractAddress}-{tokenType}/type=default_90_0
 // tokenType 107 覆盖面较广，作为默认值
-export const CHAIN_TO_OKLINK_ID: Record<string, number> = {
+const CHAIN_TO_OKLINK_ID: Record<string, number> = {
   localnet: 1, // Ethereum
   "x-layer": 196,
   "binance-smart-chain": 56,
@@ -58,7 +58,7 @@ export function getOKLinkTokenIconUrl(
 }
 
 // ============ 代币类型定义 ============
-export interface TokenConfig {
+interface TokenConfig {
   symbol: string;
   name: string;
   decimals: number;
@@ -68,7 +68,7 @@ export interface TokenConfig {
 }
 
 // ============ 链配置类型定义 ============
-export interface ChainConfig {
+interface ChainConfig {
   // 基础信息
   chainId: number;
   stringId: string;
@@ -113,7 +113,9 @@ function toAddress(value: string | undefined): `0x${string}` | undefined {
 // 直接字面量访问环境变量，确保 Next.js 正确内联
 const ENV_ADDRESSES = {
   // Localnet
-  LOCALNET_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_LOCALNET_WAREHOUSE_ADDRESS),
+  LOCALNET_WAREHOUSE: toAddress(
+    process.env.NEXT_PUBLIC_LOCALNET_WAREHOUSE_ADDRESS
+  ),
   LOCALNET_USDT: toAddress(process.env.NEXT_PUBLIC_LOCALNET_USDT_ADDRESS),
   LOCALNET_USDC: toAddress(process.env.NEXT_PUBLIC_LOCALNET_USDC_ADDRESS),
   LOCALNET_USDG: toAddress(process.env.NEXT_PUBLIC_LOCALNET_USDG_ADDRESS),
@@ -129,11 +131,15 @@ const ENV_ADDRESSES = {
   BSC_USDT: toAddress(process.env.NEXT_PUBLIC_BSC_USDT_ADDRESS),
   BSC_USDC: toAddress(process.env.NEXT_PUBLIC_BSC_USDC_ADDRESS),
   // BSC Testnet
-  BSC_TESTNET_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_BSC_TESTNET_WAREHOUSE_ADDRESS),
+  BSC_TESTNET_WAREHOUSE: toAddress(
+    process.env.NEXT_PUBLIC_BSC_TESTNET_WAREHOUSE_ADDRESS
+  ),
   BSC_TESTNET_USDT: toAddress(process.env.NEXT_PUBLIC_BSC_TESTNET_USDT_ADDRESS),
   BSC_TESTNET_USDC: toAddress(process.env.NEXT_PUBLIC_BSC_TESTNET_USDC_ADDRESS),
   // Arbitrum
-  ARBITRUM_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_ARBITRUM_WAREHOUSE_ADDRESS),
+  ARBITRUM_WAREHOUSE: toAddress(
+    process.env.NEXT_PUBLIC_ARBITRUM_WAREHOUSE_ADDRESS
+  ),
   ARBITRUM_USDT: toAddress(process.env.NEXT_PUBLIC_ARBITRUM_USDT_ADDRESS),
   ARBITRUM_USDC: toAddress(process.env.NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS),
 } as const;
@@ -150,7 +156,12 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
     rpcUrl: "http://127.0.0.1:8545",
     warehouseAddress: ENV_ADDRESSES.LOCALNET_WAREHOUSE,
     tokens: {
-      native: { symbol: "ETH", name: "Localnet ETH", decimals: 18, isNative: true },
+      native: {
+        symbol: "ETH",
+        name: "Localnet ETH",
+        decimals: 18,
+        isNative: true,
+      },
       USDT: {
         symbol: "USDT",
         name: "Mock USDT",
@@ -261,7 +272,12 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
     rpcUrl: "https://data-seed-prebsc-1-s1.binance.org:8545",
     warehouseAddress: ENV_ADDRESSES.BSC_TESTNET_WAREHOUSE,
     tokens: {
-      native: { symbol: "tBNB", name: "Test BNB", decimals: 18, isNative: true },
+      native: {
+        symbol: "tBNB",
+        name: "Test BNB",
+        decimals: 18,
+        isNative: true,
+      },
       USDT: {
         symbol: "USDT",
         name: "Test USDT",
@@ -315,14 +331,14 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
 /**
  * 获取链配置
  */
-export function getChainConfig(chainId: number): ChainConfig | undefined {
+function getChainConfig(chainId: number): ChainConfig | undefined {
   return CHAIN_CONFIGS[chainId as SupportedChainId];
 }
 
 /**
  * 获取所有定义的链ID列表（包括未配置的）
  */
-export function getAllDefinedChainIds(): SupportedChainId[] {
+function getAllDefinedChainIds(): SupportedChainId[] {
   return Object.keys(CHAIN_CONFIGS).map(Number) as SupportedChainId[];
 }
 
@@ -339,21 +355,21 @@ export function getAllChainIds(): SupportedChainId[] {
 /**
  * @deprecated 使用 getAllChainIds() 替代
  */
-export function getActiveChainIds(): SupportedChainId[] {
+function getActiveChainIds(): SupportedChainId[] {
   return getAllChainIds();
 }
 
 /**
  * 检查链是否已启用（配置了仓库地址）
  */
-export function isChainEnabled(chainId: number): boolean {
+function isChainEnabled(chainId: number): boolean {
   return !!CHAIN_CONFIGS[chainId as SupportedChainId]?.warehouseAddress;
 }
 
 /**
  * 通过字符串ID获取链配置
  */
-export function getChainByStringId(stringId: string): ChainConfig | undefined {
+function getChainByStringId(stringId: string): ChainConfig | undefined {
   return Object.values(CHAIN_CONFIGS).find((c) => c.stringId === stringId);
 }
 
@@ -381,7 +397,9 @@ export function getChainName(chainId: number): string {
 /**
  * 获取仓库合约地址
  */
-export function getWarehouseAddress(chainId: number): `0x${string}` | undefined {
+export function getWarehouseAddress(
+  chainId: number
+): `0x${string}` | undefined {
   return CHAIN_CONFIGS[chainId as SupportedChainId]?.warehouseAddress;
 }
 
@@ -398,7 +416,7 @@ export function getTokenAddress(
 /**
  * 获取代币信息
  */
-export function getTokenConfig(
+function getTokenConfig(
   chainId: number,
   symbol: string
 ): TokenConfig | undefined {
@@ -415,7 +433,9 @@ export function getTokenConfig(
  * 获取原生代币符号
  */
 export function getNativeTokenSymbol(chainId: number): string {
-  return CHAIN_CONFIGS[chainId as SupportedChainId]?.tokens.native.symbol || "ETH";
+  return (
+    CHAIN_CONFIGS[chainId as SupportedChainId]?.tokens.native.symbol || "ETH"
+  );
 }
 
 /**
@@ -452,14 +472,14 @@ export function getTrustWalletIconUrl(
 /**
  * 获取所有 viem chain 对象（用于 wagmi config）
  */
-export function getAllViemChains(): ViemChain[] {
+function getAllViemChains(): ViemChain[] {
   return Object.values(CHAIN_CONFIGS).map((c) => c.viemChain);
 }
 
 /**
  * 获取所有 RPC transports（用于 wagmi config）
  */
-export function getAllTransports(): Record<number, string> {
+function getAllTransports(): Record<number, string> {
   const transports: Record<number, string> = {};
   for (const config of Object.values(CHAIN_CONFIGS)) {
     transports[config.chainId] = config.rpcUrl;
@@ -468,6 +488,6 @@ export function getAllTransports(): Record<number, string> {
 }
 
 // ============ 默认值 ============
-export const DEFAULT_CHAIN_ID = Number(
+const DEFAULT_CHAIN_ID = Number(
   process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID || CHAIN_IDS.HARDHAT
 ) as SupportedChainId;

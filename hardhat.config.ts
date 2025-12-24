@@ -5,7 +5,9 @@ import * as dotenv from "dotenv";
 // 加载部署私钥
 dotenv.config({ path: ".env.deploy" });
 
-const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000001";
+const DEPLOYER_PRIVATE_KEY =
+  process.env.DEPLOYER_PRIVATE_KEY ||
+  "0x0000000000000000000000000000000000000000000000000000000000000001";
 
 // 加载合约相关的环境变量
 export default defineConfig({

@@ -49,11 +49,6 @@ import {
   Loader2,
   Wallet,
 } from "lucide-react";
-import {
-  NetworkArbitrumOne,
-  NetworkBinanceSmartChain,
-  NetworkXLayer,
-} from "@web3icons/react";
 import { motion } from "framer-motion";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
@@ -118,9 +113,11 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
   const [disbursementAmount, setDisbursementAmount] = useState("50");
   const [frequency, setFrequency] = useState("30");
   const [period, setPeriod] = useState("1");
-  
+
   // 默认选择第一个启用的链
-  const defaultChainStringId = getChainStringId(getAllChainIds()[0] || CHAIN_IDS.HARDHAT);
+  const defaultChainStringId = getChainStringId(
+    getAllChainIds()[0] || CHAIN_IDS.HARDHAT
+  );
   const [selectedChain, setSelectedChain] = useState(defaultChainStringId);
 
   // Get currencies for the selected chain
@@ -136,7 +133,8 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
   );
   const [selectedCurrencyData, setSelectedCurrencyData] =
     useState<Currency | null>(() => getDefaultCurrency(defaultChainStringId));
-  const [selectedChainSymbol, setSelectedChainSymbol] = useState(defaultChainStringId);
+  const [selectedChainSymbol, setSelectedChainSymbol] =
+    useState(defaultChainStringId);
   const [amount, setAmount] = useState("");
   const [lockPeriod, setLockPeriod] = useState("30");
   const [unlockDate, setUnlockDate] = useState<number>(() => Date.now());
@@ -145,8 +143,11 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
 
   // 找到支持 VIP 的链上已激活 VIP 的 lockup（用于自动应用折扣）
   // 检查合约 xwaifuToken 是否有效（非零地址）
-  const xwaifuAddr = xwaifuTokenAddress ? String(xwaifuTokenAddress).toLowerCase() : "";
-  const hasXwaifuSupport = xwaifuAddr && xwaifuAddr !== "0x0000000000000000000000000000000000000000";
+  const xwaifuAddr = xwaifuTokenAddress
+    ? String(xwaifuTokenAddress).toLowerCase()
+    : "";
+  const hasXwaifuSupport =
+    xwaifuAddr && xwaifuAddr !== "0x0000000000000000000000000000000000000000";
 
   const activeVIPLockup = positions.find((p) => {
     if (p.type !== "coin-based") return false;
@@ -165,22 +166,25 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
   });
 
   // 从 position.id 解析出 lockup index: "lockup-{chainId}-{index}"
-  const vipLockupId = activeVIPLockup ? BigInt(activeVIPLockup.id.split("-")[2]) : undefined;
+  const vipLockupId = activeVIPLockup
+    ? BigInt(activeVIPLockup.id.split("-")[2])
+    : undefined;
 
   // 是否有有效 VIP（xwaifuToken 非零地址且有已激活的 VIP lockup）
   const hasVIPDiscount = hasXwaifuSupport && vipLockupId !== undefined;
 
   // U-based token selection (USDT, USDC, or USDG)
-  const [uBasedTokenSymbol, setUBasedTokenSymbol] = useState<"USDT" | "USDC" | "USDG">(
-    "USDT"
-  );
+  const [uBasedTokenSymbol, setUBasedTokenSymbol] = useState<
+    "USDT" | "USDC" | "USDG"
+  >("USDT");
 
   // Get current chain's token addresses
   const currentNumericChainId = getChainNumericId(selectedChain);
 
   // Get available stablecoins for current chain
   const availableStablecoins = useMemo(() => {
-    const coins: Array<{ symbol: "USDT" | "USDC" | "USDG"; color: string }> = [];
+    const coins: Array<{ symbol: "USDT" | "USDC" | "USDG"; color: string }> =
+      [];
     if (getTokenAddress(currentNumericChainId, "USDT")) {
       coins.push({ symbol: "USDT", color: "emerald" });
     }
@@ -195,7 +199,10 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
 
   // Auto-select first available stablecoin when chain changes
   useEffect(() => {
-    if (availableStablecoins.length > 0 && !availableStablecoins.find(c => c.symbol === uBasedTokenSymbol)) {
+    if (
+      availableStablecoins.length > 0 &&
+      !availableStablecoins.find((c) => c.symbol === uBasedTokenSymbol)
+    ) {
       setUBasedTokenSymbol(availableStablecoins[0].symbol);
     }
   }, [availableStablecoins, uBasedTokenSymbol]);
@@ -300,9 +307,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
   useEffect(() => {
     // Use blockchain time if available, fallback to local time
     const baseTime = blockchainTime ? blockchainTime * 1000 : Date.now();
-    setUnlockDate(
-      baseTime + Number.parseInt(lockPeriod) * 24 * 60 * 60 * 1000
-    );
+    setUnlockDate(baseTime + Number.parseInt(lockPeriod) * 24 * 60 * 60 * 1000);
   }, [lockPeriod, blockchainTime]);
 
   const validateDisbursementAmount = (value: string) => {
@@ -319,6 +324,9 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
   const [customPeriodOpen, setCustomPeriodOpen] = useState(false);
   const [customPeriodValue, setCustomPeriodValue] = useState("");
   const [disbursementError, setDisbursementError] = useState("");
+
+  const [customLockPeriodOpen, setCustomLockPeriodOpen] = useState(false);
+  const [customLockPeriodValue, setCustomLockPeriodValue] = useState("");
 
   const quickAmounts = ["10", "20", "30", "50", "100"];
 
@@ -495,7 +503,8 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
         setIsSubmitting(false);
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Please try again";
+      const errorMessage =
+        err instanceof Error ? err.message : "Please try again";
       toast.error("Transaction failed", {
         description: errorMessage,
       });
@@ -509,7 +518,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
       await switchChain?.({ chainId: expectedChainId });
     }
 
-    if (!amount || parseFloat(amount) <= 0) {
+    if (!amount || Number.parseFloat(amount) <= 0) {
       toast.error("Invalid amount", {
         description: "Please enter a valid amount",
       });
@@ -610,7 +619,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
       if (err instanceof Error) {
         errorMessage = err.message;
         // Check for shortMessage (viem errors)
-        if ('shortMessage' in err) {
+        if ("shortMessage" in err) {
           errorMessage = (err as { shortMessage: string }).shortMessage;
         }
       }
@@ -825,17 +834,28 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                               <button
                                 key={coin.symbol}
                                 type="button"
-                                onClick={() => setUBasedTokenSymbol(coin.symbol)}
+                                onClick={() =>
+                                  setUBasedTokenSymbol(coin.symbol)
+                                }
                                 className={`rounded px-2 py-1 text-xs font-bold transition-all ${
                                   uBasedTokenSymbol === coin.symbol
                                     ? `bg-${coin.color}-500 text-white`
                                     : "bg-slate-200 text-slate-500 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600"
                                 }`}
-                                style={uBasedTokenSymbol === coin.symbol ? {
-                                  backgroundColor: coin.color === "emerald" ? "#10b981" :
-                                                   coin.color === "blue" ? "#3b82f6" :
-                                                   coin.color === "amber" ? "#f59e0b" : "#10b981"
-                                } : undefined}
+                                style={
+                                  uBasedTokenSymbol === coin.symbol
+                                    ? {
+                                        backgroundColor:
+                                          coin.color === "emerald"
+                                            ? "#10b981"
+                                            : coin.color === "blue"
+                                              ? "#3b82f6"
+                                              : coin.color === "amber"
+                                                ? "#f59e0b"
+                                                : "#10b981",
+                                      }
+                                    : undefined
+                                }
                               >
                                 {coin.symbol}
                               </button>
@@ -1075,6 +1095,54 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                         </button>
                       </div>
                     </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <ArrowRightLeft className="h-3.5 w-3.5 text-blue-400" />
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                          {t("form.labels.crossChainBridges")}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <a
+                          href="https://stargate.finance/bridge"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-linear-to-br from-purple-50 to-indigo-50 p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:from-purple-500/10 dark:to-indigo-500/10"
+                        >
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600">
+                            <span className="text-xs font-bold text-white">
+                              S
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
+                              Stargate
+                            </h5>
+                          </div>
+                          <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
+                        </a>
+
+                        <a
+                          href="https://www.orbiter.finance/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex flex-1 items-center gap-2 rounded-lg border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-2.5 transition-all hover:border-orange-400 hover:shadow-md dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10"
+                        >
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500">
+                            <span className="text-xs font-bold text-white">
+                              O
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
+                              Orbiter
+                            </h5>
+                          </div>
+                          <ExternalLink className="h-3 w-3 shrink-0 text-orange-400 opacity-60 transition-opacity group-hover:opacity-100" />
+                        </a>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Right Column - Summary Panel */}
@@ -1157,31 +1225,17 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           <p className="text-xs text-amber-700 dark:text-amber-400">
                             {t("form.summary.discount")}
                           </p>
-                          {selectedChain === "xlayer" && (
-                            <a
-                              href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                            >
-                              {t("form.summary.buyXWaifuLink")}
-                              <svg
-                                className="h-3 w-3"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                />
-                              </svg>
-                            </a>
-                          )}
                         </div>
                       )}
+
+                      <a
+                        href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mb-3 text-xs text-green-500 hover:text-green-600 hover:underline"
+                      >
+                        {t("form.summary.buyXWaifuLink")} ↗
+                      </a>
 
                       {/* Remittance toggle - pill style */}
                       <div className="mb-4 space-y-2">
@@ -1352,7 +1406,6 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           { value: "30", label: "30", desc: t("form.days") },
                           { value: "90", label: "90", desc: t("form.days") },
                           { value: "180", label: "180", desc: t("form.days") },
-                          { value: "365", label: "365", desc: t("form.days") },
                         ].map((p) => (
                           <button
                             key={p.value}
@@ -1367,91 +1420,117 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                             <div className="text-xs opacity-60">{p.desc}</div>
                           </button>
                         ))}
+                        <Popover
+                          open={customLockPeriodOpen}
+                          onOpenChange={setCustomLockPeriodOpen}
+                        >
+                          <PopoverTrigger asChild>
+                            <button
+                              className={`rounded-xl border p-3 text-center transition-all sm:p-4 ${
+                                !["30", "90", "180"].includes(lockPeriod)
+                                  ? "border-amber-500 bg-amber-500/20 text-amber-700 dark:text-white"
+                                  : "border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400 dark:hover:bg-slate-700/50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-center gap-1 text-sm font-bold">
+                                <Settings className="h-3 w-3" />
+                                {t("form.periods.custom")}
+                              </div>
+                              <div className="text-xs opacity-60">
+                                {!["30", "90", "180"].includes(lockPeriod)
+                                  ? `${lockPeriod} ${t("form.days")}`
+                                  : t("form.periods.customDesc")}
+                              </div>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <div className="space-y-3">
+                              <h4 className="font-semibold text-slate-800 dark:text-white">
+                                {t("form.periods.customTitle")}
+                              </h4>
+                              <Input
+                                type="number"
+                                placeholder={t(
+                                  "form.periods.customPlaceholder"
+                                )}
+                                value={customLockPeriodValue}
+                                onChange={(e) =>
+                                  setCustomLockPeriodValue(e.target.value)
+                                }
+                                className="border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-900"
+                              />
+                              <Button
+                                onClick={() => {
+                                  if (
+                                    customLockPeriodValue &&
+                                    Number.parseInt(customLockPeriodValue) > 0
+                                  ) {
+                                    setLockPeriod(customLockPeriodValue);
+                                    setCustomLockPeriodOpen(false);
+                                  }
+                                }}
+                                className="w-full bg-amber-500 text-white hover:bg-amber-600"
+                              >
+                                {t("form.periods.customConfirm")}
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
 
-                    {/* Amount Input */}
+                    {/* Amount Input - Coin Based */}
                     <div className="space-y-2">
                       <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-                        <Lock className="h-3 w-3" />
+                        <Vault className="h-4 w-4 text-amber-400" />
                         {t("form.coinBased.lockAmount")}
                       </label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          value={amount}
-                          onChange={(e) => setAmount(e.target.value)}
-                          placeholder="0.00"
-                          className="h-14 rounded-xl border-slate-300 bg-slate-100 pr-20 pl-4 text-xl font-bold text-slate-800 focus:border-amber-500 focus:ring-amber-500/20 sm:text-2xl dark:border-slate-600 dark:bg-slate-800/50 dark:text-white"
-                        />
-                        <span className="absolute top-1/2 right-4 -translate-y-1/2 font-bold text-amber-500 dark:text-amber-400">
-                          {selectedCurrency}
-                        </span>
-                      </div>
-                      {/* Balance display for coin-based */}
-                      {isConnected && actualLockupBalance !== undefined && (
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                            <Wallet className="h-3 w-3" />
-                            {t("form.balance.label")}
-                          </span>
-                          <span
-                            className={`font-mono ${hasInsufficientLockupBalance ? "text-red-500" : "text-slate-600 dark:text-slate-300"}`}
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="h-14 rounded-xl border-slate-300 bg-slate-100 text-base font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white"
+                      />
+                      <div className="grid grid-cols-5 gap-2">
+                        {quickAmounts.map((amt) => (
+                          <button
+                            key={amt}
+                            onClick={() => setAmount(amt)}
+                            className="rounded-lg border border-slate-300 bg-slate-100 px-2 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-amber-400 hover:bg-amber-100 hover:text-amber-700 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400 dark:hover:border-amber-500 dark:hover:bg-amber-500/20 dark:hover:text-amber-400"
                           >
-                            {typeof actualLockupBalance === "bigint"
-                              ? Number(
-                                  formatUnits(
-                                    actualLockupBalance,
-                                    lockupTokenDecimals
-                                  )
-                                ).toLocaleString(undefined, {
-                                  maximumFractionDigits: 6,
-                                })
-                              : "0"}{" "}
-                            {selectedCurrency}
-                          </span>
-                        </div>
-                      )}
+                            {amt}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    {/* Cross-chain Bridge */}
-                    <div className="space-y-3">
+                    {/* Cross-chain Bridge section*/}
+                    <div className="mb-6 space-y-2">
                       <div className="flex items-center gap-2">
-                        <ArrowRightLeft className="h-4 w-4 text-blue-400" />
-                        <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                        <ArrowRightLeft className="h-3.5 w-3.5 text-blue-400" />
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                           {t("form.labels.crossChainBridges")}
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        {/* Stargate Bridge */}
+                      <div className="flex gap-2">
                         <a
                           href="https://stargate.finance/bridge"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group rounded-xl border border-purple-200/50 bg-linear-to-br from-purple-50 to-indigo-50 p-4 transition-all duration-200 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/10 dark:border-purple-500/20 dark:from-purple-500/10 dark:to-indigo-500/10 dark:hover:border-purple-400/50"
+                          className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-linear-to-br from-purple-50 to-indigo-50 p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:from-purple-500/10 dark:to-indigo-500/10"
                         >
-                          <div className="mb-2 flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600 shadow-lg">
-                              <span className="text-lg font-bold text-white">
-                                S
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
-                                Stargate
-                              </h4>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {t("form.coinBased.stargateSub")}
-                              </p>
-                            </div>
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600">
+                            <span className="text-xs font-bold text-white">
+                              S
+                            </span>
                           </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-300">
-                            {t("form.coinBased.stargateDesc")}
-                          </p>
-                          <div className="mt-3 flex items-center text-xs font-medium text-purple-600 dark:text-purple-400">
-                            {t("form.coinBased.bridgeNow")}
-                            <ExternalLink className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
+                              Stargate
+                            </h5>
                           </div>
+                          <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
                         </a>
 
                         {/* Orbiter Bridge */}
@@ -1459,30 +1538,19 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           href="https://www.orbiter.finance/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group rounded-xl border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-4 transition-all duration-200 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-500/10 dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10 dark:hover:border-orange-400/50"
+                          className="group flex flex-1 items-center gap-2 rounded-lg border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-2.5 transition-all hover:border-orange-400 hover:shadow-md dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10"
                         >
-                          <div className="mb-2 flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500 shadow-lg">
-                              <span className="text-lg font-bold text-white">
-                                O
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
-                                Orbiter
-                              </h4>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {t("form.coinBased.orbiterSub")}
-                              </p>
-                            </div>
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500">
+                            <span className="text-xs font-bold text-white">
+                              O
+                            </span>
                           </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-300">
-                            {t("form.coinBased.orbiterDesc")}
-                          </p>
-                          <div className="mt-3 flex items-center text-xs font-medium text-orange-600 dark:text-orange-400">
-                            {t("form.coinBased.bridgeNow")}
-                            <ExternalLink className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
+                              Orbiter
+                            </h5>
                           </div>
+                          <ExternalLink className="h-3 w-3 shrink-0 text-orange-400 opacity-60 transition-opacity group-hover:opacity-100" />
                         </a>
                       </div>
                     </div>
@@ -1528,7 +1596,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                             {t("form.labels.unlockDate")}
                           </span>
                           <span className="font-mono text-slate-800 dark:text-white">
-                            {new Date(unlockDate).toLocaleDateString()}
+                            {new Date(unlockDate).toISOString().split("T")[0]}
                           </span>
                         </div>
                       </div>
@@ -1568,31 +1636,17 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           <p className="text-xs text-amber-700 dark:text-amber-400">
                             {t("form.summary.discount")}
                           </p>
-                          {selectedChain === "xlayer" && (
-                            <a
-                              href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                            >
-                              {t("form.summary.buyXWaifuLink")}
-                              <svg
-                                className="h-3 w-3"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                />
-                              </svg>
-                            </a>
-                          )}
                         </div>
                       )}
+
+                      <a
+                        href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mb-3 text-xs text-green-500 hover:text-green-600 hover:underline"
+                      >
+                        {t("form.summary.buyXWaifuLink")} ↗
+                      </a>
 
                       {/* Security Notice */}
                       <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
@@ -1607,36 +1661,30 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                         </p>
                       </div>
 
-                      {/* Remittance toggle for lockup - pill style */}
-                      <div className="mb-4 space-y-2">
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {t("form.remittance.lockupOption")}
-                        </p>
-                        <div className="inline-flex rounded-lg border border-slate-200 bg-white/70 p-1 dark:border-slate-700 dark:bg-slate-800/70">
-                          <button
-                            type="button"
-                            className={`min-w-[88px] rounded-md px-3 py-2 text-sm font-medium transition-all ${
-                              !lockupRemittance
-                                ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
-                                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
-                            }`}
-                            onClick={() => setLockupRemittance(false)}
+                      {/* Balance display for coin-based */}
+                      {isConnected && actualLockupBalance !== undefined && (
+                        <div className="mb-4 flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                            <Wallet className="h-3 w-3" />
+                            {t("form.balance.label")}
+                          </span>
+                          <span
+                            className={`font-mono ${hasInsufficientLockupBalance ? "text-red-500" : "text-slate-600 dark:text-slate-300"}`}
                           >
-                            {t("form.remittance.selfOnly")}
-                          </button>
-                          <button
-                            type="button"
-                            className={`min-w-[120px] rounded-md px-3 py-2 text-sm font-medium transition-all ${
-                              lockupRemittance
-                                ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
-                                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
-                            }`}
-                            onClick={() => setLockupRemittance(true)}
-                          >
-                            {t("form.remittance.enableRemittance")}
-                          </button>
+                            {typeof actualLockupBalance === "bigint"
+                              ? Number(
+                                  formatUnits(
+                                    actualLockupBalance,
+                                    lockupTokenDecimals
+                                  )
+                                ).toLocaleString(undefined, {
+                                  maximumFractionDigits: 6,
+                                })
+                              : "0"}{" "}
+                            {selectedCurrency}
+                          </span>
                         </div>
-                      </div>
+                      )}
 
                       {/* Lock Button */}
                       {!mounted ? (

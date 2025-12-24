@@ -125,7 +125,7 @@ const SUPPORTED_CHAINS = getAllChainIds().map((chainId) => {
   };
 });
 
-export interface Position {
+interface Position {
   id: string;
   type: "u-based" | "coin-based";
   amount: string; // For u-based: per-period amount, for coin-based: total amount
@@ -237,7 +237,17 @@ async function fetchPositionsForChain(
           abi: warehouseAbi,
           functionName: "deposits",
           args: [i],
-        })) as [string, string, bigint, bigint, number, number, bigint, boolean, boolean];
+        })) as [
+          string,
+          string,
+          bigint,
+          bigint,
+          number,
+          number,
+          bigint,
+          boolean,
+          boolean,
+        ];
 
         const deposit: DepositData = {
           user: result[0] as `0x${string}`,
@@ -260,7 +270,8 @@ async function fetchPositionsForChain(
 
           const nextWithdrawTime = Number(deposit.nextWithdrawalTime);
           const remaining = totalPeriods - periodsWithdrawn;
-          const canWithdraw = blockchainNow >= nextWithdrawTime && remaining > 0;
+          const canWithdraw =
+            blockchainNow >= nextWithdrawTime && remaining > 0;
 
           // Calculate withdrawable periods
           let withdrawableNow = 0;
@@ -324,7 +335,17 @@ async function fetchPositionsForChain(
           abi: warehouseAbi,
           functionName: "lockups",
           args: [i],
-        })) as [string, string, bigint, bigint, boolean, boolean, bigint, boolean, boolean];
+        })) as [
+          string,
+          string,
+          bigint,
+          bigint,
+          boolean,
+          boolean,
+          bigint,
+          boolean,
+          boolean,
+        ];
 
         const lockup: LockupData = {
           user: result[0] as `0x${string}`,

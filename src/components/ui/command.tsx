@@ -173,7 +173,7 @@ function CommandShortcut({
 
 export {
   Command,
-  CommandInput,
+  
   CommandList,
   CommandEmpty,
   CommandGroup,

@@ -57,7 +57,7 @@ import {
 } from "@/lib/chains";
 
 // Chain type definition
-export interface Chain {
+interface Chain {
   id: string;
   name: string;
   symbol: string;
@@ -79,7 +79,7 @@ export interface Currency {
 }
 
 // Get token icon URL from Trust Wallet Assets
-export function getTokenIconUrl(
+function getTokenIconUrl(
   contractAddress: string,
   chainId: string
 ): string {
@@ -90,7 +90,7 @@ export function getTokenIconUrl(
 }
 
 // 从统一配置生成 defaultChains（只包含已启用的链）
-export const defaultChains: Chain[] = getAllChainIds().map((chainId) => {
+const defaultChains: Chain[] = getAllChainIds().map((chainId) => {
   const config = CHAIN_CONFIGS[chainId as SupportedChainId];
   return {
     id: config.stringId,
@@ -101,7 +101,7 @@ export const defaultChains: Chain[] = getAllChainIds().map((chainId) => {
 });
 
 // 重新导出 getChainStringId (从 chains.ts)
-export { getChainStringId } from "@/lib/chains";
+;
 
 // 从统一配置生成链上代币列表
 export function getCurrenciesForChain(chainId: number): Currency[] {
@@ -109,7 +109,13 @@ export function getCurrenciesForChain(chainId: number): Currency[] {
   if (!config) {
     // Fallback to generic tokens
     return [
-      { id: "ETH", name: "Ethereum", symbol: "ETH", isNative: true, decimals: 18 },
+      {
+        id: "ETH",
+        name: "Ethereum",
+        symbol: "ETH",
+        isNative: true,
+        decimals: 18,
+      },
       { id: "USDT", name: "Tether", symbol: "USDT", decimals: 6 },
       { id: "USDC", name: "USD Coin", symbol: "USDC", decimals: 6 },
     ];
@@ -148,7 +154,7 @@ export function getCurrenciesForChain(chainId: number): Currency[] {
 }
 
 // Default currencies - fallback when chain is not connected
-export const defaultCurrencies: Currency[] = [
+const defaultCurrencies: Currency[] = [
   { id: "ETH", name: "Ethereum", symbol: "ETH", isNative: true, decimals: 18 },
   { id: "BNB", name: "BNB", symbol: "BNB", isNative: true, decimals: 18 },
   { id: "OKB", name: "OKB", symbol: "OKB", isNative: true, decimals: 18 },
@@ -158,7 +164,7 @@ export const defaultCurrencies: Currency[] = [
 ];
 
 // Localnet specific tokens with actual addresses (legacy, use getCurrenciesForChain instead)
-export const localnetCurrencies: Currency[] = getCurrenciesForChain(
+const localnetCurrencies: Currency[] = getCurrenciesForChain(
   CHAIN_IDS.HARDHAT
 );
 
@@ -285,21 +291,19 @@ export function CurrencyIcon({
   chainId?: string;
   isNative?: boolean;
 }) {
-  // 原生代币优先使用库图标
-  if (isNative || !contractAddress) {
-    const NativeIcon = NATIVE_TOKEN_ICONS[symbol.toUpperCase()];
-    if (NativeIcon) {
-      return <NativeIcon className={className} variant="branded" />;
-    }
-  }
+  // 原生代币优先使用库图标（但不要在 hooks 之前 return）
+  const NativeIcon = NATIVE_TOKEN_ICONS[symbol.toUpperCase()];
+  const shouldUseNativeIcon = (isNative || !contractAddress) && !!NativeIcon;
 
+  // 依据 token 身份（链+合约+自定义url+符号+是否原生）形成 key
+  const tokenKey = `${chainId ?? ""}:${contractAddress ?? ""}:${iconUrl ?? ""}:${symbol}:${isNative ? 1 : 0}`;
   // fallback 级别: 0=custom, 1=TrustWallet, 2-5=OKLink(107,109,105,110), 6=generic
-  const [fallbackLevel, setFallbackLevel] = useState(0);
-
-  // 当代币变化时重置 fallback 级别
-  useEffect(() => {
-    setFallbackLevel(0);
-  }, [contractAddress, chainId]);
+  // 将 key 与 level 绑定，避免在 effect 中重置 state
+  const [fallback, setFallback] = useState<{ key: string; level: number }>({
+    key: tokenKey,
+    level: 0,
+  });
+  const fallbackLevel = fallback.key === tokenKey ? fallback.level : 0;
 
   // OKLink tokenType 尝试顺序
   const oklinkTokenTypes = [107, 109, 105, 110];
@@ -318,8 +322,17 @@ export function CurrencyIcon({
     if (fallbackLevel <= 1 && trustWalletUrl) return trustWalletUrl;
     // Level 2-5: OKLink 尝试不同 tokenType
     const oklinkIndex = fallbackLevel - 2;
-    if (oklinkIndex >= 0 && oklinkIndex < oklinkTokenTypes.length && contractAddress && chainId) {
-      return getOKLinkTokenIconUrl(contractAddress, chainId, oklinkTokenTypes[oklinkIndex]);
+    if (
+      oklinkIndex >= 0 &&
+      oklinkIndex < oklinkTokenTypes.length &&
+      contractAddress &&
+      chainId
+    ) {
+      return getOKLinkTokenIconUrl(
+        contractAddress,
+        chainId,
+        oklinkTokenTypes[oklinkIndex]
+      );
     }
     return null;
   };
@@ -328,8 +341,16 @@ export function CurrencyIcon({
 
   // 图片加载失败时，尝试下一个来源
   const handleError = () => {
-    setFallbackLevel((prev) => prev + 1);
+    setFallback((prev) => ({
+      key: tokenKey,
+      level: (prev.key === tokenKey ? prev.level : 0) + 1,
+    }));
   };
+
+  // 如果是原生代币并且存在对应图标，优先显示
+  if (shouldUseNativeIcon) {
+    return <NativeIcon className={className} variant="branded" />;
+  }
 
   // 如果有有效的图片 URL，显示图片
   if (imageUrl) {
@@ -424,7 +445,11 @@ function AddCurrencyCard({
   } = useTokenInfo(tokenAddress, selectedNumericChainId);
 
   // Fetch user balance on the selected chain
-  const { data: balance } = useTokenBalance(tokenAddress, address, selectedNumericChainId);
+  const { data: balance } = useTokenBalance(
+    tokenAddress,
+    address,
+    selectedNumericChainId
+  );
 
   const formatBalance = (bal: bigint | undefined, dec: number | undefined) => {
     if (bal === undefined || dec === undefined) return "0";
@@ -625,7 +650,12 @@ function AddCurrencyCard({
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-xs text-slate-400">
-                          <span>{t("form.customToken.decimals").replace("{decimals}", String(decimals))}</span>
+                          <span>
+                            {t("form.customToken.decimals").replace(
+                              "{decimals}",
+                              String(decimals)
+                            )}
+                          </span>
                         </div>
                       </div>
                     ) : (

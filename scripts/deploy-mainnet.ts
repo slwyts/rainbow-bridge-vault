@@ -34,7 +34,9 @@ function showUsage() {
     console.log(`  ${key.padEnd(12)} - ${val.name} (Chain ID: ${val.chainId})`);
   }
   console.log("\nExample:");
-  console.log("  npm run deploy xlayer 0x98c2e0ecdfa961f8b36144c743fea3951dad0309\n");
+  console.log(
+    "  npm run deploy xlayer 0x98c2e0ecdfa961f8b36144c743fea3951dad0309\n"
+  );
 }
 
 async function main() {
@@ -69,16 +71,22 @@ async function main() {
   const [deployer] = await viem.getWalletClients();
   const publicClient = await viem.getPublicClient();
   const chainId = await publicClient.getChainId();
-  const networkInfo = Object.values(SUPPORTED_NETWORKS).find(n => n.chainId === chainId);
+  const networkInfo = Object.values(SUPPORTED_NETWORKS).find(
+    (n) => n.chainId === chainId
+  );
 
   console.log("=".repeat(60));
   console.log("RainbowWarehouse Deployment");
   console.log("=".repeat(60));
-  console.log(`Network:  ${networkInfo?.name || "Unknown"} (Chain ID: ${chainId})`);
+  console.log(
+    `Network:  ${networkInfo?.name || "Unknown"} (Chain ID: ${chainId})`
+  );
   console.log(`Deployer: ${deployer.account.address}`);
   console.log(`Owner:    ${ownerAddress}`);
 
-  const balance = await publicClient.getBalance({ address: deployer.account.address });
+  const balance = await publicClient.getBalance({
+    address: deployer.account.address,
+  });
   console.log(`Balance:  ${(Number(balance) / 1e18).toFixed(6)} native tokens`);
 
   if (balance === 0n) {
@@ -101,7 +109,11 @@ async function main() {
   console.log("=".repeat(60));
 
   // 输出环境变量
-  const prefix = networkInfo ? Object.entries(SUPPORTED_NETWORKS).find(([, v]) => v.chainId === chainId)?.[0]?.toUpperCase() : "UNKNOWN";
+  const prefix = networkInfo
+    ? Object.entries(SUPPORTED_NETWORKS)
+        .find(([, v]) => v.chainId === chainId)?.[0]
+        ?.toUpperCase()
+    : "UNKNOWN";
   console.log(`\nNEXT_PUBLIC_${prefix}_WAREHOUSE_ADDRESS=${warehouse.address}`);
 }
 

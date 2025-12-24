@@ -15,17 +15,22 @@ async function main() {
   }
 
   if (!viem) {
-    console.error("Error: 'viem' object not found on 'hre' or network connection.");
+    console.error(
+      "Error: 'viem' object not found on 'hre' or network connection."
+    );
     process.exit(1);
   }
 
   const [deployer] = await viem.getWalletClients();
 
-  console.log("Deploying contracts with the account:", deployer.account.address);
+  console.log(
+    "Deploying contracts with the account:",
+    deployer.account.address
+  );
 
   // 1. Deploy Mock Tokens
   console.log("Deploying Mock Tokens...");
-  
+
   const usdt = await viem.deployContract("MockERC20", [
     "Tether USD",
     "USDT",
@@ -33,11 +38,7 @@ async function main() {
   ]);
   console.log("USDT deployed to:", usdt.address);
 
-  const usdc = await viem.deployContract("MockERC20", [
-    "USD Coin",
-    "USDC",
-    18,
-  ]);
+  const usdc = await viem.deployContract("MockERC20", ["USD Coin", "USDC", 18]);
   console.log("USDC deployed to:", usdc.address);
 
   // Mint tokens to deployer
@@ -49,16 +50,16 @@ async function main() {
 
   // Deploy RainbowWarehouse
   // Constructor args: _initialOwner, _xwaifuToken
-  // For BSC Testnet, _xwaifuToken is ignored by the contract logic (sets to address(0)), 
+  // For BSC Testnet, _xwaifuToken is ignored by the contract logic (sets to address(0)),
   // but we still need to pass a valid address type.
-  
+
   const initialOwner = deployer.account.address;
-  const dummyToken = "0x0000000000000000000000000000000000000000"; 
+  const dummyToken = "0x0000000000000000000000000000000000000000";
 
   console.log("Deploying RainbowWarehouse...");
   const rainbowWarehouse = await viem.deployContract("RainbowWarehouse", [
     initialOwner,
-    dummyToken
+    dummyToken,
   ]);
 
   console.log("RainbowWarehouse deployed to:", rainbowWarehouse.address);
