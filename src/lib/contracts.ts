@@ -2,13 +2,13 @@ import {
   useReadContract,
   useWriteContract,
   useWaitForTransactionReceipt,
-  useAccount,
   useChainId,
   useBalance,
+  useBlock,
 } from "wagmi";
-import { parseUnits, zeroAddress } from "viem";
+import { zeroAddress } from "viem";
 import { warehouseAbi, erc20Abi } from "./abi";
-import { getWarehouseAddress, getChainName, CHAIN_IDS } from "./constants";
+import { getWarehouseAddress } from "./chains";
 
 // Hook to get current chain's warehouse address
 export function useWarehouseAddress(): `0x${string}` | undefined {
@@ -22,100 +22,6 @@ function useContractChainId(): number {
 }
 
 // ============ Read Hooks ============
-
-// Read a deposit by ID
-function useDeposit(depositId: bigint) {
-  const warehouseAddress = useWarehouseAddress();
-  const chainId = useContractChainId();
-
-  return useReadContract({
-    address: warehouseAddress,
-    abi: warehouseAbi,
-    functionName: "deposits",
-    args: [depositId],
-    chainId,
-    query: { enabled: !!warehouseAddress },
-  });
-}
-
-// Read a lockup by ID
-function useLockup(lockupId: bigint) {
-  const warehouseAddress = useWarehouseAddress();
-  const chainId = useContractChainId();
-
-  return useReadContract({
-    address: warehouseAddress,
-    abi: warehouseAbi,
-    functionName: "lockups",
-    args: [lockupId],
-    chainId,
-    query: { enabled: !!warehouseAddress },
-  });
-}
-
-// Read next deposit ID (to know how many deposits exist)
-function useNextDepositId() {
-  const warehouseAddress = useWarehouseAddress();
-  const chainId = useContractChainId();
-
-  return useReadContract({
-    address: warehouseAddress,
-    abi: warehouseAbi,
-    functionName: "nextDepositId",
-    chainId,
-    query: { enabled: !!warehouseAddress },
-  });
-}
-
-// Read next lockup ID
-function useNextLockupId() {
-  const warehouseAddress = useWarehouseAddress();
-  const chainId = useContractChainId();
-
-  return useReadContract({
-    address: warehouseAddress,
-    abi: warehouseAbi,
-    functionName: "nextLockupId",
-    chainId,
-    query: { enabled: !!warehouseAddress },
-  });
-}
-
-// Read user's deposit IDs
-function useUserDepositId(
-  userAddress: `0x${string}` | undefined,
-  index: bigint
-) {
-  const warehouseAddress = useWarehouseAddress();
-  const chainId = useContractChainId();
-
-  return useReadContract({
-    address: warehouseAddress,
-    abi: warehouseAbi,
-    functionName: "userDepositIds",
-    args: userAddress ? [userAddress, index] : undefined,
-    chainId,
-    query: { enabled: !!userAddress && !!warehouseAddress },
-  });
-}
-
-// Read user's lockup IDs
-function useUserLockupId(
-  userAddress: `0x${string}` | undefined,
-  index: bigint
-) {
-  const warehouseAddress = useWarehouseAddress();
-  const chainId = useContractChainId();
-
-  return useReadContract({
-    address: warehouseAddress,
-    abi: warehouseAbi,
-    functionName: "userLockupIds",
-    args: userAddress ? [userAddress, index] : undefined,
-    chainId,
-    query: { enabled: !!userAddress && !!warehouseAddress },
-  });
-}
 
 // Read ERC20 balance
 export function useTokenBalance(
@@ -282,92 +188,6 @@ export function useApproveToken() {
   };
 
   return { approve, hash, isPending, isConfirming, isSuccess, error };
-}
-
-// Hook to create a U-based deposit
-function useCreateDeposit() {
-  const warehouseAddress = useWarehouseAddress();
-  const {
-    writeContractAsync,
-    data: hash,
-    isPending,
-    error,
-  } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  });
-
-  const createDeposit = async (params: {
-    token: `0x${string}`;
-    amountPerPeriod: bigint;
-    periodSeconds: bigint;
-    totalPeriods: number;
-    discountLockupId?: bigint;
-    enableRemittance?: boolean;
-    value?: bigint; // For native token deposits
-  }) => {
-    if (!warehouseAddress)
-      throw new Error("Warehouse not deployed on this chain");
-    const txHash = await writeContractAsync({
-      address: warehouseAddress,
-      abi: warehouseAbi,
-      functionName: "createDeposit",
-      args: [
-        params.token,
-        params.amountPerPeriod,
-        params.periodSeconds,
-        params.totalPeriods,
-        params.discountLockupId ?? 0n,
-        params.enableRemittance ?? false,
-      ],
-      value: params.value,
-    });
-    return txHash;
-  };
-
-  return { createDeposit, hash, isPending, isConfirming, isSuccess, error };
-}
-
-// Hook to create a coin-based lockup
-function useCreateLockup() {
-  const warehouseAddress = useWarehouseAddress();
-  const {
-    writeContractAsync,
-    data: hash,
-    isPending,
-    error,
-  } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  });
-
-  const createLockup = async (params: {
-    token: `0x${string}`;
-    amount: bigint;
-    unlockTime: bigint;
-    discountLockupId?: bigint;
-    enableRemittance?: boolean;
-    value?: bigint; // For native token lockups
-  }) => {
-    if (!warehouseAddress)
-      throw new Error("Warehouse not deployed on this chain");
-    const txHash = await writeContractAsync({
-      address: warehouseAddress,
-      abi: warehouseAbi,
-      functionName: "createLockup",
-      args: [
-        params.token,
-        params.amount,
-        params.unlockTime,
-        params.discountLockupId ?? 0n,
-        params.enableRemittance ?? false,
-      ],
-      value: params.value,
-    });
-    return txHash;
-  };
-
-  return { createLockup, hash, isPending, isConfirming, isSuccess, error };
 }
 
 // Hook to withdraw from a deposit
@@ -585,97 +405,7 @@ export function calculateLockupFee(amount: bigint): bigint {
   return (amount * 5n) / 1000n;
 }
 
-// ============ Type Definitions ============
-
-interface DepositData {
-  id: bigint;
-  user: `0x${string}`;
-  token: `0x${string}`;
-  amountPerPeriod: bigint;
-  periodSeconds: bigint;
-  totalPeriods: number;
-  periodsWithdrawn: number;
-  nextWithdrawalTime: bigint;
-}
-
-interface LockupData {
-  id: bigint;
-  user: `0x${string}`;
-  token: `0x${string}`;
-  amount: bigint;
-  unlockTime: bigint;
-  withdrawn: boolean;
-  isDiscountActive: boolean;
-  createTime: bigint;
-}
-
-// Hook to read a single deposit with proper typing
-function useDepositById(depositId: bigint | undefined) {
-  const warehouseAddress = useWarehouseAddress();
-  const chainId = useContractChainId();
-
-  return useReadContract({
-    address: warehouseAddress,
-    abi: warehouseAbi,
-    functionName: "deposits",
-    args: depositId !== undefined ? [depositId] : undefined,
-    chainId,
-    query: { enabled: depositId !== undefined && !!warehouseAddress },
-  });
-}
-
-// Hook to read a single lockup with proper typing
-function useLockupById(lockupId: bigint | undefined) {
-  const warehouseAddress = useWarehouseAddress();
-  const chainId = useContractChainId();
-
-  return useReadContract({
-    address: warehouseAddress,
-    abi: warehouseAbi,
-    functionName: "lockups",
-    args: lockupId !== undefined ? [lockupId] : undefined,
-    chainId,
-    query: { enabled: lockupId !== undefined && !!warehouseAddress },
-  });
-}
-
-// Parse deposit tuple from contract
-function parseDeposit(
-  id: bigint,
-  data: readonly [string, string, bigint, bigint, number, number, bigint]
-): DepositData {
-  return {
-    id,
-    user: data[0] as `0x${string}`,
-    token: data[1] as `0x${string}`,
-    amountPerPeriod: data[2],
-    periodSeconds: data[3],
-    totalPeriods: data[4],
-    periodsWithdrawn: data[5],
-    nextWithdrawalTime: data[6],
-  };
-}
-
-// Parse lockup tuple from contract
-function parseLockup(
-  id: bigint,
-  data: readonly [string, string, bigint, bigint, boolean, boolean, bigint]
-): LockupData {
-  return {
-    id,
-    user: data[0] as `0x${string}`,
-    token: data[1] as `0x${string}`,
-    amount: data[2],
-    unlockTime: data[3],
-    withdrawn: data[4],
-    isDiscountActive: data[5],
-    createTime: data[6],
-  };
-}
-
 // ============ Blockchain Time Hook ============
-
-import { useBlockNumber, useBlock } from "wagmi";
 
 /**
  * 获取区块链当前时间（block.timestamp）
@@ -776,8 +506,7 @@ export function canActivateVIP(
   if (withdrawn) return false;
   if (isDiscountActive) return false;
   if (amount < VIP_CONSTANTS.STAKE_MIN_AMOUNT) return false;
-  // 前端检查放宽到 364 天，实际合约要求 365 天
-  // 如果不满足合约要求，交易会失败并显示错误
+
   const lockDuration = unlockTime - createTime;
   const minDurationForUI = 364 * 24 * 60 * 60; // 364 days
   if (lockDuration < minDurationForUI) return false;

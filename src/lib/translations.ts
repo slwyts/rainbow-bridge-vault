@@ -164,6 +164,25 @@ export const translations = {
         switchNetworkFailed: "Network switch failed",
         connectWalletFirst: "Please connect wallet first",
       },
+      vip: {
+        oneClickTitle: "One-Click VIP Activation",
+        oneClickDesc:
+          "Stake 10,000 xWAIFU for 365 days + burn 100 to activate 50% fee discount",
+        noSupportedChain: "No chain supports xWAIFU VIP",
+        switchingChain: "Switching to supported chain...",
+        configError: "xWAIFU or warehouse not configured",
+        checkingApproval: "Checking approval...",
+        waitingApproval: "Waiting for approval confirmation...",
+        creatingLockup: "Creating VIP lockup...",
+        waitingConfirmation: "Waiting for lockup confirmation...",
+        lockupIdNotFound: "Could not find lockup ID from transaction",
+        activatingVIP: "Activating VIP...",
+        burning100: "Burning 100 xWAIFU",
+        waitingActivation: "Waiting for VIP activation...",
+        success: "VIP Activated!",
+        successDescFull: "You now enjoy 50% off on all fees!",
+        failed: "VIP Activation Failed",
+      },
     },
     chains: {
       gas: {
@@ -174,8 +193,10 @@ export const translations = {
     },
     positions: {
       title: "My Positions",
-      empty: "No active positions yet",
-      emptyHistory: "No historical positions",
+      empty: {
+        current: "No active positions yet",
+        history: "No historical positions",
+      },
       filter: {
         current: "Current",
         history: "History",
@@ -518,6 +539,24 @@ export const translations = {
         switchNetworkFailed: "切换网络失败",
         connectWalletFirst: "请先连接钱包",
       },
+      vip: {
+        oneClickTitle: "一键开通 VIP",
+        oneClickDesc: "锁仓 10,000 xWAIFU 365天 + 燃烧 100 个激活手续费5折",
+        noSupportedChain: "没有链支持 xWAIFU VIP",
+        switchingChain: "正在切换到支持的链...",
+        configError: "xWAIFU 或仓库合约未配置",
+        checkingApproval: "正在检查授权...",
+        waitingApproval: "等待授权确认...",
+        creatingLockup: "正在创建 VIP 锁仓...",
+        waitingConfirmation: "等待锁仓确认...",
+        lockupIdNotFound: "无法从交易中获取锁仓ID",
+        activatingVIP: "正在激活 VIP...",
+        burning100: "燃烧 100 xWAIFU",
+        waitingActivation: "等待 VIP 激活...",
+        success: "VIP 激活成功！",
+        successDescFull: "您现在可以享受所有手续费5折优惠！",
+        failed: "VIP 激活失败",
+      },
     },
     chains: {
       gas: {
@@ -528,8 +567,10 @@ export const translations = {
     },
     positions: {
       title: "我的仓库",
-      empty: "暂无活跃仓库",
-      emptyHistory: "暂无历史仓库",
+      empty: {
+        current: "暂无活跃仓库",
+        history: "暂无历史仓库",
+      },
       filter: {
         current: "当前",
         history: "历史",

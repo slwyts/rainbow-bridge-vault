@@ -17,15 +17,6 @@ export const CHAIN_IDS = {
 
 export type SupportedChainId = (typeof CHAIN_IDS)[keyof typeof CHAIN_IDS];
 
-// ============ Chain String IDs (用于UI组件) ============
-const CHAIN_STRING_IDS = {
-  [CHAIN_IDS.HARDHAT]: "localnet",
-  [CHAIN_IDS.XLAYER]: "x-layer",
-  [CHAIN_IDS.BSC]: "binance-smart-chain",
-  [CHAIN_IDS.BSC_TESTNET]: "bsc-testnet",
-  [CHAIN_IDS.ARBITRUM]: "arbitrum-one",
-} as const;
-
 // ============ Trust Wallet Assets 映射 ============
 export const CHAIN_TO_TRUST_WALLET: Record<string, string> = {
   localnet: "ethereum",
@@ -329,48 +320,13 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
 // ============ 辅助函数 ============
 
 /**
- * 获取链配置
- */
-function getChainConfig(chainId: number): ChainConfig | undefined {
-  return CHAIN_CONFIGS[chainId as SupportedChainId];
-}
-
-/**
- * 获取所有定义的链ID列表（包括未配置的）
- */
-function getAllDefinedChainIds(): SupportedChainId[] {
-  return Object.keys(CHAIN_CONFIGS).map(Number) as SupportedChainId[];
-}
-
-/**
  * 获取所有启用的链ID（配置了仓库地址的链）
  * 这是主要使用的函数，UI组件应该使用这个
  */
 export function getAllChainIds(): SupportedChainId[] {
-  return getAllDefinedChainIds().filter(
+  return (Object.keys(CHAIN_CONFIGS).map(Number) as SupportedChainId[]).filter(
     (id) => CHAIN_CONFIGS[id].warehouseAddress
   );
-}
-
-/**
- * @deprecated 使用 getAllChainIds() 替代
- */
-function getActiveChainIds(): SupportedChainId[] {
-  return getAllChainIds();
-}
-
-/**
- * 检查链是否已启用（配置了仓库地址）
- */
-function isChainEnabled(chainId: number): boolean {
-  return !!CHAIN_CONFIGS[chainId as SupportedChainId]?.warehouseAddress;
-}
-
-/**
- * 通过字符串ID获取链配置
- */
-function getChainByStringId(stringId: string): ChainConfig | undefined {
-  return Object.values(CHAIN_CONFIGS).find((c) => c.stringId === stringId);
 }
 
 /**
@@ -384,7 +340,8 @@ export function getChainStringId(chainId: number): string {
  * 获取链的数字ID（从字符串ID）
  */
 export function getChainNumericId(stringId: string): number {
-  return getChainByStringId(stringId)?.chainId || CHAIN_IDS.HARDHAT;
+  const config = Object.values(CHAIN_CONFIGS).find((c) => c.stringId === stringId);
+  return config?.chainId || CHAIN_IDS.HARDHAT;
 }
 
 /**
@@ -414,22 +371,6 @@ export function getTokenAddress(
 }
 
 /**
- * 获取代币信息
- */
-function getTokenConfig(
-  chainId: number,
-  symbol: string
-): TokenConfig | undefined {
-  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
-  if (!config) return undefined;
-
-  if (symbol === config.tokens.native.symbol) {
-    return config.tokens.native;
-  }
-  return config.tokens[symbol as "USDT" | "USDC" | "USDG" | "XWAIFU"];
-}
-
-/**
  * 获取原生代币符号
  */
 export function getNativeTokenSymbol(chainId: number): string {
@@ -438,56 +379,113 @@ export function getNativeTokenSymbol(chainId: number): string {
   );
 }
 
+// ============ UI 代币类型 ============
+
 /**
- * 获取链上所有代币列表（用于UI显示）
+ * UI 代币类型定义（用于资产选择器等组件）
  */
-export function getChainTokenList(chainId: number): TokenConfig[] {
+export interface Currency {
+  id: string;
+  name: string;
+  symbol: string;
+  iconUrl?: string;
+  contractAddress?: string;
+  isCustom?: boolean;
+  chainId?: string;
+  decimals?: number;
+  isNative?: boolean;
+}
+
+/**
+ * 获取链上代币列表（Currency 格式，用于 UI 组件）
+ */
+export function getCurrenciesForChain(chainId: number): Currency[] {
   const config = CHAIN_CONFIGS[chainId as SupportedChainId];
-  if (!config) return [];
-
-  const tokens: TokenConfig[] = [config.tokens.native];
-
-  if (config.tokens.USDT?.address) tokens.push(config.tokens.USDT);
-  if (config.tokens.USDC?.address) tokens.push(config.tokens.USDC);
-  if (config.tokens.USDG?.address) tokens.push(config.tokens.USDG);
-  if (config.tokens.XWAIFU?.address) tokens.push(config.tokens.XWAIFU);
-
-  return tokens;
-}
-
-/**
- * 获取 Trust Wallet 图标 URL
- */
-export function getTrustWalletIconUrl(
-  contractAddress: string,
-  chainId: number
-): string {
-  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
-  const trustWalletChain = config?.trustWalletName || "ethereum";
-  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${trustWalletChain}/assets/${contractAddress}/logo.png`;
-}
-
-// ============ Wagmi/Viem 相关 ============
-
-/**
- * 获取所有 viem chain 对象（用于 wagmi config）
- */
-function getAllViemChains(): ViemChain[] {
-  return Object.values(CHAIN_CONFIGS).map((c) => c.viemChain);
-}
-
-/**
- * 获取所有 RPC transports（用于 wagmi config）
- */
-function getAllTransports(): Record<number, string> {
-  const transports: Record<number, string> = {};
-  for (const config of Object.values(CHAIN_CONFIGS)) {
-    transports[config.chainId] = config.rpcUrl;
+  if (!config) {
+    // Fallback to generic tokens
+    return [
+      {
+        id: "ETH",
+        name: "Ethereum",
+        symbol: "ETH",
+        isNative: true,
+        decimals: 18,
+      },
+      { id: "USDT", name: "Tether", symbol: "USDT", decimals: 6 },
+      { id: "USDC", name: "USD Coin", symbol: "USDC", decimals: 6 },
+    ];
   }
-  return transports;
+
+  const currencies: Currency[] = [];
+  const stringId = config.stringId;
+
+  // 添加原生代币
+  currencies.push({
+    id: `${stringId}-${config.tokens.native.symbol.toLowerCase()}`,
+    name: config.tokens.native.name,
+    symbol: config.tokens.native.symbol,
+    isNative: true,
+    decimals: config.tokens.native.decimals,
+    chainId: stringId,
+  });
+
+  // 添加其他代币
+  const tokenKeys = ["USDT", "USDC", "USDG", "XWAIFU"] as const;
+  for (const key of tokenKeys) {
+    const token = config.tokens[key];
+    if (token?.address) {
+      currencies.push({
+        id: `${stringId}-${token.symbol.toLowerCase()}`,
+        name: token.name,
+        symbol: token.symbol,
+        contractAddress: token.address,
+        decimals: token.decimals,
+        chainId: stringId,
+      });
+    }
+  }
+
+  return currencies;
 }
 
 // ============ 默认值 ============
 const DEFAULT_CHAIN_ID = Number(
   process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID || CHAIN_IDS.HARDHAT
 ) as SupportedChainId;
+
+/**
+ * 获取支持 xWAIFU VIP 的链ID列表
+ * 只返回配置了 xWAIFU 代币地址的链
+ */
+export function getXWaifuSupportedChainIds(): SupportedChainId[] {
+  return getAllChainIds().filter(
+    (id) => CHAIN_CONFIGS[id].tokens.XWAIFU?.address
+  );
+}
+
+/**
+ * 获取首选的 xWAIFU 链
+ * 优先级：当前链 > 默认链 > 第一个支持的链
+ */
+export function getPreferredXWaifuChainId(
+  currentChainId?: number
+): SupportedChainId | undefined {
+  const supportedChains = getXWaifuSupportedChainIds();
+  if (supportedChains.length === 0) return undefined;
+
+  // 优先使用当前链（如果它支持 xWAIFU）
+  if (
+    currentChainId &&
+    supportedChains.includes(currentChainId as SupportedChainId)
+  ) {
+    return currentChainId as SupportedChainId;
+  }
+
+  // 其次使用默认链（如果它支持 xWAIFU）
+  if (supportedChains.includes(DEFAULT_CHAIN_ID)) {
+    return DEFAULT_CHAIN_ID;
+  }
+
+  // 最后返回第一个支持的链
+  return supportedChains[0];
+}

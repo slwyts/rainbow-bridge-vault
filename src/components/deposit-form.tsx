@@ -51,7 +51,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
-import { parseUnits, formatUnits } from "viem";
+import { parseUnits, formatUnits, decodeEventLog } from "viem";
 import { writeContract, waitForTransactionReceipt } from "@wagmi/core";
 import { config as wagmiConfig } from "@/lib/web3";
 import { warehouseAbi, erc20Abi } from "@/lib/abi";
@@ -63,6 +63,7 @@ import {
   getTokenAddress,
   getChainNumericId,
   getChainStringId,
+  getPreferredXWaifuChainId,
   type SupportedChainId,
 } from "@/lib/chains";
 import {
@@ -106,6 +107,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
 
   // Transaction states (managed locally instead of via hooks)
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVIPLockupProcessing, setIsVIPLockupProcessing] = useState(false);
 
   const [depositType, setDepositType] = useState<"u-based" | "coin-based">(
     "u-based"
@@ -646,7 +648,164 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
       isConnected &&
       connectedChainId !== targetChain.chainId
     ) {
-      switchChain({ chainId: targetChain.chainId });
+      // wagmi 的 switchChain 会自动处理添加网络（如果钱包不存在该链）
+      switchChain(
+        { chainId: targetChain.chainId },
+        {
+          onError: (err) => {
+            toast.error(t("form.errors.switchNetworkFailed"), {
+              description:
+                err instanceof Error ? err.message : "Please try again",
+            });
+          },
+        }
+      );
+    }
+  };
+
+  // 一键开通 VIP：锁仓 10000 xWAIFU 365天 + 激活 VIP
+  const handleOneClickVIP = async () => {
+    if (!address) {
+      toast.error(t("form.errors.connectWalletFirst"));
+      return;
+    }
+
+    // 获取首选的支持 xWAIFU 的链（优先当前链）
+    const preferredChainId = getPreferredXWaifuChainId(connectedChainId);
+    if (!preferredChainId) {
+      toast.error(t("form.vip.noSupportedChain"));
+      return;
+    }
+
+    setIsVIPLockupProcessing(true);
+
+    try {
+      // 1. 如果当前链不支持 xWAIFU，切换到支持的链
+      if (connectedChainId !== preferredChainId) {
+        toast.info(t("form.vip.switchingChain"), {
+          description: CHAIN_CONFIGS[preferredChainId].name,
+        });
+        await switchChain?.({ chainId: preferredChainId });
+        // 等待链切换完成
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      const targetChainId = preferredChainId;
+      const xwaifuAddress = getTokenAddress(targetChainId, "XWAIFU");
+      const warehouseAddr = getWarehouseAddress(targetChainId);
+
+      if (!xwaifuAddress || !warehouseAddr) {
+        throw new Error(t("form.vip.configError"));
+      }
+
+      // VIP 要求：10000 xWAIFU，365天，激活需要额外 100 xWAIFU
+      const VIP_AMOUNT = parseUnits("10000", 18); // xWAIFU 是 18 位精度
+      const VIP_BURN_AMOUNT = parseUnits("100", 18); // 激活 VIP 需要燃烧 100
+      const VIP_LOCK_DAYS = 365;
+      const lockupFee = calculateLockupFee(VIP_AMOUNT);
+      // 总共需要：10000 锁仓 + 手续费 + 100 激活费
+      const totalNeeded = VIP_AMOUNT + lockupFee + VIP_BURN_AMOUNT;
+
+      // 计算解锁时间戳
+      const unlockTimestamp = BigInt(
+        Math.floor(Date.now() / 1000) + VIP_LOCK_DAYS * 24 * 60 * 60
+      );
+
+      // 2. Approve（包含锁仓和激活所需的总量）
+      toast.info(t("form.vip.checkingApproval"));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const approveHash = await writeContract(wagmiConfig as any, {
+        address: xwaifuAddress,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [warehouseAddr, totalNeeded],
+        chainId: targetChainId,
+      });
+
+      toast.info(t("form.vip.waitingApproval"));
+      await waitForTransactionReceipt(wagmiConfig, { hash: approveHash });
+
+      // 3. 创建 lockup
+      toast.info(t("form.vip.creatingLockup"), {
+        description: `10,000 xWAIFU × ${VIP_LOCK_DAYS} ${t("form.days")}`,
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lockupHash = await writeContract(wagmiConfig as any, {
+        address: warehouseAddr,
+        abi: warehouseAbi,
+        functionName: "createLockup",
+        args: [
+          xwaifuAddress,
+          VIP_AMOUNT,
+          unlockTimestamp,
+          0n, // 不使用现有 VIP
+          false, // 不开启汇付
+        ],
+        chainId: targetChainId,
+      });
+
+      toast.info(t("form.vip.waitingConfirmation"));
+      const lockupReceipt = await waitForTransactionReceipt(wagmiConfig, {
+        hash: lockupHash,
+      });
+
+      // 4. 从交易回执中解析 LockupCreated 事件获取 lockup ID
+      let lockupId: bigint | undefined;
+      for (const log of lockupReceipt.logs) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const decoded = decodeEventLog({
+            abi: warehouseAbi as any,
+            data: log.data,
+            topics: log.topics,
+          }) as { eventName: string; args: { id: bigint } };
+          if (decoded.eventName === "LockupCreated") {
+            lockupId = decoded.args.id;
+            break;
+          }
+        } catch {
+          // 不是我们要找的事件，继续
+        }
+      }
+
+      if (lockupId === undefined) {
+        throw new Error(t("form.vip.lockupIdNotFound"));
+      }
+
+      // 5. 激活 VIP（燃烧 100 xWAIFU）
+      toast.info(t("form.vip.activatingVIP"), {
+        description: t("form.vip.burning100"),
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const activateHash = await writeContract(wagmiConfig as any, {
+        address: warehouseAddr,
+        abi: warehouseAbi,
+        functionName: "activateVIP",
+        args: [lockupId],
+        chainId: targetChainId,
+      });
+
+      toast.info(t("form.vip.waitingActivation"));
+      await waitForTransactionReceipt(wagmiConfig, { hash: activateHash });
+
+      toast.success(t("form.vip.success"), {
+        description: t("form.vip.successDescFull"),
+      });
+
+      // 6. 刷新仓位
+      onAddPosition();
+    } catch (err) {
+      const errorMessage =
+        (err as { shortMessage?: string })?.shortMessage ||
+        (err instanceof Error ? err.message : "Please try again");
+      toast.error(t("form.vip.failed"), {
+        description: errorMessage,
+      });
+    } finally {
+      setIsVIPLockupProcessing(false);
     }
   };
 
@@ -1210,7 +1369,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                         </div>
                       </div>
 
-                      {/* Discount Notice */}
+                      {/* Discount Notice / One-click VIP */}
                       {hasVIPDiscount ? (
                         <div className="mb-6 rounded-lg border border-emerald-300 bg-emerald-100 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
                           <div className="flex items-center gap-2">
@@ -1221,21 +1380,40 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           </div>
                         </div>
                       ) : (
-                        <div className="mb-6 rounded-lg border border-amber-300 bg-amber-100 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
-                          <p className="text-xs text-amber-700 dark:text-amber-400">
-                            {t("form.summary.discount")}
-                          </p>
+                        <div className="mb-6 space-y-2">
+                          <button
+                            type="button"
+                            onClick={handleOneClickVIP}
+                            disabled={!mounted || isVIPLockupProcessing || !isConnected}
+                            className="w-full rounded-lg border border-amber-400 bg-gradient-to-r from-amber-100 to-orange-100 p-3 text-left transition-all hover:border-amber-500 hover:from-amber-200 hover:to-orange-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/10 dark:hover:from-amber-500/20 dark:hover:to-orange-500/20"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Crown className="h-4 w-4 text-amber-500" />
+                                <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                  {t("form.vip.oneClickTitle")}
+                                </span>
+                              </div>
+                              {isVIPLockupProcessing ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-amber-500" />
+                              )}
+                            </div>
+                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-300/80">
+                              {t("form.vip.oneClickDesc")}
+                            </p>
+                          </button>
+                          <a
+                            href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block text-xs text-green-500 hover:text-green-600 hover:underline"
+                          >
+                            {t("form.summary.buyXWaifuLink")} ↗
+                          </a>
                         </div>
                       )}
-
-                      <a
-                        href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mb-3 text-xs text-green-500 hover:text-green-600 hover:underline"
-                      >
-                        {t("form.summary.buyXWaifuLink")} ↗
-                      </a>
 
                       {/* Remittance toggle - pill style */}
                       <div className="mb-4 space-y-2">
@@ -1621,7 +1799,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                         </span>
                       </div>
 
-                      {/* VIP Discount Notice */}
+                      {/* VIP Discount Notice / One-click VIP */}
                       {hasVIPDiscount ? (
                         <div className="mb-4 rounded-lg border border-emerald-300 bg-emerald-100 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
                           <div className="flex items-center gap-2">
@@ -1632,21 +1810,40 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           </div>
                         </div>
                       ) : (
-                        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-100 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
-                          <p className="text-xs text-amber-700 dark:text-amber-400">
-                            {t("form.summary.discount")}
-                          </p>
+                        <div className="mb-4 space-y-2">
+                          <button
+                            type="button"
+                            onClick={handleOneClickVIP}
+                            disabled={!mounted || isVIPLockupProcessing || !isConnected}
+                            className="w-full rounded-lg border border-amber-400 bg-gradient-to-r from-amber-100 to-orange-100 p-3 text-left transition-all hover:border-amber-500 hover:from-amber-200 hover:to-orange-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/10 dark:hover:from-amber-500/20 dark:hover:to-orange-500/20"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Crown className="h-4 w-4 text-amber-500" />
+                                <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                  {t("form.vip.oneClickTitle")}
+                                </span>
+                              </div>
+                              {isVIPLockupProcessing ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-amber-500" />
+                              )}
+                            </div>
+                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-300/80">
+                              {t("form.vip.oneClickDesc")}
+                            </p>
+                          </button>
+                          <a
+                            href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block text-xs text-green-500 hover:text-green-600 hover:underline"
+                          >
+                            {t("form.summary.buyXWaifuLink")} ↗
+                          </a>
                         </div>
                       )}
-
-                      <a
-                        href="https://web3.okx.com/zh-hans/token/x-layer/0x140aba9691353ed54479372c4e9580d558d954b1"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mb-3 text-xs text-green-500 hover:text-green-600 hover:underline"
-                      >
-                        {t("form.summary.buyXWaifuLink")} ↗
-                      </a>
 
                       {/* Security Notice */}
                       <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">

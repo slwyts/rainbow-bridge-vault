@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { createPublicClient, http, zeroAddress } from "viem";
 import {
-  CHAIN_IDS,
   CHAIN_CONFIGS,
   getAllChainIds,
   getWarehouseAddress,

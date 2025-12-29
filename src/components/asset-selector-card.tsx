@@ -5,7 +5,6 @@ import {
   useEffect,
   useMemo,
   useCallback,
-  type ReactNode,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -41,18 +40,17 @@ import {
   TokenOKB,
 } from "@web3icons/react";
 import { useTokenInfo, useTokenBalance } from "@/lib/contracts";
-import { useAccount, useChainId } from "wagmi";
+import { useAccount } from "wagmi";
 import { formatUnits, getAddress } from "viem";
 import {
   CHAIN_IDS,
   CHAIN_CONFIGS,
   getAllChainIds,
-  getTokenAddress,
-  getChainTokenList,
-  getTrustWalletIconUrl,
   CHAIN_TO_TRUST_WALLET,
   getOKLinkTokenIconUrl,
   getChainNumericId,
+  getCurrenciesForChain,
+  type Currency,
   type SupportedChainId,
 } from "@/lib/chains";
 
@@ -64,19 +62,8 @@ interface Chain {
   chainId: number; // Numeric chain ID for wagmi
 }
 
-// Currency type definition
-export interface Currency {
-  id: string;
-  name: string;
-  symbol: string;
-  icon?: ReactNode;
-  iconUrl?: string; // Custom icon URL for imported tokens
-  contractAddress?: string;
-  isCustom?: boolean;
-  chainId?: string;
-  decimals?: number;
-  isNative?: boolean; // true for native chain tokens like ETH, BNB
-}
+// Re-export Currency type for external use
+export type { Currency };
 
 // Get token icon URL from Trust Wallet Assets
 function getTokenIconUrl(
@@ -100,73 +87,8 @@ const defaultChains: Chain[] = getAllChainIds().map((chainId) => {
   };
 });
 
-// 重新导出 getChainStringId (从 chains.ts)
-;
-
-// 从统一配置生成链上代币列表
-export function getCurrenciesForChain(chainId: number): Currency[] {
-  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
-  if (!config) {
-    // Fallback to generic tokens
-    return [
-      {
-        id: "ETH",
-        name: "Ethereum",
-        symbol: "ETH",
-        isNative: true,
-        decimals: 18,
-      },
-      { id: "USDT", name: "Tether", symbol: "USDT", decimals: 6 },
-      { id: "USDC", name: "USD Coin", symbol: "USDC", decimals: 6 },
-    ];
-  }
-
-  const currencies: Currency[] = [];
-  const stringId = config.stringId;
-
-  // 添加原生代币
-  currencies.push({
-    id: `${stringId}-${config.tokens.native.symbol.toLowerCase()}`,
-    name: config.tokens.native.name,
-    symbol: config.tokens.native.symbol,
-    isNative: true,
-    decimals: config.tokens.native.decimals,
-    chainId: stringId,
-  });
-
-  // 添加其他代币
-  const tokenKeys = ["USDT", "USDC", "USDG", "XWAIFU"] as const;
-  for (const key of tokenKeys) {
-    const token = config.tokens[key];
-    if (token?.address) {
-      currencies.push({
-        id: `${stringId}-${token.symbol.toLowerCase()}`,
-        name: token.name,
-        symbol: token.symbol,
-        contractAddress: token.address,
-        decimals: token.decimals,
-        chainId: stringId,
-      });
-    }
-  }
-
-  return currencies;
-}
-
-// Default currencies - fallback when chain is not connected
-const defaultCurrencies: Currency[] = [
-  { id: "ETH", name: "Ethereum", symbol: "ETH", isNative: true, decimals: 18 },
-  { id: "BNB", name: "BNB", symbol: "BNB", isNative: true, decimals: 18 },
-  { id: "OKB", name: "OKB", symbol: "OKB", isNative: true, decimals: 18 },
-  { id: "USDT", name: "Tether", symbol: "USDT", decimals: 6 },
-  { id: "USDC", name: "USD Coin", symbol: "USDC", decimals: 6 },
-  { id: "WBTC", name: "Wrapped Bitcoin", symbol: "WBTC", decimals: 8 },
-];
-
-// Localnet specific tokens with actual addresses (legacy, use getCurrenciesForChain instead)
-const localnetCurrencies: Currency[] = getCurrenciesForChain(
-  CHAIN_IDS.HARDHAT
-);
+// Re-export getCurrenciesForChain for external use
+export { getCurrenciesForChain };
 
 // LocalStorage keys
 const CUSTOM_CURRENCIES_KEY = "rainbow-bridge-custom-currencies";
@@ -193,10 +115,8 @@ function GenericTokenIcon({
 }
 
 function GenericChainIcon({
-  symbol,
   className,
 }: {
-  symbol: string;
   className?: string;
 }) {
   return (
@@ -216,12 +136,10 @@ function TokenBalanceDisplay({
   tokenAddress,
   userAddress,
   decimals,
-  symbol,
 }: {
   tokenAddress: `0x${string}`;
   userAddress: `0x${string}`;
   decimals: number;
-  symbol: string;
 }) {
   const { data: balance, isLoading } = useTokenBalance(
     tokenAddress,
@@ -349,7 +267,7 @@ export function CurrencyIcon({
 
   // 如果是原生代币并且存在对应图标，优先显示
   if (shouldUseNativeIcon) {
-    return <NativeIcon className={className} variant="branded" />;
+      return <NativeIcon className={className} />;
   }
 
   // 如果有有效的图片 URL，显示图片
@@ -394,7 +312,7 @@ export function ChainIcon({
       return <NetworkEthereum className={className} variant="branded" />;
     default:
       // Fallback to generic chain icon (no dynamic NetworkIcon)
-      return <GenericChainIcon symbol={symbol} className={className} />;
+      return <GenericChainIcon className={className} />;
   }
 }
 
@@ -441,7 +359,6 @@ function AddCurrencyCard({
     decimals,
     isLoading: tokenLoading,
     isValid: tokenValid,
-    error: tokenError,
   } = useTokenInfo(tokenAddress, selectedNumericChainId);
 
   // Fetch user balance on the selected chain
@@ -1006,7 +923,6 @@ export function AssetSelectorCard({
                                     }
                                     userAddress={address}
                                     decimals={currency.decimals || 18}
-                                    symbol={currency.symbol}
                                   />
                                 )}
                                 {selectedCurrency === currency.symbol && (
