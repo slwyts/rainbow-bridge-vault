@@ -37,6 +37,63 @@ const CHAIN_TO_OKLINK_ID: Record<string, number> = {
   "arbitrum-one": 42161,
 };
 
+// iconaves.com 链名映射
+const CHAIN_TO_ICONAVES: Record<string, string> = {
+  localnet: "eth",
+  "x-layer": "xlayer",
+  "binance-smart-chain": "bsc",
+  "bsc-testnet": "bsc",
+  "arbitrum-one": "arbitrum",
+};
+
+// 特定代币的固定图标 URL（优先级最高）
+// key 格式: {chainId}-{lowercaseAddress}
+const FIXED_TOKEN_ICONS: Record<string, string> = {
+  // X Layer USDG
+  "x-layer-0x4ae46a509f6b1d9056937ba4500cb143933d2dc8":
+    "https://static.oklink.com/cdn/web3/currency/token/large/196-0x4ae46a509f6b1d9056937ba4500cb143933d2dc8-107/type=default_90_0",
+  // X Layer xWaifu
+  "x-layer-0x140aba9691353ed54479372c4e9580d558d954b1":
+    "https://static.oklink.com/cdn/web3/currency/token/large/196-0x140aba9691353ed54479372c4e9580d558d954b1-107/type=default_90_0",
+};
+
+// 获取特定代币的固定图标 URL
+export function getFixedTokenIconUrl(
+  contractAddress: string,
+  chainId: string
+): string | undefined {
+  const key = `${chainId}-${contractAddress.toLowerCase()}`;
+  return FIXED_TOKEN_ICONS[key];
+}
+
+// 获取 iconaves.com 代币图标 URL
+// 格式: https://www.iconaves.com/token_icon/{chain}/{address}.png
+export function getIconavesTokenIconUrl(
+  contractAddress: string,
+  chainId: string
+): string | undefined {
+  const iconavesChain = CHAIN_TO_ICONAVES[chainId];
+  if (!iconavesChain) return undefined;
+  return `https://www.iconaves.com/token_icon/${iconavesChain}/${contractAddress.toLowerCase()}.png`;
+}
+
+// 获取 Dyorswap 代币图标 URL (仅 X Layer)
+// 格式: https://dyorswap.org/images/tokens/{checksumAddress}.png
+export function getDyorswapTokenIconUrl(
+  contractAddress: string,
+  chainId: string
+): string | undefined {
+  if (chainId !== "x-layer") return undefined;
+  // 使用 checksum address
+  const { getAddress } = require("viem");
+  try {
+    const checksumAddress = getAddress(contractAddress);
+    return `https://dyorswap.org/images/tokens/${checksumAddress}.png`;
+  } catch {
+    return undefined;
+  }
+}
+
 // 获取 OKLink 代币图标 URL
 export function getOKLinkTokenIconUrl(
   contractAddress: string,

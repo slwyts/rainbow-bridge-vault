@@ -25,10 +25,30 @@ import {
 } from "lucide-react";
 // Static imports only - dynamic imports cause 2000+ chunk files!
 import {
+  // Network icons
   NetworkBinanceSmartChain,
   NetworkXLayer,
   NetworkArbitrumOne,
   NetworkEthereum,
+  NetworkPolygon,
+  NetworkAvalanche,
+  NetworkOptimism,
+  NetworkBase,
+  NetworkFantom,
+  NetworkCronos,
+  NetworkGnosis,
+  NetworkZksync,
+  NetworkLinea,
+  NetworkScroll,
+  NetworkBlast,
+  NetworkMantle,
+  NetworkCelo,
+  NetworkMoonbeam,
+  NetworkMoonriver,
+  NetworkHarmony,
+  NetworkAurora,
+  NetworkBoba,
+  NetworkKava,
   // Native token icons
   TokenETH,
   TokenBNB,
@@ -38,6 +58,40 @@ import {
   TokenFTM,
   TokenOP,
   TokenOKB,
+  TokenCRO,
+  TokenONE,
+  TokenCELO,
+  TokenGLMR,
+  TokenMOVR,
+  TokenKAVA,
+  // Common ERC20 tokens
+  TokenUSDT,
+  TokenUSDC,
+  TokenDAI,
+  TokenWBTC,
+  TokenLINK,
+  TokenUNI,
+  TokenAAVE,
+  TokenCRV,
+  TokenMKR,
+  TokenSNX,
+  TokenCOMP,
+  TokenSUSHI,
+  Token1INCH,
+  TokenLDO,
+  TokenRPL,
+  TokenAPE,
+  TokenSHIB,
+  TokenPEPE,
+  TokenARB,
+  TokenGMX,
+  TokenDYDX,
+  TokenENS,
+  TokenGRT,
+  TokenFRAX,
+  TokenLUSD,
+  TokenRETH,
+  TokenCBETH,
 } from "@web3icons/react";
 import { useTokenInfo, useTokenBalance } from "@/lib/contracts";
 import { useAccount } from "wagmi";
@@ -48,6 +102,9 @@ import {
   getAllChainIds,
   CHAIN_TO_TRUST_WALLET,
   getOKLinkTokenIconUrl,
+  getDyorswapTokenIconUrl,
+  getFixedTokenIconUrl,
+  getIconavesTokenIconUrl,
   getChainNumericId,
   getCurrenciesForChain,
   type Currency,
@@ -69,11 +126,15 @@ export type { Currency };
 function getTokenIconUrl(
   contractAddress: string,
   chainId: string
-): string {
+): string | undefined {
   const trustWalletChain = CHAIN_TO_TRUST_WALLET[chainId] || "ethereum";
   // Trust Wallet requires checksum address (mixed case)
-  const checksumAddress = getAddress(contractAddress);
-  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${trustWalletChain}/assets/${checksumAddress}/logo.png`;
+  try {
+    const checksumAddress = getAddress(contractAddress);
+    return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${trustWalletChain}/assets/${checksumAddress}/logo.png`;
+  } catch {
+    return undefined;
+  }
 }
 
 // 从统一配置生成 defaultChains（只包含已启用的链）
@@ -136,14 +197,17 @@ function TokenBalanceDisplay({
   tokenAddress,
   userAddress,
   decimals,
+  chainId,
 }: {
   tokenAddress: `0x${string}`;
   userAddress: `0x${string}`;
   decimals: number;
+  chainId?: number;
 }) {
   const { data: balance, isLoading } = useTokenBalance(
     tokenAddress,
-    userAddress
+    userAddress,
+    chainId
   );
 
   const formatBalance = (bal: bigint | undefined) => {
@@ -180,9 +244,11 @@ function TokenBalanceDisplay({
   );
 }
 
-// 原生代币图标映射
-const NATIVE_TOKEN_ICONS: Record<string, typeof TokenETH> = {
+// 代币图标映射（原生代币 + 常见 ERC20）
+const TOKEN_ICONS: Record<string, typeof TokenETH> = {
+  // Native tokens
   ETH: TokenETH,
+  WETH: TokenETH, // 用 ETH 图标代替
   BNB: TokenBNB,
   MATIC: TokenMATIC,
   POL: TokenMATIC,
@@ -191,9 +257,49 @@ const NATIVE_TOKEN_ICONS: Record<string, typeof TokenETH> = {
   FTM: TokenFTM,
   OP: TokenOP,
   OKB: TokenOKB,
+  CRO: TokenCRO,
+  ONE: TokenONE,
+  CELO: TokenCELO,
+  GLMR: TokenGLMR,
+  MOVR: TokenMOVR,
+  KAVA: TokenKAVA,
+  // Stablecoins
+  USDT: TokenUSDT,
+  USDC: TokenUSDC,
+  DAI: TokenDAI,
+  FRAX: TokenFRAX,
+  LUSD: TokenLUSD,
+  // Wrapped & LST
+  WBTC: TokenWBTC,
+  RETH: TokenRETH,
+  CBETH: TokenCBETH,
+  // DeFi tokens
+  LINK: TokenLINK,
+  UNI: TokenUNI,
+  AAVE: TokenAAVE,
+  CRV: TokenCRV,
+  MKR: TokenMKR,
+  SNX: TokenSNX,
+  COMP: TokenCOMP,
+  SUSHI: TokenSUSHI,
+  "1INCH": Token1INCH,
+  LDO: TokenLDO,
+  RPL: TokenRPL,
+  GMX: TokenGMX,
+  DYDX: TokenDYDX,
+  // Other popular tokens
+  APE: TokenAPE,
+  SHIB: TokenSHIB,
+  PEPE: TokenPEPE,
+  ARB: TokenARB,
+  ENS: TokenENS,
+  GRT: TokenGRT,
 };
 
-// CurrencyIcon with fallback: Native -> Trust Wallet -> OKLink -> Generic
+// 保留旧的映射名以兼容
+const NATIVE_TOKEN_ICONS = TOKEN_ICONS;
+
+// CurrencyIcon with fallback: Fixed -> Native -> Dyorswap -> iconaves -> Trust Wallet -> OKLink -> Generic
 export function CurrencyIcon({
   symbol,
   className = "w-8 h-8",
@@ -209,81 +315,110 @@ export function CurrencyIcon({
   chainId?: string;
   isNative?: boolean;
 }) {
+  // 检查是否有固定图标（最高优先级）
+  const fixedIconUrl = contractAddress && chainId
+    ? getFixedTokenIconUrl(contractAddress, chainId)
+    : undefined;
+
   // 原生代币优先使用库图标（但不要在 hooks 之前 return）
   const NativeIcon = NATIVE_TOKEN_ICONS[symbol.toUpperCase()];
-  const shouldUseNativeIcon = (isNative || !contractAddress) && !!NativeIcon;
-
-  // 依据 token 身份（链+合约+自定义url+符号+是否原生）形成 key
-  const tokenKey = `${chainId ?? ""}:${contractAddress ?? ""}:${iconUrl ?? ""}:${symbol}:${isNative ? 1 : 0}`;
-  // fallback 级别: 0=custom, 1=TrustWallet, 2-5=OKLink(107,109,105,110), 6=generic
-  // 将 key 与 level 绑定，避免在 effect 中重置 state
-  const [fallback, setFallback] = useState<{ key: string; level: number }>({
-    key: tokenKey,
-    level: 0,
-  });
-  const fallbackLevel = fallback.key === tokenKey ? fallback.level : 0;
+  const shouldUseNativeIcon = (isNative || !contractAddress) && !!NativeIcon && !fixedIconUrl;
 
   // OKLink tokenType 尝试顺序
   const oklinkTokenTypes = [107, 109, 105, 110];
 
-  // 生成 Trust Wallet URL (checksum address)
-  const trustWalletUrl =
-    contractAddress && chainId
-      ? getTokenIconUrl(contractAddress, chainId)
-      : undefined;
+  // 预先生成所有可能的 URL 列表
+  const allUrls = useMemo(() => {
+    const urls: string[] = [];
 
-  // 根据 fallback 级别选择 URL
-  const getImageUrl = () => {
-    // Level 0: 自定义 iconUrl
-    if (fallbackLevel === 0 && iconUrl) return iconUrl;
-    // Level 1: Trust Wallet (checksum address)
-    if (fallbackLevel <= 1 && trustWalletUrl) return trustWalletUrl;
-    // Level 2-5: OKLink 尝试不同 tokenType
-    const oklinkIndex = fallbackLevel - 2;
-    if (
-      oklinkIndex >= 0 &&
-      oklinkIndex < oklinkTokenTypes.length &&
-      contractAddress &&
-      chainId
-    ) {
-      return getOKLinkTokenIconUrl(
-        contractAddress,
-        chainId,
-        oklinkTokenTypes[oklinkIndex]
-      );
+    // 1. 固定图标
+    if (fixedIconUrl) urls.push(fixedIconUrl);
+    // 2. 自定义 iconUrl
+    if (iconUrl) urls.push(iconUrl);
+    // 3. Dyorswap (X Layer only)
+    if (contractAddress && chainId === "x-layer") {
+      const url = getDyorswapTokenIconUrl(contractAddress, chainId);
+      if (url) urls.push(url);
     }
-    return null;
-  };
+    // 4. iconaves.com
+    if (contractAddress && chainId) {
+      const url = getIconavesTokenIconUrl(contractAddress, chainId);
+      if (url) urls.push(url);
+    }
+    // 5. Trust Wallet
+    if (contractAddress && chainId) {
+      const url = getTokenIconUrl(contractAddress, chainId);
+      if (url) urls.push(url);
+    }
+    // 6. OKLink (multiple tokenTypes)
+    if (contractAddress && chainId) {
+      for (const tokenType of oklinkTokenTypes) {
+        const url = getOKLinkTokenIconUrl(contractAddress, chainId, tokenType);
+        if (url) urls.push(url);
+      }
+    }
 
-  const imageUrl = getImageUrl();
+    return urls;
+  }, [fixedIconUrl, iconUrl, contractAddress, chainId]);
 
-  // 图片加载失败时，尝试下一个来源
-  const handleError = () => {
-    setFallback((prev) => ({
-      key: tokenKey,
-      level: (prev.key === tokenKey ? prev.level : 0) + 1,
-    }));
-  };
+  // 当前尝试的 URL 索引
+  const [urlIndex, setUrlIndex] = useState(0);
+  const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+
+  // 当 token 变化时重置
+  const tokenKey = `${chainId ?? ""}:${contractAddress ?? ""}:${symbol}`;
+  useEffect(() => {
+    setUrlIndex(0);
+    setImgStatus('loading');
+  }, [tokenKey]);
+
+  const currentUrl = allUrls[urlIndex];
+
+  // 图片加载失败时，尝试下一个 URL
+  const handleError = useCallback(() => {
+    if (urlIndex < allUrls.length - 1) {
+      setUrlIndex(prev => prev + 1);
+      setImgStatus('loading');
+    } else {
+      setImgStatus('error');
+    }
+  }, [urlIndex, allUrls.length]);
+
+  // 图片加载成功
+  const handleLoad = useCallback(() => {
+    setImgStatus('loaded');
+  }, []);
 
   // 如果是原生代币并且存在对应图标，优先显示
   if (shouldUseNativeIcon) {
-      return <NativeIcon className={className} />;
+    return <NativeIcon className={className} />;
   }
 
-  // 如果有有效的图片 URL，显示图片
-  if (imageUrl) {
+  // 如果有 URL 可以尝试
+  if (currentUrl && imgStatus !== 'error') {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={imageUrl}
-        alt={symbol}
-        className={cn("rounded-full", className)}
-        onError={handleError}
-      />
+      <div className={cn("relative", className)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          key={currentUrl} // 关键：确保 URL 变化时重新创建元素
+          src={currentUrl}
+          alt={symbol}
+          className={cn(
+            "rounded-full w-full h-full object-cover",
+            imgStatus !== 'loaded' && "opacity-0 absolute"
+          )}
+          onError={handleError}
+          onLoad={handleLoad}
+        />
+        {/* 加载中或加载失败时显示占位符 */}
+        {imgStatus !== 'loaded' && (
+          <GenericTokenIcon symbol={symbol} className="w-full h-full" />
+        )}
+      </div>
     );
   }
 
-  // 所有来源都失败，显示通用图标
+  // 所有来源都失败或没有 URL，显示通用图标
   return <GenericTokenIcon symbol={symbol} className={className} />;
 }
 
@@ -923,6 +1058,7 @@ export function AssetSelectorCard({
                                     }
                                     userAddress={address}
                                     decimals={currency.decimals || 18}
+                                    chainId={getChainNumericId(activeChain)}
                                   />
                                 )}
                                 {selectedCurrency === currency.symbol && (
