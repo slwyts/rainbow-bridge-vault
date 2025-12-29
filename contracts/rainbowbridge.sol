@@ -15,12 +15,12 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
     IERC20 public immutable usdtToken;
     uint256 public immutable REMITTANCE_FEE;
     uint256 public constant DISCOUNT_COST = 100 * 1e18;
-    uint256 public constant STAKE_MIN_AMOUNT = 9800 * 1e18; // Adjusted to allow for fee + cost deduction
+    uint256 public constant STAKE_MIN_AMOUNT = 9800 * 1e18;
     uint256 public constant STAKE_MIN_DURATION = 363 days;
 
     struct Deposit {
         address user;
-        address token;  // ERC20 or native (address(0))
+        address token;
         uint256 amountPerPeriod;
         uint256 periodSeconds;
         uint32 totalPeriods;
@@ -32,11 +32,11 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
 
     struct Lockup {
         address user;
-        address token;         // ERC20 or native (address(0))
+        address token;
         uint256 amount;
         uint256 unlockTime;
         bool withdrawn;
-        bool isDiscountActive; // VIP Status
+        bool isDiscountActive;
         uint256 createTime;
         bool remittanceEnabled;
         bool createdAsRemit;
@@ -45,7 +45,6 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
     mapping(uint256 => Deposit) public deposits;
     mapping(uint256 => Lockup) public lockups;
     
-    // User indexes
     mapping(address => uint256[]) public userDepositIds;
     mapping(address => uint256[]) public userLockupIds;
 
@@ -61,37 +60,35 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
     event LockupRemittanceEnabled(uint256 indexed id);
 
     constructor(address _initialOwner, address _xwaifuToken, address _usdtToken) Ownable(_initialOwner) {
-        if (block.chainid == 196) { // X Layer
-            xwaifuToken = IERC20(0x140abA9691353eD54479372c4E9580D558D954b1);
-            usdtToken = IERC20(0x779Ded0c9e1022225f8E0630b35a9b54bE713736);
-        } else if (block.chainid == 1) { // Ethereum
-            xwaifuToken = IERC20(address(0));
-            usdtToken = IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7);
-        } else if (block.chainid == 42161) { // Arbitrum
-            xwaifuToken = IERC20(address(0));
-            usdtToken = IERC20(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9);
-        } else if (block.chainid == 56) { // BSC
-            xwaifuToken = IERC20(address(0));
-            usdtToken = IERC20(0x55d398326f99059fF775485246999027B3197955);
-        } else if (block.chainid == 137) { // Polygon
-            xwaifuToken = IERC20(address(0));
-            usdtToken = IERC20(0xc2132D05D31c914a87C6611C10748AEb04B58e8F);
-        } else if (block.chainid == 8453) { // Base
-            xwaifuToken = IERC20(address(0));
-            usdtToken = IERC20(0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2);
-        } else if (block.chainid == 31337) { // Hardhat Local
-            xwaifuToken = IERC20(_xwaifuToken);
-            address defaultUsdt = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
-            usdtToken = IERC20(_usdtToken != address(0) ? _usdtToken : defaultUsdt);
-        } else {
-            revert("Unsupported chain");
-        }
+        (address xwaifu, address usdt) = _getTokenAddresses(_xwaifuToken, _usdtToken);
+        xwaifuToken = IERC20(xwaifu);
+        usdtToken = IERC20(usdt);
 
-        uint8 decimals = IERC20Metadata(address(usdtToken)).decimals();
+        uint8 decimals = IERC20Metadata(usdt).decimals();
         REMITTANCE_FEE = (10 ** decimals) / 10; // 0.1 USDT
     }
 
-    // --- Vesting (Periodic) ---
+    function _getTokenAddresses(address _xwaifuToken, address _usdtToken) internal view returns (address xwaifu, address usdt) {
+        if (block.chainid == 196) { // X Layer
+            return (0x140abA9691353eD54479372c4E9580D558D954b1, 0x779Ded0c9e1022225f8E0630b35a9b54bE713736);
+        } else if (block.chainid == 1) { // Ethereum
+            return (address(0), 0xdAC17F958D2ee523a2206206994597C13D831ec7);
+        } else if (block.chainid == 42161) { // Arbitrum
+            return (address(0), 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9);
+        } else if (block.chainid == 56) { // BSC
+            return (address(0), 0x55d398326f99059fF775485246999027B3197955);
+        } else if (block.chainid == 137) { // Polygon
+            return (address(0), 0xc2132D05D31c914a87C6611C10748AEb04B58e8F);
+        } else if (block.chainid == 8453) { // Base
+            return (address(0), 0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2);
+        } else if (block.chainid == 31337) { // Hardhat Local
+            address defaultUsdt = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
+            return (_xwaifuToken, _usdtToken != address(0) ? _usdtToken : defaultUsdt);
+        } else {
+            revert("Unsupported chain");
+        }
+    }
+
     function createDeposit(
         address _token,
         uint256 _amountPerPeriod,
@@ -107,7 +104,6 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         uint256 totalPrincipal = _amountPerPeriod * _totalPeriods;
         uint256 fee = _calculateFee(totalPrincipal, _totalPeriods);
 
-        // Handle Discount (use type(uint256).max to skip discount)
         if (_discountLockupId != type(uint256).max && address(xwaifuToken) != address(0)) {
             if (_checkDiscount(_discountLockupId)) {
                 fee = fee / 2;
@@ -116,22 +112,11 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
 
         if (_token == address(0)) {
             require(msg.value == totalPrincipal + fee, "Incorrect value");
-            if (fee > 0) {
-                (bool okFee, ) = payable(owner()).call{value: fee}("");
-                require(okFee, "Fee transfer failed");
-            }
         } else {
             require(msg.value == 0, "No value needed");
-            // Transfer tokens: Principal + Fee
-            IERC20(_token).safeTransferFrom(msg.sender, address(this), totalPrincipal + fee);
-            
-            // Send fee to owner
-            if (fee > 0) {
-                IERC20(_token).safeTransfer(owner(), fee);
-            }
         }
 
-        // Store Deposit
+        // Effects - 先更新状态
         uint256 id = nextDepositId++;
         deposits[id] = Deposit({
             user: msg.sender,
@@ -144,8 +129,21 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
             remittanceEnabled: _enableRemittance,
             createdAsRemit: _enableRemittance
         });
-        
         userDepositIds[msg.sender].push(id);
+
+        // Interactions - 最后进行外部调用
+        if (_token == address(0)) {
+            if (fee > 0) {
+                (bool okFee, ) = payable(owner()).call{value: fee}("");
+                require(okFee, "Fee transfer failed");
+            }
+        } else {
+            IERC20(_token).safeTransferFrom(msg.sender, address(this), totalPrincipal + fee);
+            if (fee > 0) {
+                IERC20(_token).safeTransfer(owner(), fee);
+            }
+        }
+
         emit DepositCreated(id, msg.sender, _token, totalPrincipal);
     }
 
@@ -160,20 +158,17 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
             require(recipient == msg.sender, "Remittance disabled");
         }
 
-        // How many periods are available since nextWithdrawalTime
         uint256 remaining = d.totalPeriods - d.periodsWithdrawn;
-        uint256 available = 1 + (block.timestamp - d.nextWithdrawalTime) / d.periodSeconds; // at least 1
+        uint256 available = 1 + (block.timestamp - d.nextWithdrawalTime) / d.periodSeconds;
         if (available > remaining) {
-            available = remaining; // cap to remaining
+            available = remaining;
         }
 
-        // Update state
         d.periodsWithdrawn += uint32(available);
         if (d.periodsWithdrawn < d.totalPeriods) {
             d.nextWithdrawalTime += d.periodSeconds * available;
         }
 
-        // Payout all available periods at once
         uint256 payout = d.amountPerPeriod * available;
         if (d.token == address(0)) {
             (bool ok, ) = payable(recipient).call{value: payout}("");
@@ -188,11 +183,10 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         Deposit storage d = deposits[_id];
         require(msg.sender == d.user, "Not owner");
         require(d.periodsWithdrawn < d.totalPeriods, "Completed");
-        // Only native remittance (created at open) can be emergency cancelled
         require(d.createdAsRemit, "Cancel not allowed");
 
         uint256 remaining = d.amountPerPeriod * (d.totalPeriods - d.periodsWithdrawn);
-        d.periodsWithdrawn = d.totalPeriods; // Mark complete
+        d.periodsWithdrawn = d.totalPeriods;
 
         address recipient = _to == address(0) ? msg.sender : _to;
         require(recipient != address(0), "Invalid recipient");
@@ -212,8 +206,7 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         Lockup storage l = lockups[_id];
         require(msg.sender == l.user, "Not owner");
         require(!l.withdrawn, "Withdrawn");
-    // Only native remittance (created at open) can be emergency cancelled
-    require(l.createdAsRemit, "Cancel not allowed");
+        require(l.createdAsRemit, "Cancel not allowed");
 
         l.withdrawn = true;
 
@@ -226,17 +219,16 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         } else {
             IERC20(l.token).safeTransfer(recipient, l.amount);
         }
-    emit LockupWithdrawn(_id, l.amount, recipient);
+        emit LockupWithdrawn(_id, l.amount, recipient);
     }
 
-    // --- Lockup (One-time) ---
     function createLockup(address _token, uint256 _amount, uint256 _unlockTime, uint256 _discountLockupId, bool _enableRemittance) external payable nonReentrant whenNotPaused {
+        // Checks
         require(_unlockTime > block.timestamp, "Invalid time");
 
         uint256 amountLocked = _amount;
         uint256 fee = 0;
 
-        // Check VIP discount (use type(uint256).max to skip discount)
         bool hasDiscount = false;
         if (_discountLockupId != type(uint256).max) {
             if (_checkDiscount(_discountLockupId)) {
@@ -247,27 +239,22 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         if (_token == address(0)) {
             require(msg.value > 0, "No value");
             amountLocked = msg.value;
-            fee = (amountLocked * 5) / 1000; // 0.5%
+            fee = (amountLocked * 5) / 1000;
             if (hasDiscount) {
-                fee = fee / 2; // VIP 50% off
+                fee = fee / 2;
             }
             amountLocked -= fee;
-
-            (bool okFee, ) = payable(owner()).call{value: fee}("");
-            require(okFee, "Fee transfer failed");
         } else {
             require(msg.value == 0, "No value needed");
             uint256 total = _amount;
-            fee = (total * 5) / 1000; // 0.5%
+            fee = (total * 5) / 1000;
             if (hasDiscount) {
-                fee = fee / 2; // VIP 50% off
+                fee = fee / 2;
             }
             amountLocked = total - fee;
-
-            IERC20(_token).safeTransferFrom(msg.sender, address(this), total);
-            IERC20(_token).safeTransfer(owner(), fee);
         }
 
+        // Effects - 先更新状态
         uint256 id = nextLockupId++;
         lockups[id] = Lockup({
             user: msg.sender,
@@ -280,8 +267,17 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
             remittanceEnabled: _enableRemittance,
             createdAsRemit: _enableRemittance
         });
-
         userLockupIds[msg.sender].push(id);
+
+        // Interactions - 最后进行外部调用
+        if (_token == address(0)) {
+            (bool okFee, ) = payable(owner()).call{value: fee}("");
+            require(okFee, "Fee transfer failed");
+        } else {
+            IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+            IERC20(_token).safeTransfer(owner(), fee);
+        }
+
         emit LockupCreated(id, msg.sender, _token, amountLocked);
     }
 
@@ -307,7 +303,6 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         emit LockupWithdrawn(_id, l.amount, recipient);
     }
 
-    // --- Helpers ---
     function _calculateFee(uint256 _amount, uint32 _periods) internal pure returns (uint256) {
         uint256 bps = _periods <= 10 ? 50 : (_periods <= 30 ? 80 : (_periods <= 100 ? 100 : 200));
         return (_amount * bps) / 10000;
@@ -321,11 +316,9 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         require(!l.withdrawn, "Withdrawn");
         require(!l.isDiscountActive, "Already active");
         
-        // Check eligibility
         require(l.amount >= STAKE_MIN_AMOUNT, "Insufficient amount");
         require(l.unlockTime >= l.createTime + STAKE_MIN_DURATION, "Insufficient duration");
 
-        // Burn cost from position
         require(l.amount >= DISCOUNT_COST, "Cost too high");
         l.amount -= DISCOUNT_COST;
         xwaifuToken.safeTransfer(owner(), DISCOUNT_COST);
@@ -345,7 +338,6 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         return true;
     }
 
-    // --- Remittance Enable (Warehouse -> Remit) ---
     function enableDepositRemittance(uint256 _id) external nonReentrant {
         Deposit storage d = deposits[_id];
         require(msg.sender == d.user, "Not owner");
@@ -355,7 +347,7 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         _collectRemittanceFee();
 
         d.remittanceEnabled = true;
-        d.createdAsRemit = false; // conversion
+        d.createdAsRemit = false;
         emit DepositRemittanceEnabled(_id);
     }
 
@@ -383,7 +375,6 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         require(ok, "Native transfer failed");
     }
 
-    // --- Admin ---
     function pause() external onlyOwner {
         _pause();
     }
