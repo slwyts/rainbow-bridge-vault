@@ -382,4 +382,20 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
     function unpause() external onlyOwner {
         _unpause();
     }
+
+    function getUserDeposits(address _user) external view returns (uint256[] memory ids, Deposit[] memory data) {
+        ids = userDepositIds[_user];
+        data = new Deposit[](ids.length);
+        for (uint256 i = 0; i < ids.length; i++) {
+            data[i] = deposits[ids[i]];
+        }
+    }
+
+    function getUserLockups(address _user) external view returns (uint256[] memory ids, Lockup[] memory data) {
+        ids = userLockupIds[_user];
+        data = new Lockup[](ids.length);
+        for (uint256 i = 0; i < ids.length; i++) {
+            data[i] = lockups[ids[i]];
+        }
+    }
 }

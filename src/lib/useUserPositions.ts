@@ -177,7 +177,7 @@ interface LockupData {
   createdAsRemit: boolean;
 }
 
-// Fetch positions for a single chain
+// Fetch positions for a single chain using batch functions (with fallback)
 async function fetchPositionsForChain(
   chainConfig: (typeof SUPPORTED_CHAINS)[0],
   userAddress: string
@@ -202,209 +202,234 @@ async function fetchPositionsForChain(
     const block = await client.getBlock();
     const blockchainNow = Number(block.timestamp);
 
-    // Fetch next IDs to know the range
-    let nextDepositId = 0n;
-    let nextLockupId = 0n;
+    // Try batch fetch first, fallback to legacy method
+    let depositIds: bigint[] = [];
+    let depositsData: DepositData[] = [];
+    let lockupIds: bigint[] = [];
+    let lockupsData: LockupData[] = [];
+    let useLegacy = false;
 
     try {
-      nextDepositId = (await client.readContract({
-        address: warehouseAddress as `0x${string}`,
-        abi: warehouseAbi,
-        functionName: "nextDepositId",
-      })) as bigint;
-    } catch {
-      // Contract might not exist on this chain
-    }
-
-    try {
-      nextLockupId = (await client.readContract({
-        address: warehouseAddress as `0x${string}`,
-        abi: warehouseAbi,
-        functionName: "nextLockupId",
-      })) as bigint;
-    } catch {
-      // Contract might not exist on this chain
-    }
-
-    const userAddressLower = userAddress.toLowerCase();
-
-    // Fetch all deposits and filter by user
-    for (let i = 0n; i < nextDepositId; i++) {
-      try {
-        const result = (await client.readContract({
+      // Try new batch functions
+      const [depositsResult, lockupsResult] = await Promise.all([
+        client.readContract({
           address: warehouseAddress as `0x${string}`,
           abi: warehouseAbi,
-          functionName: "deposits",
-          args: [i],
-        })) as [
-          string,
-          string,
-          bigint,
-          bigint,
-          number,
-          number,
-          bigint,
-          boolean,
-          boolean,
-        ];
+          functionName: "getUserDeposits",
+          args: [userAddress as `0x${string}`],
+        }),
+        client.readContract({
+          address: warehouseAddress as `0x${string}`,
+          abi: warehouseAbi,
+          functionName: "getUserLockups",
+          args: [userAddress as `0x${string}`],
+        }),
+      ]);
 
-        const deposit: DepositData = {
-          user: result[0] as `0x${string}`,
-          token: result[1] as `0x${string}`,
-          amountPerPeriod: result[2],
-          periodSeconds: result[3],
-          totalPeriods: result[4],
-          periodsWithdrawn: result[5],
-          nextWithdrawalTime: result[6],
-          remittanceEnabled: result[7],
-          createdAsRemit: result[8],
-        };
+      const [dIds, dData] = depositsResult as [bigint[], DepositData[]];
+      const [lIds, lData] = lockupsResult as [bigint[], LockupData[]];
+      depositIds = dIds;
+      depositsData = dData;
+      lockupIds = lIds;
+      lockupsData = lData;
+    } catch {
+      // Batch functions not available, use legacy method
+      useLegacy = true;
+    }
 
-        // Check if this deposit belongs to the user (include completed ones for history)
-        if (deposit.user.toLowerCase() === userAddressLower) {
-          const periodSeconds = Number(deposit.periodSeconds);
-          const totalPeriods = deposit.totalPeriods;
-          const periodsWithdrawn = deposit.periodsWithdrawn;
-          const periodDays = Math.round(periodSeconds / 86400);
+    if (useLegacy) {
+      // Fallback: fetch all and filter by user
+      let nextDepositId = 0n;
+      let nextLockupId = 0n;
 
-          const nextWithdrawTime = Number(deposit.nextWithdrawalTime);
-          const remaining = totalPeriods - periodsWithdrawn;
-          const canWithdraw =
-            blockchainNow >= nextWithdrawTime && remaining > 0;
+      try {
+        nextDepositId = (await client.readContract({
+          address: warehouseAddress as `0x${string}`,
+          abi: warehouseAbi,
+          functionName: "nextDepositId",
+        })) as bigint;
+      } catch {
+        // Contract might not exist on this chain
+      }
 
-          // Calculate withdrawable periods
-          let withdrawableNow = 0;
-          if (canWithdraw) {
-            const timeSinceNext = blockchainNow - nextWithdrawTime;
-            withdrawableNow = Math.min(
-              remaining,
-              1 + Math.floor(timeSinceNext / periodSeconds)
-            );
+      try {
+        nextLockupId = (await client.readContract({
+          address: warehouseAddress as `0x${string}`,
+          abi: warehouseAbi,
+          functionName: "nextLockupId",
+        })) as bigint;
+      } catch {
+        // Contract might not exist on this chain
+      }
+
+      const userAddressLower = userAddress.toLowerCase();
+
+      for (let i = 0n; i < nextDepositId; i++) {
+        try {
+          const result = (await client.readContract({
+            address: warehouseAddress as `0x${string}`,
+            abi: warehouseAbi,
+            functionName: "deposits",
+            args: [i],
+          })) as [string, string, bigint, bigint, number, number, bigint, boolean, boolean];
+
+          const deposit: DepositData = {
+            user: result[0] as `0x${string}`,
+            token: result[1] as `0x${string}`,
+            amountPerPeriod: result[2],
+            periodSeconds: result[3],
+            totalPeriods: result[4],
+            periodsWithdrawn: result[5],
+            nextWithdrawalTime: result[6],
+            remittanceEnabled: result[7],
+            createdAsRemit: result[8],
+          };
+
+          if (deposit.user.toLowerCase() === userAddressLower) {
+            depositIds.push(i);
+            depositsData.push(deposit);
           }
-
-          // Calculate total amount
-          const totalAmount = deposit.amountPerPeriod * BigInt(totalPeriods);
-
-          // Get token symbol and decimals
-          const tokenSymbol = await fetchTokenSymbol(
-            client,
-            deposit.token,
-            chainConfig.chainId
-          );
-          const tokenDecimals = await fetchTokenDecimals(
-            client,
-            deposit.token,
-            chainConfig.chainId
-          );
-
-          positions.push({
-            id: `deposit-${chainConfig.chainId}-${i}`,
-            type: "u-based",
-            amount: deposit.amountPerPeriod.toString(),
-            totalAmount: totalAmount.toString(),
-            currency: tokenSymbol,
-            decimals: tokenDecimals,
-            frequency: totalPeriods,
-            period: periodDays,
-            remaining,
-            startDate: new Date((nextWithdrawTime - periodSeconds) * 1000)
-              .toISOString()
-              .split("T")[0],
-            status: remaining === 0 ? "completed" : "active",
-            chain: chainConfig.name,
-            chainId: chainConfig.chainId,
-            nextWithdrawTime,
-            canWithdraw,
-            withdrawableNow,
-            tokenAddress: deposit.token,
-            remittanceEnabled: deposit.remittanceEnabled,
-            createdAsRemit: deposit.createdAsRemit,
-          });
+        } catch {
+          // Skip failed reads
         }
-      } catch {
-        // Skip failed reads
+      }
+
+      for (let i = 0n; i < nextLockupId; i++) {
+        try {
+          const result = (await client.readContract({
+            address: warehouseAddress as `0x${string}`,
+            abi: warehouseAbi,
+            functionName: "lockups",
+            args: [i],
+          })) as [string, string, bigint, bigint, boolean, boolean, bigint, boolean, boolean];
+
+          const lockup: LockupData = {
+            user: result[0] as `0x${string}`,
+            token: result[1] as `0x${string}`,
+            amount: result[2],
+            unlockTime: result[3],
+            withdrawn: result[4],
+            isDiscountActive: result[5],
+            createTime: result[6],
+            remittanceEnabled: result[7],
+            createdAsRemit: result[8],
+          };
+
+          if (lockup.user.toLowerCase() === userAddressLower) {
+            lockupIds.push(i);
+            lockupsData.push(lockup);
+          }
+        } catch {
+          // Skip failed reads
+        }
       }
     }
 
-    // Fetch all lockups and filter by user
-    for (let i = 0n; i < nextLockupId; i++) {
-      try {
-        const result = (await client.readContract({
-          address: warehouseAddress as `0x${string}`,
-          abi: warehouseAbi,
-          functionName: "lockups",
-          args: [i],
-        })) as [
-          string,
-          string,
-          bigint,
-          bigint,
-          boolean,
-          boolean,
-          bigint,
-          boolean,
-          boolean,
-        ];
+    // Process deposits
+    for (let idx = 0; idx < depositsData.length; idx++) {
+      const deposit = depositsData[idx];
+      const depositId = depositIds[idx];
 
-        const lockup: LockupData = {
-          user: result[0] as `0x${string}`,
-          token: result[1] as `0x${string}`,
-          amount: result[2],
-          unlockTime: result[3],
-          withdrawn: result[4],
-          isDiscountActive: result[5],
-          createTime: result[6],
-          remittanceEnabled: result[7],
-          createdAsRemit: result[8],
-        };
+      const periodSeconds = Number(deposit.periodSeconds);
+      const totalPeriods = deposit.totalPeriods;
+      const periodsWithdrawn = deposit.periodsWithdrawn;
+      const periodDays = Math.round(periodSeconds / 86400);
 
-        // Check if this lockup belongs to the user (include withdrawn ones for history)
-        if (lockup.user.toLowerCase() === userAddressLower) {
-          const unlockTime = Number(lockup.unlockTime);
-          const createTime = Number(lockup.createTime);
-          const canWithdraw = blockchainNow >= unlockTime;
+      const nextWithdrawTime = Number(deposit.nextWithdrawalTime);
+      const remaining = totalPeriods - periodsWithdrawn;
+      const canWithdraw = blockchainNow >= nextWithdrawTime && remaining > 0;
 
-          // Calculate period in days (from create to unlock)
-          const periodDays = Math.max(
-            0,
-            Math.round((unlockTime - createTime) / 86400)
-          );
-
-          // Get token symbol and decimals
-          const tokenSymbol = await fetchTokenSymbol(
-            client,
-            lockup.token,
-            chainConfig.chainId
-          );
-          const tokenDecimals = await fetchTokenDecimals(
-            client,
-            lockup.token,
-            chainConfig.chainId
-          );
-
-          positions.push({
-            id: `lockup-${chainConfig.chainId}-${i}`,
-            type: "coin-based",
-            amount: lockup.amount.toString(),
-            currency: tokenSymbol,
-            decimals: tokenDecimals,
-            period: periodDays,
-            startDate: new Date(createTime * 1000).toISOString().split("T")[0],
-            status: lockup.withdrawn ? "completed" : "active",
-            chain: chainConfig.name,
-            chainId: chainConfig.chainId,
-            unlockTime,
-            canWithdraw,
-            tokenAddress: lockup.token,
-            remittanceEnabled: lockup.remittanceEnabled,
-            createdAsRemit: lockup.createdAsRemit,
-            isDiscountActive: lockup.isDiscountActive,
-            createTime,
-          });
-        }
-      } catch {
-        // Skip failed reads
+      let withdrawableNow = 0;
+      if (canWithdraw) {
+        const timeSinceNext = blockchainNow - nextWithdrawTime;
+        withdrawableNow = Math.min(
+          remaining,
+          1 + Math.floor(timeSinceNext / periodSeconds)
+        );
       }
+
+      const totalAmount = deposit.amountPerPeriod * BigInt(totalPeriods);
+
+      const tokenSymbol = await fetchTokenSymbol(
+        client,
+        deposit.token,
+        chainConfig.chainId
+      );
+      const tokenDecimals = await fetchTokenDecimals(
+        client,
+        deposit.token,
+        chainConfig.chainId
+      );
+
+      positions.push({
+        id: `deposit-${chainConfig.chainId}-${depositId}`,
+        type: "u-based",
+        amount: deposit.amountPerPeriod.toString(),
+        totalAmount: totalAmount.toString(),
+        currency: tokenSymbol,
+        decimals: tokenDecimals,
+        frequency: totalPeriods,
+        period: periodDays,
+        remaining,
+        startDate: new Date((nextWithdrawTime - periodSeconds) * 1000)
+          .toISOString()
+          .split("T")[0],
+        status: remaining === 0 ? "completed" : "active",
+        chain: chainConfig.name,
+        chainId: chainConfig.chainId,
+        nextWithdrawTime,
+        canWithdraw,
+        withdrawableNow,
+        tokenAddress: deposit.token,
+        remittanceEnabled: deposit.remittanceEnabled,
+        createdAsRemit: deposit.createdAsRemit,
+      });
+    }
+
+    // Process lockups
+    for (let idx = 0; idx < lockupsData.length; idx++) {
+      const lockup = lockupsData[idx];
+      const lockupId = lockupIds[idx];
+
+      const unlockTime = Number(lockup.unlockTime);
+      const createTime = Number(lockup.createTime);
+      const canWithdraw = blockchainNow >= unlockTime;
+
+      const periodDays = Math.max(
+        0,
+        Math.round((unlockTime - createTime) / 86400)
+      );
+
+      const tokenSymbol = await fetchTokenSymbol(
+        client,
+        lockup.token,
+        chainConfig.chainId
+      );
+      const tokenDecimals = await fetchTokenDecimals(
+        client,
+        lockup.token,
+        chainConfig.chainId
+      );
+
+      positions.push({
+        id: `lockup-${chainConfig.chainId}-${lockupId}`,
+        type: "coin-based",
+        amount: lockup.amount.toString(),
+        currency: tokenSymbol,
+        decimals: tokenDecimals,
+        period: periodDays,
+        startDate: new Date(createTime * 1000).toISOString().split("T")[0],
+        status: lockup.withdrawn ? "completed" : "active",
+        chain: chainConfig.name,
+        chainId: chainConfig.chainId,
+        unlockTime,
+        canWithdraw,
+        tokenAddress: lockup.token,
+        remittanceEnabled: lockup.remittanceEnabled,
+        createdAsRemit: lockup.createdAsRemit,
+        isDiscountActive: lockup.isDiscountActive,
+        createTime,
+      });
     }
   } catch {
     // Chain not available or contract error
