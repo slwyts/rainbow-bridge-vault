@@ -51,7 +51,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
-import { parseUnits, formatUnits, decodeEventLog } from "viem";
+import { parseUnits, formatUnits, decodeEventLog, maxUint256 } from "viem";
 import { writeContract, waitForTransactionReceipt } from "@wagmi/core";
 import { config as wagmiConfig } from "@/lib/web3";
 import { warehouseAbi, erc20Abi } from "@/lib/abi";
@@ -483,7 +483,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
             amountPerPeriod,
             BigInt(periodSeconds),
             totalPeriods,
-            vipLockupId ?? 0n, // 自动应用 VIP 折扣
+            vipLockupId ?? maxUint256, // 无 VIP 时传 maxUint256 跳过折扣检查
             depositRemittance,
           ],
         });
@@ -593,7 +593,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
           tokenAddressForContract,
           lockAmount,
           unlockTimestamp,
-          vipLockupId ?? 0n, // 自动应用 VIP 折扣
+          vipLockupId ?? maxUint256, // 无 VIP 时传 maxUint256 跳过折扣检查
           lockupRemittance,
         ],
         // For native tokens, send the value with the transaction

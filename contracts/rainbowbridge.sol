@@ -107,8 +107,8 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         uint256 totalPrincipal = _amountPerPeriod * _totalPeriods;
         uint256 fee = _calculateFee(totalPrincipal, _totalPeriods);
 
-        // Handle Discount
-        if (_discountLockupId > 0 && address(xwaifuToken) != address(0)) {
+        // Handle Discount (use type(uint256).max to skip discount)
+        if (_discountLockupId != type(uint256).max && address(xwaifuToken) != address(0)) {
             if (_checkDiscount(_discountLockupId)) {
                 fee = fee / 2;
             }
@@ -236,9 +236,9 @@ contract RainbowWarehouse is Ownable, Pausable, ReentrancyGuard {
         uint256 amountLocked = _amount;
         uint256 fee = 0;
 
-        // Check VIP discount
+        // Check VIP discount (use type(uint256).max to skip discount)
         bool hasDiscount = false;
-        if (_discountLockupId > 0) {
+        if (_discountLockupId != type(uint256).max) {
             if (_checkDiscount(_discountLockupId)) {
                 hasDiscount = true;
             }
