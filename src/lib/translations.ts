@@ -78,7 +78,7 @@ export const translations = {
         totalFee: "Total Fee",
         fee: "Fee",
         discount:
-          "Stake 10,000+ xWAIFU on X Layer for 365+ days, burn 100 to activate VIP for 50% off fees!",
+          "Stake 10,000+ xwaifu on X Layer for 365+ days, burn 100 to activate VIP for 50% off fees!",
         buyXWaifuLink: "Buy xwaifu on X Layer →",
       },
       buttons: {
@@ -167,17 +167,17 @@ export const translations = {
       vip: {
         oneClickTitle: "One-Click VIP Activation",
         oneClickDesc:
-          "Stake 10,000 xWAIFU for 365 days + burn 100 to activate 50% fee discount",
-        noSupportedChain: "No chain supports xWAIFU VIP",
+          "Stake 10,000 xwaifu for 365 days + burn 100 to activate 50% fee discount",
+        noSupportedChain: "No chain supports xwaifu VIP",
         switchingChain: "Switching to supported chain...",
-        configError: "xWAIFU or warehouse not configured",
+        configError: "xwaifu or warehouse not configured",
         checkingApproval: "Checking approval...",
         waitingApproval: "Waiting for approval confirmation...",
         creatingLockup: "Creating VIP lockup...",
         waitingConfirmation: "Waiting for lockup confirmation...",
         lockupIdNotFound: "Could not find lockup ID from transaction",
         activatingVIP: "Activating VIP...",
-        burning100: "Burning 100 xWAIFU",
+        burning100: "Burning 100 xwaifu",
         waitingActivation: "Waiting for VIP activation...",
         success: "VIP Activated!",
         successDescFull: "You now enjoy 50% off on all fees!",
@@ -368,7 +368,7 @@ export const translations = {
         name: "Token Name",
         address: "Contract Address",
         benefits:
-          "Stake 10,000+ xWAIFU on X Layer for 365+ days, burn 100 to activate VIP for 50% off fees!",
+          "Stake 10,000+ xwaifu on X Layer for 365+ days, burn 100 to activate VIP for 50% off fees!",
         buyButton: "Buy xwaifu",
       },
       contact: {
@@ -458,7 +458,7 @@ export const translations = {
         totalFee: "总费用",
         fee: "费用",
         discount:
-          "在 X Layer 上质押 10,000+ xWAIFU 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
+          "在 X Layer 上质押 10,000+ xwaifu 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
         buyXWaifuLink: "在 X Layer 上购买 xwaifu →",
       },
       buttons: {
@@ -547,17 +547,17 @@ export const translations = {
       },
       vip: {
         oneClickTitle: "一键开通 VIP",
-        oneClickDesc: "锁仓 10,000 xWAIFU 365天 + 燃烧 100 个激活手续费5折",
-        noSupportedChain: "没有链支持 xWAIFU VIP",
+        oneClickDesc: "锁仓 10,000 xwaifu 365天 + 燃烧 100 个激活手续费5折",
+        noSupportedChain: "没有链支持 xwaifu VIP",
         switchingChain: "正在切换到支持的链...",
-        configError: "xWAIFU 或仓库合约未配置",
+        configError: "xwaifu 或仓库合约未配置",
         checkingApproval: "正在检查授权...",
         waitingApproval: "等待授权确认...",
         creatingLockup: "正在创建 VIP 锁仓...",
         waitingConfirmation: "等待锁仓确认...",
         lockupIdNotFound: "无法从交易中获取锁仓ID",
         activatingVIP: "正在激活 VIP...",
-        burning100: "燃烧 100 xWAIFU",
+        burning100: "燃烧 100 xwaifu",
         waitingActivation: "等待 VIP 激活...",
         success: "VIP 激活成功！",
         successDescFull: "您现在可以享受所有手续费5折优惠！",
@@ -734,12 +734,12 @@ export const translations = {
         watchesMarket: "经常盯盘",
       },
       tokenInfo: {
-        title: "xWAIFU代币集成",
+        title: "xwaifu代币集成",
         chain: "链",
         name: "代币名称",
         address: "合约地址",
         benefits:
-          "在 X Layer 上质押 10,000+ xWAIFU 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
+          "在 X Layer 上质押 10,000+ xwaifu 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
         buyButton: "购买 xwaifu",
       },
       contact: {
