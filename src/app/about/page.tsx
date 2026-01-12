@@ -49,16 +49,16 @@ function AboutContent() {
       name: "James Wynn",
       strategy: "highLeverage20x",
       peakDesc: "jamesWynnPeak",
-      peakAmount: "8700",
+      peakAmount: "87",
       finalDesc: "lostAllProfitAndPrincipal",
-      finalAmount: "-2177",
+      finalAmount: "-21.77",
       finalUnit: "usd",
     },
     {
       name: "qwatio",
       strategy: "highLeverage20x",
       peakDesc: "qwatioPeak",
-      peakAmount: "2600",
+      peakAmount: "26",
       finalDesc: "lostAllProfitAndPrincipal",
       finalAmount: "0",
       finalUnit: "zero",
@@ -67,20 +67,20 @@ function AboutContent() {
       name: "AguilaTrades",
       strategy: "highLeverage20x",
       peakDesc: "aguilaPeak",
-      peakAmount: "4170",
+      peakAmount: "41.7",
       finalDesc: "lostAllProfit",
-      finalAmount: "-3760",
-      finalUnit: "cny",
+      finalAmount: "-37.6",
+      finalUnit: "usd",
     },
     {
       name: "100%Whale",
       nameKey: "whaleName",
       strategy: "highFrequency",
       peakDesc: "whalePeak",
-      peakAmount: "3199",
+      peakAmount: "31.99",
       finalDesc: "lostAllProfit",
-      finalAmount: "-3002",
-      finalUnit: "cny",
+      finalAmount: "-30.02",
+      finalUnit: "usd",
     },
   ];
 
@@ -302,6 +302,72 @@ function AboutContent() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </a>
+            </div>
+          </div>
+
+          {/* Contact Section */}
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/50 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
+            <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-100/50 px-6 py-4 dark:border-slate-700/50 dark:bg-slate-800/50">
+              <span className="flex items-center gap-2 font-mono text-sm text-slate-600 dark:text-slate-400">
+                <FileText className="h-4 w-4" />
+                contact.md
+              </span>
+            </div>
+
+            <div className="p-8">
+              <h2 className="mb-6 text-2xl font-bold text-slate-900 dark:text-white">
+                {t("about.contact.title")}
+              </h2>
+
+              <div className="grid gap-4 sm:grid-cols-2 mb-6">
+                <a
+                  href="https://x.com/Cihannu03718026"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-100/50 p-5 transition-all hover:border-slate-300 hover:bg-slate-200/50 dark:border-slate-700/50 dark:bg-slate-800/30 dark:hover:border-slate-600 dark:hover:bg-slate-700/30"
+                >
+                  <div className="rounded-xl bg-linear-to-br from-sky-500 to-blue-500 p-3 shadow-lg">
+                    <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs tracking-wider text-slate-500 uppercase mb-1">
+                      {t("about.contact.twitter")}
+                    </p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">
+                      @Cihannu03718026
+                    </p>
+                  </div>
+                </a>
+
+                <a
+                  href="mailto:bifrost888@protonmail.com"
+                  className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-100/50 p-5 transition-all hover:border-slate-300 hover:bg-slate-200/50 dark:border-slate-700/50 dark:bg-slate-800/30 dark:hover:border-slate-600 dark:hover:bg-slate-700/30"
+                >
+                  <div className="rounded-xl bg-linear-to-br from-violet-500 to-purple-500 p-3 shadow-lg">
+                    <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="20" height="16" x="2" y="4" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs tracking-wider text-slate-500 uppercase mb-1">
+                      {t("about.contact.email")}
+                    </p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">
+                      bifrost888@protonmail.com
+                    </p>
+                  </div>
+                </a>
+              </div>
+
+              {/* Slogan */}
+              <div className="rounded-xl border border-emerald-300 bg-linear-to-r from-emerald-100/80 to-cyan-100/80 p-6 text-center dark:border-emerald-500/30 dark:from-emerald-500/10 dark:to-cyan-500/10">
+                <p className="text-xl font-bold text-emerald-800 dark:text-emerald-200">
+                  {t("about.slogan")}
+                </p>
+              </div>
             </div>
           </div>
         </div>

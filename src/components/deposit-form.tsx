@@ -840,7 +840,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
           <div className="hidden items-center gap-3 sm:flex">
             <Vault className="h-4 w-4 text-violet-500 dark:text-violet-400" />
             <span className="font-mono text-sm text-slate-600 dark:text-slate-400">
-              rainbow-bridge-vault
+              bifrost-vault
             </span>
             {/* Show actual wallet chain - only after mount to prevent hydration mismatch */}
             {mounted && isConnected && (

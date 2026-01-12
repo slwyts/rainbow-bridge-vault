@@ -12,7 +12,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Rainbow Bridge Vault - Smart Crypto Savings",
+  title: "Bifrost Fund Diversion & Security Vault",
   description:
     "Decentralized cryptocurrency vault with automated disbursements. Perfect for disciplined trading and fund management.",
   icons: {

@@ -1,12 +1,12 @@
 export const translations = {
   en: {
     app: {
-      name: "Rainbow Bridge Vault",
+      name: "Bifrost Fund Diversion & Security Vault",
     },
     nav: {
       home: "Home",
       about: "About",
-      protocol: "Rainbow Bridge Protocol",
+      protocol: "Bifrost Finance",
       protocolNotOpened: "Not opened yet. Please stay tuned for updates.",
       protocolOk: "OK",
       menu: "Menu",
@@ -299,9 +299,9 @@ export const translations = {
       },
     },
     about: {
-      title: "About Rainbow Bridge Vault",
+      title: "About Bifrost Fund Diversion",
       description:
-        "Rainbow Bridge Vault provides scheduled cryptocurrency deposits and periodic disbursements through smart contracts. It helps high-leverage traders achieve mechanical and rational fund distribution, reducing the risk of irrational choices driven by emotions. In extreme market conditions, Rainbow Bridge Vault ensures traders have enough for living expenses and a chance to start over.",
+        "Bifrost Fund Diversion provides scheduled cryptocurrency deposits and periodic disbursement services via smart contracts. It enables high-leverage traders to implement mechanically rational fund diversion, reducing the risk of irrational choices driven by emotions. In extreme market conditions, the Bifrost Fund Diversion reserves essential living expenses and a \"second-chance\" capital buffer for traders.",
       features: {
         title: "Key Features",
         feature1: {
@@ -351,15 +351,15 @@ export const translations = {
         },
       },
       targetUsers: {
-        title: "Who Should Use Rainbow Bridge?",
+        title: "Who Is Bifrost For?",
         subtitle: "This platform is perfect for traders who:",
         noStopLoss: "Don't set stop losses and hold losing positions",
         allIn: "Go all-in on trades",
         highLeverage: "Use 10x or higher leverage",
-        noReserve: "Have no emergency funds and constantly move money around",
+        noReserve: "Have no emergency funds and constantly shift money between accounts",
         cantHold: "Can't control the urge to trade and open positions daily",
-        impatient: "Are impatient and chase every price movement",
-        shortSmallCoins: "Like shorting small coins with big price increases",
+        impatient: "Are impatient and chase every price rally",
+        shortSmallCoins: "Like shorting small-cap tokens with large price surges",
         watchesMarket: "Constantly watch price charts",
       },
       tokenInfo: {
@@ -371,6 +371,12 @@ export const translations = {
           "Stake 10,000+ xWAIFU on X Layer for 365+ days, burn 100 to activate VIP for 50% off fees!",
         buyButton: "Buy xwaifu",
       },
+      contact: {
+        title: "Contact Us",
+        twitter: "Twitter",
+        email: "Email",
+      },
+      slogan: "Use Bifrost Vault, Be Prepared for Anything.",
     },
   },
   zh: {
@@ -667,7 +673,7 @@ export const translations = {
     about: {
       title: "关于彩虹桥仓库",
       description:
-        "彩虹桥仓库通过智能合约提供加密货币的定期存放与周期性派发业务，为高杠杆投资者实现机械理性的资金分流，以降低高杠杆投资者在情绪中的非理性选择风险。在极端行情下，彩虹桥仓库会为交易者留下最后的一点生活所需和东山再起的筹码。",
+        "彩虹桥仓库通过智能合约提供加密货币的定期存放与周期性派发业务，为高杠杆投资者实现机械理性的资金分流，以降低高杠杆投资者在情绪中的非理性选择风险。在极端行情下，彩虹桥仓库会为交易者留下最后的一点生活所需和东山再起的筹码。使用彩虹桥仓库，有备无患",
       features: {
         title: "主要特点",
         feature1: {
@@ -716,7 +722,7 @@ export const translations = {
         },
       },
       targetUsers: {
-        title: "谁应该使用彩虹桥？",
+        title: "谁适合使用彩虹桥仓库？",
         subtitle: "以下情况的交易者非常适合：",
         noStopLoss: "不设止损，抗单",
         allIn: "梭哈",
@@ -736,6 +742,12 @@ export const translations = {
           "在 X Layer 上质押 10,000+ xWAIFU 并锁定 365 天以上，燃烧 100 个激活 VIP 即可享受手续费 5 折！",
         buyButton: "购买 xwaifu",
       },
+      contact: {
+        title: "联系我们",
+        twitter: "推特",
+        email: "邮箱",
+      },
+      slogan: "使用彩虹桥仓库，有备无患。",
       validation: {
         minDisbursementAmount: "派发金额至少为5USD",
       },
