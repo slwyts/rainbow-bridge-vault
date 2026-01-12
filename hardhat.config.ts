@@ -97,6 +97,7 @@ export default defineConfig({
       url: "https://polygon-rpc.com",
       accounts: [DEPLOYER_PRIVATE_KEY],
       chainId: 137,
+      gasPrice: 9500000000000, // 9500 gwei - Polygon gas 飙升
     },
     base: {
       type: "http",

@@ -3,7 +3,7 @@
  * 所有链相关的配置都从这里导出，避免在多处重复定义
  */
 
-import { hardhat, bsc, bscTestnet, arbitrum, xLayer } from "viem/chains";
+import { hardhat, bsc, bscTestnet, arbitrum, xLayer, polygon } from "viem/chains";
 import type { Chain as ViemChain } from "viem";
 
 // ============ Chain IDs ============
@@ -13,6 +13,7 @@ export const CHAIN_IDS = {
   BSC_TESTNET: 97,
   BSC: 56,
   ARBITRUM: 42161,
+  POLYGON: 137,
 } as const;
 
 export type SupportedChainId = (typeof CHAIN_IDS)[keyof typeof CHAIN_IDS];
@@ -24,6 +25,7 @@ export const CHAIN_TO_TRUST_WALLET: Record<string, string> = {
   "binance-smart-chain": "smartchain",
   "bsc-testnet": "smartchain",
   "arbitrum-one": "arbitrum",
+  polygon: "polygon",
 };
 
 // ============ OKLink Chain ID 映射 (用于获取代币图标) ============
@@ -35,6 +37,7 @@ const CHAIN_TO_OKLINK_ID: Record<string, number> = {
   "binance-smart-chain": 56,
   "bsc-testnet": 56,
   "arbitrum-one": 42161,
+  polygon: 137,
 };
 
 // iconaves.com 链名映射
@@ -44,6 +47,7 @@ const CHAIN_TO_ICONAVES: Record<string, string> = {
   "binance-smart-chain": "bsc",
   "bsc-testnet": "bsc",
   "arbitrum-one": "arbitrum",
+  polygon: "polygon",
 };
 
 // 特定代币的固定图标 URL（优先级最高）
@@ -190,6 +194,12 @@ const ENV_ADDRESSES = {
   ),
   ARBITRUM_USDT: toAddress(process.env.NEXT_PUBLIC_ARBITRUM_USDT_ADDRESS),
   ARBITRUM_USDC: toAddress(process.env.NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS),
+  // Polygon
+  POLYGON_WAREHOUSE: toAddress(
+    process.env.NEXT_PUBLIC_POLYGON_WAREHOUSE_ADDRESS
+  ),
+  POLYGON_USDT: toAddress(process.env.NEXT_PUBLIC_POLYGON_USDT_ADDRESS),
+  POLYGON_USDC: toAddress(process.env.NEXT_PUBLIC_POLYGON_USDC_ADDRESS),
 } as const;
 
 // ============ 所有支持的链配置 ============
@@ -371,6 +381,35 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
     gasEstimate: "$0.10",
     gasLevel: "medium",
     trustWalletName: "arbitrum",
+  },
+
+  // Polygon
+  [CHAIN_IDS.POLYGON]: {
+    chainId: CHAIN_IDS.POLYGON,
+    stringId: "polygon",
+    name: "Polygon",
+    shortName: "Polygon",
+    viemChain: polygon,
+    rpcUrl: "https://polygon-rpc.com",
+    warehouseAddress: ENV_ADDRESSES.POLYGON_WAREHOUSE,
+    tokens: {
+      native: { symbol: "POL", name: "POL", decimals: 18, isNative: true },
+      USDT: {
+        symbol: "USDT",
+        name: "USDT",
+        decimals: 6,
+        address: ENV_ADDRESSES.POLYGON_USDT,
+      },
+      USDC: {
+        symbol: "USDC",
+        name: "USDC",
+        decimals: 6,
+        address: ENV_ADDRESSES.POLYGON_USDC,
+      },
+    },
+    gasEstimate: "$0.01",
+    gasLevel: "low",
+    trustWalletName: "polygon",
   },
 };
 
