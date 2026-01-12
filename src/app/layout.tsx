@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   title: "Rainbow Bridge Vault - Smart Crypto Savings",
   description:
     "Decentralized cryptocurrency vault with automated disbursements. Perfect for disciplined trading and fund management.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -24,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="zh"
       className={clsx(_geist.className, _geistMono.className)}
       suppressHydrationWarning
     >

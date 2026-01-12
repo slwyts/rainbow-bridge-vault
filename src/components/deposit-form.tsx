@@ -382,8 +382,10 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
 
     // VIP 折扣 50%
     const originalFee = baseFee;
+    const originalFeeRate = baseFeeRate;
     if (hasVIPDiscount) {
       baseFee = baseFee / 2;
+      baseFeeRate = baseFeeRate / 2;
     }
 
     return {
@@ -392,6 +394,8 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
       disbursementFee: "0.00",
       total: baseFee.toFixed(2),
       hasDiscount: hasVIPDiscount,
+      feeRate: (baseFeeRate * 100).toFixed(1) + "%",
+      originalFeeRate: (originalFeeRate * 100).toFixed(1) + "%",
     };
   };
 
@@ -699,16 +703,21 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
       }
 
       // VIP 要求：10000 xWAIFU，365天，激活需要额外 100 xWAIFU
-      const VIP_AMOUNT = parseUnits("10000", 18); // xWAIFU 是 18 位精度
-      const VIP_BURN_AMOUNT = parseUnits("100", 18); // 激活 VIP 需要燃烧 100
+      // 注意：为确保满足 STAKE_MIN_AMOUNT (9800)，需要锁仓足够多
+      // 合约会扣 0.5% 手续费，所以 10000 实际锁入 9950
+      // 但激活 VIP 还会扣 100，所以最终是 9850，仍然 >= 9800
+      const VIP_AMOUNT = parseUnits("10100", 18); // 多锁 100 以确保扣费后仍够
+      const VIP_BURN_AMOUNT = parseUnits("100", 18); // 激活 VIP 需要燃烧 100（从锁仓金额中扣）
       const VIP_LOCK_DAYS = 365;
       const lockupFee = calculateLockupFee(VIP_AMOUNT);
-      // 总共需要：10000 锁仓 + 手续费 + 100 激活费
-      const totalNeeded = VIP_AMOUNT + lockupFee + VIP_BURN_AMOUNT;
+      // 授权总量：锁仓金额（合约会从中扣手续费）
+      // activateVIP 是从已锁仓金额中扣，不需要额外授权
+      const totalNeeded = VIP_AMOUNT;
 
-      // 计算解锁时间戳
+      // 计算解锁时间戳 - 使用区块链时间（支持时间加速测试）
+      const baseTimestamp = blockchainTime ?? Math.floor(Date.now() / 1000);
       const unlockTimestamp = BigInt(
-        Math.floor(Date.now() / 1000) + VIP_LOCK_DAYS * 24 * 60 * 60
+        baseTimestamp + VIP_LOCK_DAYS * 24 * 60 * 60
       );
 
       // 2. Approve（包含锁仓和激活所需的总量）
@@ -740,7 +749,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
           xwaifuAddress,
           VIP_AMOUNT,
           unlockTimestamp,
-          0n, // 不使用现有 VIP
+          maxUint256, // 不使用现有 VIP 折扣，传入 uint256.max 跳过折扣检查
           false, // 不开启汇付
         ],
         chainId: targetChainId,
@@ -1333,7 +1342,9 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                       <div className="mb-6 space-y-3">
                         <div className="flex justify-between text-sm">
                           <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                            {t("form.summary.baseFee")}
+                            {t("form.summary.baseFee")} ({calculateFee().hasDiscount ? (
+                              <><span className="line-through">{calculateFee().originalFeeRate}</span> {calculateFee().feeRate}</>
+                            ) : calculateFee().feeRate})
                             {calculateFee().hasDiscount && (
                               <span className="inline-flex items-center rounded bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-white">
                                 <Crown className="mr-0.5 h-3 w-3" />

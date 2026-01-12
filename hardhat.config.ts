@@ -18,6 +18,9 @@ export default defineConfig({
         version: "0.8.33",
         settings: {
           viaIR: true,
+          metadata: {
+            bytecodeHash: "none",
+          },
           optimizer: {
             enabled: true,
             runs: 100000,
@@ -28,6 +31,9 @@ export default defineConfig({
         version: "0.8.33",
         settings: {
           viaIR: true,
+          metadata: {
+            bytecodeHash: "none",
+          },
           optimizer: {
             enabled: true,
             runs: 100000,
