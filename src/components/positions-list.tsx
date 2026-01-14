@@ -251,6 +251,12 @@ export function PositionsList({
   const [remitAddress, setRemitAddress] = useState("");
   const [isRemitting, setIsRemitting] = useState(false);
 
+  // 提前取出弹窗状态
+  const [earlyWithdrawDialogOpen, setEarlyWithdrawDialogOpen] = useState(false);
+  const [earlyWithdrawPosition, setEarlyWithdrawPosition] = useState<Position | null>(null);
+  const [earlyWithdrawToOther, setEarlyWithdrawToOther] = useState(false);
+  const [earlyWithdrawAddress, setEarlyWithdrawAddress] = useState("");
+
   // 获取区块链时间（严格从链上读取）
   const { timestamp: blockchainTime } = useBlockchainTime();
 
@@ -324,7 +330,7 @@ export function PositionsList({
     }
   };
 
-  const handleEarlyRemitWithdraw = async (position: Position) => {
+  const handleEarlyRemitWithdraw = async (position: Position, toAddress?: string) => {
     setIsEarlyProcessing(true);
     try {
       if (position.chainId && position.chainId !== chainId) {
@@ -347,11 +353,11 @@ export function PositionsList({
         throw new Error(t("positions.errors.onlyNativeRemittance"));
       }
 
-      const recipient = (recipientMap[position.id] || "").trim();
-      const toAddress =
+      const recipient = toAddress?.trim() || "";
+      const finalAddress =
         recipient.startsWith("0x") && recipient.length === 42
           ? (recipient as `0x${string}`)
-          : undefined;
+          : zeroAddress;
 
       const parts = position.id.split("-");
       const type = parts[0];
@@ -363,7 +369,7 @@ export function PositionsList({
         address: targetWarehouse,
         abi: warehouseAbi,
         functionName,
-        args: [index, toAddress ?? zeroAddress],
+        args: [index, finalAddress],
         chainId: position.chainId,
       });
 
@@ -382,6 +388,27 @@ export function PositionsList({
     } finally {
       setIsEarlyProcessing(false);
     }
+  };
+
+  // 提前取出弹窗确认
+  const handleEarlyWithdrawConfirm = async () => {
+    if (!earlyWithdrawPosition) return;
+
+    if (earlyWithdrawToOther) {
+      const addr = earlyWithdrawAddress.trim();
+      if (!addr.startsWith("0x") || addr.length !== 42) {
+        toast.error(t("positions.earlyWithdraw.invalidAddress"));
+        return;
+      }
+      await handleEarlyRemitWithdraw(earlyWithdrawPosition, addr);
+    } else {
+      await handleEarlyRemitWithdraw(earlyWithdrawPosition);
+    }
+
+    setEarlyWithdrawDialogOpen(false);
+    setEarlyWithdrawPosition(null);
+    setEarlyWithdrawToOther(false);
+    setEarlyWithdrawAddress("");
   };
 
   // Handle VIP activation for xwaifu lockups on X Layer
@@ -914,7 +941,12 @@ export function PositionsList({
                             size="sm"
                             variant="outline"
                             className="flex-1 border-blue-500 bg-transparent text-blue-600 hover:bg-blue-50 sm:flex-none dark:border-blue-400 dark:text-blue-200"
-                            onClick={() => handleEarlyRemitWithdraw(position)}
+                            onClick={() => {
+                              setEarlyWithdrawPosition(position);
+                              setEarlyWithdrawToOther(false);
+                              setEarlyWithdrawAddress("");
+                              setEarlyWithdrawDialogOpen(true);
+                            }}
                             disabled={isEarlyProcessing || isProcessing}
                           >
                             {isEarlyProcessing ? (
@@ -1003,6 +1035,62 @@ export function PositionsList({
                 <Send className="mr-2 h-4 w-4" />
               )}
               {t("positions.remittance.confirm")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 提前取出弹窗 */}
+      <Dialog open={earlyWithdrawDialogOpen} onOpenChange={setEarlyWithdrawDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("positions.earlyWithdraw.dialogTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("positions.earlyWithdraw.dialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* 选择提现到自己还是其他地址 */}
+            <div className="flex flex-col gap-2">
+              <Button
+                variant={!earlyWithdrawToOther ? "default" : "outline"}
+                className="w-full justify-start"
+                onClick={() => setEarlyWithdrawToOther(false)}
+              >
+                {t("positions.earlyWithdraw.toSelf")}
+              </Button>
+              <Button
+                variant={earlyWithdrawToOther ? "default" : "outline"}
+                className="w-full justify-start"
+                onClick={() => setEarlyWithdrawToOther(true)}
+              >
+                {t("positions.earlyWithdraw.toOther")}
+              </Button>
+            </div>
+
+            {/* 如果选择其他地址，显示输入框 */}
+            {earlyWithdrawToOther && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  {t("positions.earlyWithdraw.recipientAddress")}
+                </label>
+                <Input
+                  placeholder={t("positions.earlyWithdraw.recipientPlaceholder")}
+                  value={earlyWithdrawAddress}
+                  onChange={(e) => setEarlyWithdrawAddress(e.target.value)}
+                />
+              </div>
+            )}
+
+            <Button
+              className="w-full"
+              onClick={handleEarlyWithdrawConfirm}
+              disabled={isEarlyProcessing}
+            >
+              {isEarlyProcessing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              {t("positions.earlyWithdraw.confirm")}
             </Button>
           </div>
         </DialogContent>

@@ -246,6 +246,16 @@ export const translations = {
         confirm: "Confirm Remit",
         invalidAddress: "Please enter a valid address (0x... 42 characters)",
       },
+      earlyWithdraw: {
+        dialogTitle: "Early Withdraw",
+        dialogDescription: "Choose where to withdraw your funds",
+        toSelf: "Withdraw to My Wallet",
+        toOther: "Withdraw to Another Address",
+        recipientAddress: "Recipient Address",
+        recipientPlaceholder: "0x...",
+        confirm: "Confirm Withdraw",
+        invalidAddress: "Please enter a valid address (0x... 42 characters)",
+      },
       errors: {
         chainSwitchFailed: "Chain switch failed, transaction blocked",
         warehouseNotConfigured: "Warehouse not configured for this chain",
@@ -637,6 +647,16 @@ export const translations = {
         recipientAddress: "收款地址",
         recipientPlaceholder: "0x...",
         confirm: "确认汇付",
+        invalidAddress: "请输入有效地址（0x开头，共42个字符）",
+      },
+      earlyWithdraw: {
+        dialogTitle: "提前取出",
+        dialogDescription: "选择提现到哪个地址",
+        toSelf: "提现到我的钱包",
+        toOther: "提现到其他地址",
+        recipientAddress: "收款地址",
+        recipientPlaceholder: "0x...",
+        confirm: "确认提现",
         invalidAddress: "请输入有效地址（0x开头，共42个字符）",
       },
       errors: {
