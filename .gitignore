@@ -47,5 +47,5 @@ nul
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
+input.json
 project.zip

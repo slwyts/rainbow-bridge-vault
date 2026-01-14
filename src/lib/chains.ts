@@ -475,6 +475,26 @@ export function getNativeTokenSymbol(chainId: number): string {
   );
 }
 
+/**
+ * 获取区块链浏览器 URL
+ */
+export function getBlockExplorerUrl(chainId: number): string | undefined {
+  const config = CHAIN_CONFIGS[chainId as SupportedChainId];
+  return config?.viemChain.blockExplorers?.default.url;
+}
+
+/**
+ * 获取合约代码页面 URL
+ */
+export function getContractCodeUrl(
+  chainId: number,
+  contractAddress: string
+): string | undefined {
+  const explorerUrl = getBlockExplorerUrl(chainId);
+  if (!explorerUrl) return undefined;
+  return `${explorerUrl}/address/${contractAddress}#code`;
+}
+
 // ============ UI 代币类型 ============
 
 /**

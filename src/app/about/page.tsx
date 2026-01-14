@@ -16,8 +16,16 @@ import {
   Skull,
   FileText,
   Braces,
+  Code2,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  getAllChainIds,
+  getChainName,
+  getWarehouseAddress,
+  getContractCodeUrl,
+} from "@/lib/chains";
 
 function AboutContent() {
   const { t } = useI18n();
@@ -367,6 +375,66 @@ function AboutContent() {
                 <p className="text-xl font-bold text-emerald-800 dark:text-emerald-200">
                   {t("about.slogan")}
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Open Source Contracts Section */}
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/50 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
+            <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-100/50 px-6 py-4 dark:border-slate-700/50 dark:bg-slate-800/50">
+              <span className="flex items-center gap-2 font-mono text-sm text-slate-600 dark:text-slate-400">
+                <Code2 className="h-4 w-4" />
+                contracts.sol
+              </span>
+            </div>
+
+            <div className="p-8">
+              <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">
+                {t("about.contracts.title")}
+              </h2>
+              <p className="mb-6 text-slate-600 dark:text-slate-400">
+                {t("about.contracts.subtitle")}
+              </p>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {getAllChainIds().map((chainId) => {
+                  const warehouseAddress = getWarehouseAddress(chainId);
+                  if (!warehouseAddress) return null;
+                  
+                  const codeUrl = getContractCodeUrl(chainId, warehouseAddress);
+                  if (!codeUrl) return null;
+
+                  return (
+                    <a
+                      key={chainId}
+                      href={codeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-100/50 p-5 transition-all hover:border-emerald-300 hover:bg-emerald-50/50 dark:border-slate-700/50 dark:bg-slate-800/30 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                          {getChainName(chainId)}
+                        </h3>
+                        <ExternalLink className="h-4 w-4 text-slate-400 transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                      </div>
+                      
+                      <div>
+                        <p className="mb-1 text-xs tracking-wider text-slate-500 uppercase">
+                          {t("about.contracts.address")}
+                        </p>
+                        <code className="block font-mono text-xs break-all text-slate-600 dark:text-slate-400">
+                          {warehouseAddress}
+                        </code>
+                      </div>
+
+                      <div className="mt-auto flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                        <Code2 className="h-4 w-4" />
+                        {t("about.contracts.viewCode")}
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
             </div>
           </div>
