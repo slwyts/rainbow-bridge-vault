@@ -235,9 +235,16 @@ export const translations = {
         withdraw: "Withdraw",
         earlyWithdraw: "Early Withdraw",
         enableRemittance: "Enable Remittance (0.1 USDT)",
+        remit: "Remit",
       },
       remittance: {
         recipientHint: "Remittance recipient (leave empty to withdraw to self)",
+        dialogTitle: "Remit to Address",
+        dialogDescription: "Enter the recipient address for this withdrawal",
+        recipientAddress: "Recipient Address",
+        recipientPlaceholder: "0x...",
+        confirm: "Confirm Remit",
+        invalidAddress: "Please enter a valid address (0x... 42 characters)",
       },
       errors: {
         chainSwitchFailed: "Chain switch failed, transaction blocked",
@@ -621,9 +628,16 @@ export const translations = {
         withdraw: "取出",
         earlyWithdraw: "提前取出",
         enableRemittance: "开启汇付 (0.1 USDT)",
+        remit: "汇付",
       },
       remittance: {
         recipientHint: "汇付收款地址（留空则提到自己）",
+        dialogTitle: "汇付到地址",
+        dialogDescription: "输入此次提现的收款地址",
+        recipientAddress: "收款地址",
+        recipientPlaceholder: "0x...",
+        confirm: "确认汇付",
+        invalidAddress: "请输入有效地址（0x开头，共42个字符）",
       },
       errors: {
         chainSwitchFailed: "网络切换失败，已阻止交易",

@@ -3,6 +3,14 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useI18n } from "@/components/i18n-provider";
 import { Inbox } from "lucide-react";
 import {
@@ -17,6 +25,7 @@ import {
   Lock,
   Unlock,
   Crown,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAccount, useSwitchChain } from "wagmi";
@@ -235,6 +244,12 @@ export function PositionsList({
   const [positionFilter, setPositionFilter] = useState<"current" | "history">(
     "current"
   );
+
+  // 汇付弹窗状态
+  const [remitDialogOpen, setRemitDialogOpen] = useState(false);
+  const [remitPosition, setRemitPosition] = useState<Position | null>(null);
+  const [remitAddress, setRemitAddress] = useState("");
+  const [isRemitting, setIsRemitting] = useState(false);
 
   // 获取区块链时间（严格从链上读取）
   const { timestamp: blockchainTime } = useBlockchainTime();
@@ -490,6 +505,63 @@ export function PositionsList({
     } finally {
       setEnablingId(null);
       setIsEnablingAction(false);
+    }
+  };
+
+  // 汇付到指定地址
+  const handleRemit = async () => {
+    if (!remitPosition) return;
+
+    const addr = remitAddress.trim();
+    if (!addr.startsWith("0x") || addr.length !== 42) {
+      toast.error(t("positions.remittance.invalidAddress"));
+      return;
+    }
+
+    setIsRemitting(true);
+    try {
+      if (remitPosition.chainId && remitPosition.chainId !== chainId) {
+        const switched = await switchChainAsync?.({
+          chainId: remitPosition.chainId,
+        });
+        if (!switched || switched.id !== remitPosition.chainId) {
+          throw new Error(t("positions.errors.chainSwitchFailed"));
+        }
+      }
+
+      const targetWarehouse = getWarehouseAddress(
+        remitPosition.chainId as SupportedChainId
+      );
+      if (!targetWarehouse) {
+        throw new Error(t("positions.errors.warehouseNotConfigured"));
+      }
+
+      const parts = remitPosition.id.split("-");
+      const type = parts[0];
+      const index = BigInt(parts[2]);
+
+      const functionName = type === "deposit" ? "withdraw" : "withdrawLockup";
+      const txHash = await writeContract(wagmiConfig, {
+        address: targetWarehouse,
+        abi: warehouseAbi,
+        functionName,
+        args: [index, addr as `0x${string}`],
+        chainId: remitPosition.chainId,
+      });
+
+      await waitForTransactionReceipt(wagmiConfig, { hash: txHash });
+
+      toast.success(t("toast.withdrawSuccess.title"));
+      setRemitDialogOpen(false);
+      setRemitAddress("");
+      setRemitPosition(null);
+      setTimeout(() => onRefresh?.(), 2000);
+    } catch (err) {
+      toast.error("Remit failed", {
+        description: err instanceof Error ? err.message : "Please try again",
+      });
+    } finally {
+      setIsRemitting(false);
     }
   };
 
@@ -859,7 +931,6 @@ export function PositionsList({
                           className={`flex-1 sm:flex-none ${isWithdrawDisabled ? "cursor-not-allowed opacity-60" : ""}`}
                           onClick={() => {
                             if (!canWithdrawNow) {
-                              // 禁用时不再触发彩蛋，直接拦截
                               return;
                             }
                             handleWithdraw(position);
@@ -872,6 +943,26 @@ export function PositionsList({
                           {t("positions.actions.withdraw")}
                         </Button>
                       )}
+
+                      {/* 汇付按钮 - 仅当汇付已开启时显示，未到时间则禁用 */}
+                      {position.status === "active" &&
+                        position.remittanceEnabled && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={`flex-1 border-purple-500 bg-transparent text-purple-600 hover:bg-purple-50 sm:flex-none dark:border-purple-400 dark:text-purple-200 ${!canWithdrawNow ? "cursor-not-allowed opacity-60" : ""}`}
+                            onClick={() => {
+                              if (!canWithdrawNow) return;
+                              setRemitPosition(position);
+                              setRemitAddress("");
+                              setRemitDialogOpen(true);
+                            }}
+                            disabled={!canWithdrawNow || isProcessing || isRemitting}
+                          >
+                            <Send className="mr-1 h-4 w-4" />
+                            {t("positions.actions.remit")}
+                          </Button>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -880,6 +971,42 @@ export function PositionsList({
           </div>
         )}
       </div>
+
+      {/* 汇付弹窗 */}
+      <Dialog open={remitDialogOpen} onOpenChange={setRemitDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("positions.remittance.dialogTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("positions.remittance.dialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {t("positions.remittance.recipientAddress")}
+              </label>
+              <Input
+                placeholder={t("positions.remittance.recipientPlaceholder")}
+                value={remitAddress}
+                onChange={(e) => setRemitAddress(e.target.value)}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleRemit}
+              disabled={isRemitting}
+            >
+              {isRemitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              {t("positions.remittance.confirm")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
