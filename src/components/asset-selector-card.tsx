@@ -882,22 +882,22 @@ export function AssetSelectorCard({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 30 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-1/2 left-1/2 z-50 w-[95vw] max-w-4xl -translate-x-1/2 -translate-y-1/2"
+              className="fixed top-1/2 left-1/2 z-50 w-[95vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto"
             >
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-black/20 dark:border-slate-800 dark:bg-slate-900">
                 {/* Header */}
                 <div className="relative">
                   <div className="absolute inset-0 bg-linear-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 dark:from-amber-500/20 dark:via-orange-500/20 dark:to-rose-500/20" />
-                  <div className="relative flex items-center justify-between border-b border-slate-200/80 px-6 py-5 dark:border-slate-800">
-                    <div className="flex items-center gap-4">
-                      <div className="rounded-xl bg-linear-to-br from-amber-500 to-orange-500 p-2.5 shadow-lg shadow-amber-500/30">
-                        <Coins className="h-5 w-5 text-white" />
+                  <div className="relative flex items-center justify-between border-b border-slate-200/80 px-4 py-3 sm:px-6 sm:py-5 dark:border-slate-800">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="rounded-xl bg-linear-to-br from-amber-500 to-orange-500 p-2 sm:p-2.5 shadow-lg shadow-amber-500/30">
+                        <Coins className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
                       <div>
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                           {t("form.assetSelector.title")}
                         </h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                           {t("form.assetSelector.subtitle")}
                         </p>
                       </div>
@@ -913,9 +913,9 @@ export function AssetSelectorCard({
                   </div>
                 </div>
 
-                <div className="flex min-h-[400px] flex-col md:flex-row">
+                <div className="flex min-h-[300px] sm:min-h-[400px] flex-col md:flex-row">
                   {/* Left Side - Chains */}
-                  <div className="w-full border-b border-slate-200 p-4 md:w-1/3 md:border-r md:border-b-0 dark:border-slate-800">
+                  <div className="w-full border-b border-slate-200 p-3 sm:p-4 md:w-1/3 md:border-r md:border-b-0 dark:border-slate-800">
                     <p className="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
                       {t("form.assetSelector.selectChain")}
                     </p>
@@ -986,7 +986,7 @@ export function AssetSelectorCard({
                     </div>
 
                     {/* Currency List */}
-                    <div className="max-h-[350px] flex-1 overflow-y-auto p-4">
+                    <div className="max-h-[250px] sm:max-h-[350px] flex-1 overflow-y-auto p-3 sm:p-4">
                       {filteredCurrencies.length === 0 ? (
                         <div className="py-12 text-center text-slate-500 dark:text-slate-400">
                           <Coins className="mx-auto mb-3 h-12 w-12 opacity-30" />

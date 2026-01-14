@@ -153,3 +153,15 @@
     border-color: rgba(51, 65, 85, 0.5);
   }
 }
+
+/* 小屏幕优化 */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
