@@ -73,6 +73,7 @@ import {
   useNativeBalance,
   calculateFee as calcContractFee,
   calculateLockupFee,
+  calculateLockupAmountToSend,
   useWarehouseAddress,
   useBlockchainTime,
   useXwaifuToken,
@@ -149,7 +150,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
     ? String(xwaifuTokenAddress).toLowerCase()
     : "";
   const hasXwaifuSupport =
-    xwaifuAddr && xwaifuAddr !== "0x0000000000000000000000000000000000000000";
+    !!xwaifuAddr && xwaifuAddr !== "0x0000000000000000000000000000000000000000";
 
   const activeVIPLockup = positions.find((p) => {
     if (p.type !== "coin-based") return false;
@@ -277,13 +278,9 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
   const getLockupTotalNeeded = () => {
     const amt = Number.parseFloat(amount) || 0;
     if (amt <= 0) return 0n;
-    const amountBigInt = parseUnits(amt.toString(), lockupTokenDecimals);
-    let fee = calculateLockupFee(amountBigInt);
-    // VIP 折扣
-    if (hasVIPDiscount) {
-      fee = fee / 2n;
-    }
-    return amountBigInt + fee;
+    const desiredAmount = parseUnits(amt.toString(), lockupTokenDecimals);
+    // 反算：用户输入的是期望仓位，计算需要支付的金额
+    return calculateLockupAmountToSend(desiredAmount, hasVIPDiscount);
   };
 
   const uBasedTotalNeeded = getUBasedTotalNeeded();
@@ -394,8 +391,8 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
       disbursementFee: "0.00",
       total: baseFee.toFixed(2),
       hasDiscount: hasVIPDiscount,
-      feeRate: (baseFeeRate * 100).toFixed(1) + "%",
-      originalFeeRate: (originalFeeRate * 100).toFixed(1) + "%",
+      feeRate: (baseFeeRate * 100).toFixed(2) + "%",
+      originalFeeRate: (originalFeeRate * 100).toFixed(2) + "%",
     };
   };
 
@@ -531,13 +528,10 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
       return;
     }
 
-    const lockAmount = parseUnits(amount, lockupTokenDecimals);
-    let fee = calculateLockupFee(lockAmount);
-    // VIP 折扣：手续费减半
-    if (hasVIPDiscount) {
-      fee = fee / 2n;
-    }
-    const totalNeeded = lockAmount + fee;
+    // 用户输入的是期望仓位金额
+    const desiredAmount = parseUnits(amount, lockupTokenDecimals);
+    // 反算需要传给合约的金额
+    const amountToSend = calculateLockupAmountToSend(desiredAmount, hasVIPDiscount);
     const unlockTimestamp = BigInt(Math.floor(unlockDate / 1000));
 
     // For native tokens, use address(0)
@@ -559,7 +553,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
         const currentLockupAllowance =
           typeof freshAllowance === "bigint" ? freshAllowance : 0n;
 
-        if (currentLockupAllowance < lockAmount) {
+        if (currentLockupAllowance < amountToSend) {
           toast.info(`Approving ${selectedCurrency}...`, {
             description: "Please confirm the approval transaction",
           });
@@ -569,7 +563,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
             address: selectedTokenAddress!,
             abi: erc20Abi,
             functionName: "approve",
-            args: [currentWarehouseAddress, totalNeeded],
+            args: [currentWarehouseAddress, amountToSend],
           });
 
           // Step 2: Wait for approval confirmation
@@ -595,13 +589,13 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
         functionName: "createLockup",
         args: [
           tokenAddressForContract,
-          lockAmount,
+          amountToSend, // 传反算后的金额，合约扣费后仓位 = 用户期望值
           unlockTimestamp,
           vipLockupId ?? maxUint256, // 无 VIP 时传 maxUint256 跳过折扣检查
           lockupRemittance,
         ],
         // For native tokens, send the value with the transaction
-        ...(isNativeToken ? { value: totalNeeded } : {}),
+        ...(isNativeToken ? { value: amountToSend } : {}),
       });
 
       // Step 4: Wait for lockup confirmation
@@ -702,17 +696,12 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
         throw new Error(t("form.vip.configError"));
       }
 
-      // VIP 要求：10000 xWAIFU，365天，激活需要额外 100 xWAIFU
-      // 注意：为确保满足 STAKE_MIN_AMOUNT (9800)，需要锁仓足够多
-      // 合约会扣 0.5% 手续费，所以 10000 实际锁入 9950
-      // 但激活 VIP 还会扣 100，所以最终是 9850，仍然 >= 9800
-      const VIP_AMOUNT = parseUnits("10100", 18); // 多锁 100 以确保扣费后仍够
-      const VIP_BURN_AMOUNT = parseUnits("100", 18); // 激活 VIP 需要燃烧 100（从锁仓金额中扣）
+      // VIP 要求：最终仓位 >= 9800 xWAIFU，激活需要扣 100 xWAIFU
+      // 期望仓位 10000，激活后剩余 9900，满足 >= 9800 要求
+      const VIP_DESIRED_AMOUNT = parseUnits("10000", 18); // 期望仓位 10000
       const VIP_LOCK_DAYS = 365;
-      const lockupFee = calculateLockupFee(VIP_AMOUNT);
-      // 授权总量：锁仓金额（合约会从中扣手续费）
-      // activateVIP 是从已锁仓金额中扣，不需要额外授权
-      const totalNeeded = VIP_AMOUNT;
+      // 反算需要传给合约的金额（无 VIP 折扣，因为这是首次开通）
+      const VIP_AMOUNT_TO_SEND = calculateLockupAmountToSend(VIP_DESIRED_AMOUNT, false);
 
       // 计算解锁时间戳 - 使用区块链时间（支持时间加速测试）
       const baseTimestamp = blockchainTime ?? Math.floor(Date.now() / 1000);
@@ -720,7 +709,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
         baseTimestamp + VIP_LOCK_DAYS * 24 * 60 * 60
       );
 
-      // 2. Approve（包含锁仓和激活所需的总量）
+      // 2. Approve（锁仓所需的金额）
       toast.info(t("form.vip.checkingApproval"));
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -728,7 +717,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
         address: xwaifuAddress,
         abi: erc20Abi,
         functionName: "approve",
-        args: [warehouseAddr, totalNeeded],
+        args: [warehouseAddr, VIP_AMOUNT_TO_SEND],
         chainId: targetChainId,
       });
 
@@ -747,7 +736,7 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
         functionName: "createLockup",
         args: [
           xwaifuAddress,
-          VIP_AMOUNT,
+          VIP_AMOUNT_TO_SEND, // 反算后的金额，合约扣费后仓位 = 10000
           unlockTimestamp,
           maxUint256, // 不使用现有 VIP 折扣，传入 uint256.max 跳过折扣检查
           false, // 不开启汇付
@@ -1893,6 +1882,37 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           </span>
                         </div>
                       )}
+
+                      {/* Remittance toggle for coin-based - pill style */}
+                      <div className="mb-4 space-y-2">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {t("form.remittance.lockupOption")}
+                        </p>
+                        <div className="inline-flex rounded-lg border border-slate-200 bg-white/70 p-1 dark:border-slate-700 dark:bg-slate-800/70">
+                          <button
+                            type="button"
+                            className={`min-w-[88px] rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                              !lockupRemittance
+                                ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
+                                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                            }`}
+                            onClick={() => setLockupRemittance(false)}
+                          >
+                            {t("form.remittance.selfOnly")}
+                          </button>
+                          <button
+                            type="button"
+                            className={`min-w-[120px] rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                              lockupRemittance
+                                ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
+                                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                            }`}
+                            onClick={() => setLockupRemittance(true)}
+                          >
+                            {t("form.remittance.enableRemittance")}
+                          </button>
+                        </div>
+                      </div>
 
                       {/* Lock Button */}
                       {!mounted ? (

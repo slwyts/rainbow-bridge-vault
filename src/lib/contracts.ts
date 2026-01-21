@@ -405,6 +405,30 @@ export function calculateLockupFee(amount: bigint): bigint {
   return (amount * 5n) / 1000n;
 }
 
+/**
+ * 根据期望的仓位金额，反算需要传给合约的金额
+ * 合约逻辑: amountLocked = _amount - fee = _amount * 995 / 1000 (无VIP)
+ *          amountLocked = _amount - fee/2 = _amount * 1995 / 2000 (有VIP)
+ * 反算: _amount = desiredAmount * 1000 / 995 (无VIP)
+ *       _amount = desiredAmount * 2000 / 1995 (有VIP)
+ */
+export function calculateLockupAmountToSend(
+  desiredAmount: bigint,
+  hasVIPDiscount: boolean
+): bigint {
+  if (hasVIPDiscount) {
+    // fee = amount * 5 / 1000 / 2 = amount * 5 / 2000
+    // locked = amount - fee = amount * 1995 / 2000
+    // amount = desired * 2000 / 1995
+    return (desiredAmount * 2000n + 1994n) / 1995n; // 向上取整确保仓位 >= 期望值
+  } else {
+    // fee = amount * 5 / 1000
+    // locked = amount - fee = amount * 995 / 1000
+    // amount = desired * 1000 / 995
+    return (desiredAmount * 1000n + 994n) / 995n; // 向上取整
+  }
+}
+
 // ============ Blockchain Time Hook ============
 
 /**
