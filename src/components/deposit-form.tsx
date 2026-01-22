@@ -1262,53 +1262,43 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                         </span>
                       </div>
                       <div className="flex gap-2">
-
                         <a
                           href="https://www.butterswap.io/zh/swap"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group flex flex-1 items-center gap-2 rounded-lg border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-2.5 transition-all hover:border-orange-400 hover:shadow-md dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10"
+                          className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-linear-to-br from-purple-50 to-indigo-50 p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:from-purple-500/10 dark:to-indigo-500/10"
                         >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500 overflow-hidden">
-                            <Image
-                              src="/butter.png"
-                              alt="Butterswap"
-                              width={28}
-                              height={28}
-                              className="object-cover w-full h-full"
-                            />
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600">
+                            <span className="text-xs font-bold text-white">
+                              B
+                            </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
+                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
                               Butterswap
                             </h5>
                           </div>
-                          <ExternalLink className="h-3 w-3 shrink-0 text-orange-400 opacity-60 transition-opacity group-hover:opacity-100" />
+                          <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
                         </a>
 
                         <a
                           href="https://meson.fi/zh"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-white p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50"
+                          className="group flex flex-1 items-center gap-2 rounded-lg border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-2.5 transition-all hover:border-orange-400 hover:shadow-md dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10"
                         >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white border border-purple-200 dark:bg-slate-700 dark:border-purple-500/20 overflow-hidden">
-                            <Image
-                              src="/meson.ico"
-                              alt="Meson"
-                              width={28}
-                              height={28}
-                              className="object-cover w-full h-full"
-                            />
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500">
+                            <span className="text-xs font-bold text-white">
+                              M
+                            </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
+                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
                               Meson
                             </h5>
                           </div>
-                          <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
+                          <ExternalLink className="h-3 w-3 shrink-0 text-orange-400 opacity-60 transition-opacity group-hover:opacity-100" />
                         </a>
-
                       </div>
                     </div>
                   </div>
@@ -1708,46 +1698,38 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           href="https://www.butterswap.io/zh/swap"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group flex flex-1 items-center gap-2 rounded-lg border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-2.5 transition-all hover:border-orange-400 hover:shadow-md dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10"
+                          className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-linear-to-br from-purple-50 to-indigo-50 p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:from-purple-500/10 dark:to-indigo-500/10"
                         >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500 overflow-hidden">
-                            <Image
-                              src="/butter.png"
-                              alt="Butterswap"
-                              width={28}
-                              height={28}
-                              className="object-cover w-full h-full"
-                            />
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600">
+                            <span className="text-xs font-bold text-white">
+                              B
+                            </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
+                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
                               Butterswap
                             </h5>
                           </div>
-                          <ExternalLink className="h-3 w-3 shrink-0 text-orange-400 opacity-60 transition-opacity group-hover:opacity-100" />
+                          <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
                         </a>
 
                         <a
                           href="https://meson.fi/zh"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-white p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50"
+                          className="group flex flex-1 items-center gap-2 rounded-lg border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-2.5 transition-all hover:border-orange-400 hover:shadow-md dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10"
                         >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white border border-purple-200 dark:bg-slate-700 dark:border-purple-500/20 overflow-hidden">
-                            <Image
-                              src="/meson.ico"
-                              alt="Meson"
-                              width={28}
-                              height={28}
-                              className="object-cover w-full h-full"
-                            />
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500">
+                            <span className="text-xs font-bold text-white">
+                              M
+                            </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
+                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
                               Meson
                             </h5>
                           </div>
-                          <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
+                          <ExternalLink className="h-3 w-3 shrink-0 text-orange-400 opacity-60 transition-opacity group-hover:opacity-100" />
                         </a>
 
                       </div>
