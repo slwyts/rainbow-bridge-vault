@@ -1702,31 +1702,8 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           {t("form.labels.crossChainBridges")}
                         </span>
                       </div>
-                      <div className="flex gap-2">
-                        <a
-                          href="https://jumper.exchange/zh"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-linear-to-br from-purple-50 to-indigo-50 p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:from-purple-500/10 dark:to-indigo-500/10"
-                        >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600 overflow-hidden">
-                            <Image
-                              src="/jumper.ico"
-                              alt="Jumper"
-                              width={28}
-                              height={28}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
-                              Jumper
-                            </h5>
-                          </div>
-                          <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
-                        </a>
+                     <div className="flex gap-2">
 
-                        {/* Orbiter Bridge */}
                         <a
                           href="https://www.butterswap.io/zh/swap"
                           target="_blank"
@@ -1749,6 +1726,30 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           </div>
                           <ExternalLink className="h-3 w-3 shrink-0 text-orange-400 opacity-60 transition-opacity group-hover:opacity-100" />
                         </a>
+
+                        <a
+                          href="https://meson.fi/zh"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-white p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:bg-slate-800/50 dark:hover:bg-slate-700/50"
+                        >
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white border border-purple-200 dark:bg-slate-700 dark:border-purple-500/20 overflow-hidden">
+                            <Image
+                              src="/meson.ico"
+                              alt="Meson"
+                              width={28}
+                              height={28}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
+                              Meson
+                            </h5>
+                          </div>
+                          <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
+                        </a>
+
                       </div>
                     </div>
                   </div>
