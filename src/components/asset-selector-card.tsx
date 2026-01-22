@@ -444,6 +444,9 @@ export function ChainIcon({
       return <NetworkArbitrumOne className={className} variant="branded" />;
     case "polygon":
       return <NetworkPolygon className={className} variant="branded" />;
+    case "base-mainnet":
+      return <NetworkBase className={className} variant="branded" />;
+    case "ethereum-mainnet":
     case "ethereum":
     case "localnet":
       return <NetworkEthereum className={className} variant="branded" />;

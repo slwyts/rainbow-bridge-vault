@@ -62,13 +62,13 @@ export default defineConfig({
       chainType: "l1",
       url: "http://127.0.0.1:8545",
     },
-    // === Mainnet Networks ===
     xlayer: {
       type: "http",
       chainType: "l1",
       url: "https://rpc.xlayer.tech",
       accounts: [DEPLOYER_PRIVATE_KEY],
       chainId: 196,
+      gas: 8000000,
     },
     bsc: {
       type: "http",
@@ -76,6 +76,7 @@ export default defineConfig({
       url: "https://bsc-dataseed.binance.org",
       accounts: [DEPLOYER_PRIVATE_KEY],
       chainId: 56,
+      gas: 8000000,
     },
     arbitrum: {
       type: "http",
@@ -83,6 +84,7 @@ export default defineConfig({
       url: "https://arb1.arbitrum.io/rpc",
       accounts: [DEPLOYER_PRIVATE_KEY],
       chainId: 42161,
+      gas: 8000000,
     },
     ethereum: {
       type: "http",
@@ -90,6 +92,7 @@ export default defineConfig({
       url: "https://eth.llamarpc.com",
       accounts: [DEPLOYER_PRIVATE_KEY],
       chainId: 1,
+      gas: 8000000,
     },
     polygon: {
       type: "http",
@@ -97,7 +100,8 @@ export default defineConfig({
       url: "https://polygon-rpc.com",
       accounts: [DEPLOYER_PRIVATE_KEY],
       chainId: 137,
-      gasPrice: 9500000000000, // 9500 gwei - Polygon gas 飙升
+      gas: 8000000,
+      gasPrice: 9500000000000,
     },
     base: {
       type: "http",
@@ -105,14 +109,15 @@ export default defineConfig({
       url: "https://mainnet.base.org",
       accounts: [DEPLOYER_PRIVATE_KEY],
       chainId: 8453,
+      gas: 8000000,
     },
-    // === Testnet Networks ===
     bscTestnet: {
       type: "http",
       chainType: "l1",
       url: "https://data-seed-prebsc-1-s1.binance.org:8545",
       accounts: [DEPLOYER_PRIVATE_KEY],
       chainId: 97,
+      gas: 8000000, // Increase gas limit for contract deployment
     },
   },
 });

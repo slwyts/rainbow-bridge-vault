@@ -1,4 +1,4 @@
-import { hardhat, bsc, bscTestnet, arbitrum, xLayer, polygon } from "viem/chains";
+import { hardhat, bsc, bscTestnet, arbitrum, xLayer, polygon, base, mainnet } from "viem/chains";
 import type { Chain as ViemChain } from "viem";
 
 // ============ Chain IDs ============
@@ -9,6 +9,8 @@ export const CHAIN_IDS = {
   BSC: 56,
   ARBITRUM: 42161,
   POLYGON: 137,
+  BASE: 8453,
+  ETHEREUM: 1,
 } as const;
 
 export type SupportedChainId = (typeof CHAIN_IDS)[keyof typeof CHAIN_IDS];
@@ -21,6 +23,8 @@ export const CHAIN_TO_TRUST_WALLET: Record<string, string> = {
   "bsc-testnet": "smartchain",
   "arbitrum-one": "arbitrum",
   polygon: "polygon",
+  "base-mainnet": "base",
+  "ethereum-mainnet": "ethereum",
 };
 
 // ============ OKLink Chain ID 映射 (用于获取代币图标) ============
@@ -33,6 +37,8 @@ const CHAIN_TO_OKLINK_ID: Record<string, number> = {
   "bsc-testnet": 56,
   "arbitrum-one": 42161,
   polygon: 137,
+  "base-mainnet": 8453,
+  "ethereum-mainnet": 1,
 };
 
 // iconaves.com 链名映射
@@ -43,6 +49,8 @@ const CHAIN_TO_ICONAVES: Record<string, string> = {
   "bsc-testnet": "bsc",
   "arbitrum-one": "arbitrum",
   polygon: "polygon",
+  "base-mainnet": "base",
+  "ethereum-mainnet": "eth",
 };
 
 // 特定代币的固定图标 URL（优先级最高）
@@ -192,6 +200,16 @@ const ENV_ADDRESSES = {
   ),
   POLYGON_USDT: toAddress(process.env.NEXT_PUBLIC_POLYGON_USDT_ADDRESS),
   POLYGON_USDC: toAddress(process.env.NEXT_PUBLIC_POLYGON_USDC_ADDRESS),
+  // Base
+  BASE_WAREHOUSE: toAddress(process.env.NEXT_PUBLIC_BASE_WAREHOUSE_ADDRESS),
+  BASE_USDT: toAddress(process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS),
+  BASE_USDC: toAddress(process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS),
+  // Ethereum
+  ETHEREUM_WAREHOUSE: toAddress(
+    process.env.NEXT_PUBLIC_ETHEREUM_WAREHOUSE_ADDRESS
+  ),
+  ETHEREUM_USDT: toAddress(process.env.NEXT_PUBLIC_ETHEREUM_USDT_ADDRESS),
+  ETHEREUM_USDC: toAddress(process.env.NEXT_PUBLIC_ETHEREUM_USDC_ADDRESS),
 } as const;
 
 export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
@@ -400,6 +418,64 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
     gasEstimate: "$0.01",
     gasLevel: "low",
     trustWalletName: "polygon",
+  },
+
+  // Base
+  [CHAIN_IDS.BASE]: {
+    chainId: CHAIN_IDS.BASE,
+    stringId: "base-mainnet",
+    name: "Base",
+    shortName: "Base",
+    viemChain: base,
+    rpcUrl: "https://mainnet.base.org",
+    warehouseAddress: ENV_ADDRESSES.BASE_WAREHOUSE,
+    tokens: {
+      native: { symbol: "ETH", name: "Ethereum", decimals: 18, isNative: true },
+      USDT: {
+        symbol: "USDT",
+        name: "USDT",
+        decimals: 6,
+        address: ENV_ADDRESSES.BASE_USDT,
+      },
+      USDC: {
+        symbol: "USDC",
+        name: "USDC",
+        decimals: 6,
+        address: ENV_ADDRESSES.BASE_USDC,
+      },
+    },
+    gasEstimate: "$0.001",
+    gasLevel: "low",
+    trustWalletName: "base",
+  },
+
+  // Ethereum Mainnet
+  [CHAIN_IDS.ETHEREUM]: {
+    chainId: CHAIN_IDS.ETHEREUM,
+    stringId: "ethereum-mainnet",
+    name: "Ethereum",
+    shortName: "ETH",
+    viemChain: mainnet,
+    rpcUrl: "https://eth.llamarpc.com",
+    warehouseAddress: ENV_ADDRESSES.ETHEREUM_WAREHOUSE,
+    tokens: {
+      native: { symbol: "ETH", name: "Ethereum", decimals: 18, isNative: true },
+      USDT: {
+        symbol: "USDT",
+        name: "USDT",
+        decimals: 6,
+        address: ENV_ADDRESSES.ETHEREUM_USDT,
+      },
+      USDC: {
+        symbol: "USDC",
+        name: "USDC",
+        decimals: 6,
+        address: ENV_ADDRESSES.ETHEREUM_USDC,
+      },
+    },
+    gasEstimate: "$5.00",
+    gasLevel: "high",
+    trustWalletName: "ethereum",
   },
 };
 
