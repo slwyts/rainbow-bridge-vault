@@ -429,13 +429,7 @@ export function calculateLockupAmountToSend(
   }
 }
 
-// ============ Blockchain Time Hook ============
 
-/**
- * 获取区块链当前时间（block.timestamp）
- * 严格按照链上时间计算，不使用本地时间
- * 注意：不使用 watch 避免频繁轮询，手动调用 refetch 来更新
- */
 export function useBlockchainTime() {
   const chainId = useContractChainId();
 

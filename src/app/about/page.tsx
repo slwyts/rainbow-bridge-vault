@@ -20,6 +20,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import React from "react";
 import {
   getAllChainIds,
   getChainName,
@@ -112,7 +113,14 @@ function AboutContent() {
                 {t("about.title")}
               </h1>
               <p className="max-w-3xl text-lg leading-relaxed text-slate-700 dark:text-slate-300">
-                {t("about.description")}
+                {t("about.description")
+                  .split('\n')
+                  .map((line, idx) => (
+                    <React.Fragment key={idx}>
+                      {line}
+                      <br />
+                    </React.Fragment>
+                  ))}
               </p>
             </div>
           </div>
@@ -154,7 +162,7 @@ function AboutContent() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/50 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
+          {/* <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/50 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
             <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-100/50 px-6 py-4 dark:border-slate-700/50 dark:bg-slate-800/50">
               <span className="flex items-center gap-2 font-mono text-sm text-slate-600 dark:text-slate-400">
                 <Skull className="h-4 w-4" />
@@ -219,7 +227,7 @@ function AboutContent() {
                 ))}
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="overflow-hidden rounded-2xl border border-red-300 bg-white/50 shadow-2xl backdrop-blur-xl dark:border-red-500/30 dark:bg-slate-900/50">
             <div className="flex items-center gap-3 border-b border-red-200 bg-slate-100/50 px-6 py-4 dark:border-red-500/20 dark:bg-slate-800/50">
@@ -371,11 +379,11 @@ function AboutContent() {
               </div>
 
               {/* Slogan */}
-              <div className="rounded-xl border border-emerald-300 bg-linear-to-r from-emerald-100/80 to-cyan-100/80 p-6 text-center dark:border-emerald-500/30 dark:from-emerald-500/10 dark:to-cyan-500/10">
+              {/* <div className="rounded-xl border border-emerald-300 bg-linear-to-r from-emerald-100/80 to-cyan-100/80 p-6 text-center dark:border-emerald-500/30 dark:from-emerald-500/10 dark:to-cyan-500/10">
                 <p className="text-xl font-bold text-emerald-800 dark:text-emerald-200">
                   {t("about.slogan")}
                 </p>
-              </div>
+              </div> */}
             </div>
           </div>
 

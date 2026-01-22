@@ -1,8 +1,3 @@
-/**
- * 统一的多链配置文件
- * 所有链相关的配置都从这里导出，避免在多处重复定义
- */
-
 import { hardhat, bsc, bscTestnet, arbitrum, xLayer, polygon } from "viem/chains";
 import type { Chain as ViemChain } from "viem";
 
@@ -153,8 +148,6 @@ interface ChainConfig {
   trustWalletName: string;
 }
 
-// ============ 从环境变量读取地址的辅助函数 ============
-// 注意：Next.js 只在构建时替换字面量 process.env.XXX，不能用动态 key
 function toAddress(value: string | undefined): `0x${string}` | undefined {
   if (value && value.startsWith("0x") && value.length === 42) {
     return value as `0x${string}`;
@@ -162,7 +155,6 @@ function toAddress(value: string | undefined): `0x${string}` | undefined {
   return undefined;
 }
 
-// 直接字面量访问环境变量，确保 Next.js 正确内联
 const ENV_ADDRESSES = {
   // Localnet
   LOCALNET_WAREHOUSE: toAddress(
@@ -202,9 +194,7 @@ const ENV_ADDRESSES = {
   POLYGON_USDC: toAddress(process.env.NEXT_PUBLIC_POLYGON_USDC_ADDRESS),
 } as const;
 
-// ============ 所有支持的链配置 ============
 export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
-  // Hardhat / Localnet (开发环境)
   [CHAIN_IDS.HARDHAT]: {
     chainId: CHAIN_IDS.HARDHAT,
     stringId: "localnet",
@@ -413,12 +403,6 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
   },
 };
 
-// ============ 辅助函数 ============
-
-/**
- * 获取所有启用的链ID（配置了仓库地址的链）
- * 这是主要使用的函数，UI组件应该使用这个
- */
 export function getAllChainIds(): SupportedChainId[] {
   return (Object.keys(CHAIN_CONFIGS).map(Number) as SupportedChainId[]).filter(
     (id) => CHAIN_CONFIGS[id].warehouseAddress
@@ -494,8 +478,6 @@ export function getContractCodeUrl(
   if (!explorerUrl) return undefined;
   return `${explorerUrl}/address/${contractAddress}#code`;
 }
-
-// ============ UI 代币类型 ============
 
 /**
  * UI 代币类型定义（用于资产选择器等组件）

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e env/global.env -e env/localnet.env -e env/bsc-testnet.env -e env/bsc.env -e env/xlayer.env -e env/arbitrum.env -e env/polygon.env -- next dev",
+    "dev": "dotenv -e env/global.env -e env/bsc-testnet.env -e env/bsc.env -e env/xlayer.env -e env/arbitrum.env -e env/polygon.env -- next dev",
     "dev:local": "node scripts/start-local.js",
     "build": "npx hardhat compile && dotenv -e env/global.env -e env/bsc-testnet.env -e env/bsc.env -e env/xlayer.env -e env/arbitrum.env -e env/polygon.env -- next build",
     "start": "next start",
