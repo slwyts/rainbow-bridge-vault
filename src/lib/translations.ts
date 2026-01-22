@@ -733,7 +733,7 @@ export const translations = {
         },
         feature3: {
           title: "多链支持",
-          description: "支持SOL、BNB、XLayer、ETH和Arbitrum",
+          description: "支持BSC、XLayer、ETH和Arbitrum等",
         },
         feature4: {
           title: "低Gas费",
