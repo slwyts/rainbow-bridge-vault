@@ -49,3 +49,4 @@ nul
 next-env.d.ts
 input.json
 project.zip
+.hardhat-node.pid

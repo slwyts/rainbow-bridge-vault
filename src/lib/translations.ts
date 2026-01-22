@@ -317,8 +317,11 @@ export const translations = {
     },
     about: {
       title: "About Bifrost Fund Diversion",
-      description:
-        "Bifrost Fund Diversion provides scheduled cryptocurrency deposits and periodic disbursement services via smart contracts. It enables high-leverage traders to implement mechanically rational fund diversion, reducing the risk of irrational choices driven by emotions. In extreme market conditions, the Bifrost Fund Diversion reserves essential living expenses and a \"second-chance\" capital buffer for traders.\n\n Bifrost  Remittance\nBuilding on the  Bifrost  Diversion, you can transfer funds to other addresses. When the remittance matures, it can be sent to the designated receiving address. If you do not want to continue transferring, you can withdraw the remaining funds back to the original address in advance.\nSuitable for multiple scenarios, such as:\n1. Frequent payroll settlements\n2. Distributing tips or living allowances to recipients who may have difficulty with self-control\n3. Staged project payments\n4. Scheduled investment fund planning",
+      warehouseDescription:
+        "Bifrost Fund Diversion provides scheduled cryptocurrency deposits and periodic disbursement services via smart contracts. It enables high-leverage traders to implement mechanically rational fund diversion, reducing the risk of irrational choices driven by emotions. In extreme market conditions, the Bifrost Fund Diversion reserves essential living expenses and a \"second-chance\" capital buffer for traders.",
+      transferTitle: "About Bifrost Remittance",
+      transferDescription:
+        "Building on the Bifrost Diversion, you can transfer funds to other addresses. When the remittance matures, it can be sent to the designated receiving address. If you do not want to continue transferring, you can withdraw the remaining funds back to the original address in advance.\nSuitable for multiple scenarios, such as:\n1. Frequent payroll settlements\n2. Distributing tips or living allowances to recipients who may have difficulty with self-control\n3. Staged project payments\n4. Scheduled investment fund planning",
       features: {
         title: "Key Features",
         feature1: {
@@ -713,8 +716,11 @@ export const translations = {
     },
     about: {
       title: "关于彩虹桥仓库",
-      description:
-        "彩虹桥仓库通过智能合约提供加密货币的定期存放与周期性派发业务，为高杠杆投资者实现机械理性的资金分流，以降低高杠杆投资者在情绪中的非理性选择风险。在极端行情下，彩虹桥仓库会为交易者留下最后的一点生活所需和东山再起的筹码。使用彩虹桥仓库，有备无患。\n\n彩虹桥汇付\n在彩虹桥仓库基础上、可向其他地址转账。到期汇付可汇入受付地址，如不想继续转账可提前将剩余资金取回指定地址。\n多场景适用：\n1. 高频工资结算\n2. 向自控力较弱的群体发放打赏或生活费\n3. 工程分期支付\n4. 定投资金规划",
+      warehouseDescription:
+        "彩虹桥仓库通过智能合约提供加密货币的定期存放与周期性派发业务，为高杠杆投资者实现机械理性的资金分流，以降低高杠杆投资者在情绪中的非理性选择风险。在极端行情下，彩虹桥仓库会为交易者留下最后的一点生活所需和东山再起的筹码。使用彩虹桥仓库，有备无患。",
+      transferTitle: "关于彩虹桥汇付",
+      transferDescription:
+        "在彩虹桥仓库基础上、可向其他地址转账。到期汇付可汇入受付地址，如不想继续转账可提前将剩余资金取回指定地址。\n多场景适用：\n1. 高频工资结算\n2. 向自控力较弱的群体发放打赏或生活费\n3. 工程分期支付\n4. 定投资金规划",
       features: {
         title: "主要特点",
         feature1: {

@@ -18,6 +18,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { toast } from "sonner";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Position } from "@/app/page";
 import {
@@ -1262,38 +1263,46 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                       </div>
                       <div className="flex gap-2">
                         <a
-                          href="https://stargate.finance/bridge"
+                          href="https://jumper.exchange/zh"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-linear-to-br from-purple-50 to-indigo-50 p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:from-purple-500/10 dark:to-indigo-500/10"
                         >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600">
-                            <span className="text-xs font-bold text-white">
-                              S
-                            </span>
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600 overflow-hidden">
+                            <Image
+                              src="/jumper.ico"
+                              alt="Jumper"
+                              width={28}
+                              height={28}
+                              className="object-cover w-full h-full"
+                            />
                           </div>
                           <div className="min-w-0 flex-1">
                             <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
-                              Stargate
+                              Jumper
                             </h5>
                           </div>
                           <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
                         </a>
 
                         <a
-                          href="https://www.orbiter.finance/"
+                          href="https://www.butterswap.io/zh/swap"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="group flex flex-1 items-center gap-2 rounded-lg border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-2.5 transition-all hover:border-orange-400 hover:shadow-md dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10"
                         >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500">
-                            <span className="text-xs font-bold text-white">
-                              O
-                            </span>
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500 overflow-hidden">
+                            <Image
+                              src="/butter.png"
+                              alt="Butterswap"
+                              width={28}
+                              height={28}
+                              className="object-cover w-full h-full"
+                            />
                           </div>
                           <div className="min-w-0 flex-1">
                             <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
-                              Orbiter
+                              Butterswap
                             </h5>
                           </div>
                           <ExternalLink className="h-3 w-3 shrink-0 text-orange-400 opacity-60 transition-opacity group-hover:opacity-100" />
@@ -1693,19 +1702,23 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                       </div>
                       <div className="flex gap-2">
                         <a
-                          href="https://stargate.finance/bridge"
+                          href="https://jumper.exchange/zh"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="group flex flex-1 items-center gap-2 rounded-lg border border-purple-200/50 bg-linear-to-br from-purple-50 to-indigo-50 p-2.5 transition-all hover:border-purple-400 hover:shadow-md dark:border-purple-500/20 dark:from-purple-500/10 dark:to-indigo-500/10"
                         >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600">
-                            <span className="text-xs font-bold text-white">
-                              S
-                            </span>
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-indigo-600 overflow-hidden">
+                            <Image
+                              src="/jumper.ico"
+                              alt="Jumper"
+                              width={28}
+                              height={28}
+                              className="object-cover w-full h-full"
+                            />
                           </div>
                           <div className="min-w-0 flex-1">
                             <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
-                              Stargate
+                              Jumper
                             </h5>
                           </div>
                           <ExternalLink className="h-3 w-3 shrink-0 text-purple-400 opacity-60 transition-opacity group-hover:opacity-100" />
@@ -1713,19 +1726,23 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
 
                         {/* Orbiter Bridge */}
                         <a
-                          href="https://www.orbiter.finance/"
+                          href="https://www.butterswap.io/zh/swap"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="group flex flex-1 items-center gap-2 rounded-lg border border-orange-200/50 bg-linear-to-br from-orange-50 to-amber-50 p-2.5 transition-all hover:border-orange-400 hover:shadow-md dark:border-orange-500/20 dark:from-orange-500/10 dark:to-amber-500/10"
                         >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500">
-                            <span className="text-xs font-bold text-white">
-                              O
-                            </span>
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-500 overflow-hidden">
+                            <Image
+                              src="/butter.png"
+                              alt="Butterswap"
+                              width={28}
+                              height={28}
+                              className="object-cover w-full h-full"
+                            />
                           </div>
                           <div className="min-w-0 flex-1">
                             <h5 className="text-xs font-bold text-slate-800 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
-                              Orbiter
+                              Butterswap
                             </h5>
                           </div>
                           <ExternalLink className="h-3 w-3 shrink-0 text-orange-400 opacity-60 transition-opacity group-hover:opacity-100" />

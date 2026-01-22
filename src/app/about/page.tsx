@@ -113,7 +113,32 @@ function AboutContent() {
                 {t("about.title")}
               </h1>
               <p className="max-w-3xl text-lg leading-relaxed text-slate-700 dark:text-slate-300">
-                {t("about.description")
+                {t("about.warehouseDescription")
+                  .split('\n')
+                  .map((line, idx) => (
+                    <React.Fragment key={idx}>
+                      {line}
+                      <br />
+                    </React.Fragment>
+                  ))}
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/50 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
+            <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-100/50 px-6 py-4 dark:border-slate-700/50 dark:bg-slate-800/50">
+              <span className="flex items-center gap-2 font-mono text-sm text-slate-600 dark:text-slate-400">
+                <Coins className="h-4 w-4" />
+                transfer.md
+              </span>
+            </div>
+
+            <div className="p-8">
+              <h1 className="mb-4 from-emerald-400 via-cyan-400 to-violet-400 bg-clip-text text-4xl font-bold">
+                {t("about.transferTitle")}
+              </h1>
+              <p className="max-w-3xl text-lg leading-relaxed text-slate-700 dark:text-slate-300">
+                {t("about.transferDescription")
                   .split('\n')
                   .map((line, idx) => (
                     <React.Fragment key={idx}>
