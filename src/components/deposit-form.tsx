@@ -337,8 +337,6 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
       id: config.stringId,
       name: config.name,
       icon: <ChainIcon symbol={config.stringId} className="h-5 w-5" />,
-      gas: config.gasEstimate,
-      gasLevel: config.gasLevel,
       symbol: config.stringId,
       chainId: config.chainId,
     };
@@ -860,9 +858,6 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                     <span className="flex items-center gap-2">
                       {selectedChainData.icon}
                       <span>{selectedChainData.name}</span>
-                      <span className="text-xs text-slate-400">
-                        ({selectedChainData.gas})
-                      </span>
                     </span>
                   ) : (
                     t("form.combobox.selectChain")
@@ -899,9 +894,6 @@ export function DepositForm({ onAddPosition, positions }: DepositFormProps) {
                           />
                           <span className="mr-2">{chain.icon}</span>
                           <span className="font-medium">{chain.name}</span>
-                          <span className="ml-auto text-xs text-slate-400 dark:text-slate-500">
-                            {chain.gas}
-                          </span>
                         </CommandItem>
                       ))}
                     </CommandGroup>

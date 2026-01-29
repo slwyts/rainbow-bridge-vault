@@ -148,10 +148,6 @@ interface ChainConfig {
     XWAIFU?: TokenConfig;
   };
 
-  // UI 相关
-  gasEstimate: string;
-  gasLevel: "low" | "medium" | "high";
-
   // Trust Wallet 图标名
   trustWalletName: string;
 }
@@ -253,8 +249,6 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         address: ENV_ADDRESSES.LOCALNET_XWAIFU,
       },
     },
-    gasEstimate: "<0.001",
-    gasLevel: "low",
     trustWalletName: "ethereum",
   },
 
@@ -294,8 +288,6 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         address: ENV_ADDRESSES.XLAYER_XWAIFU,
       },
     },
-    gasEstimate: "$0.001",
-    gasLevel: "low",
     trustWalletName: "xlayer",
   },
 
@@ -323,8 +315,6 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         address: ENV_ADDRESSES.BSC_USDC,
       },
     },
-    gasEstimate: "$0.05",
-    gasLevel: "low",
     trustWalletName: "smartchain",
   },
 
@@ -357,8 +347,6 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         address: ENV_ADDRESSES.BSC_TESTNET_USDC,
       },
     },
-    gasEstimate: "<0.001",
-    gasLevel: "low",
     trustWalletName: "smartchain",
   },
 
@@ -386,8 +374,6 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         address: ENV_ADDRESSES.ARBITRUM_USDC,
       },
     },
-    gasEstimate: "$0.10",
-    gasLevel: "medium",
     trustWalletName: "arbitrum",
   },
 
@@ -415,8 +401,6 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         address: ENV_ADDRESSES.POLYGON_USDC,
       },
     },
-    gasEstimate: "$0.01",
-    gasLevel: "low",
     trustWalletName: "polygon",
   },
 
@@ -444,8 +428,6 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         address: ENV_ADDRESSES.BASE_USDC,
       },
     },
-    gasEstimate: "$0.001",
-    gasLevel: "low",
     trustWalletName: "base",
   },
 
@@ -473,8 +455,6 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, ChainConfig> = {
         address: ENV_ADDRESSES.ETHEREUM_USDC,
       },
     },
-    gasEstimate: "$5.00",
-    gasLevel: "high",
     trustWalletName: "ethereum",
   },
 };
